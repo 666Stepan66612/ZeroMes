@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(36) PRIMARY KEY,
+    login VARCHAR(32) UNIQUE NOT NULL,
+    auth_hash VARCHAR(255) NOT NULL,
+    public_key TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+)
