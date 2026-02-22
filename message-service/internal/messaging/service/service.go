@@ -21,6 +21,14 @@ func NewMessageService(messageRepo MessageRepository, kafkaProducer KafkaProduce
 }
 
 func (s *messageService) SendMessage(ctx context.Context, chatID, senderID, recipientID, content, msgType string) (*Message, error) {
+	if chatID == "" || senderID == "" || recipientID == "" || content == "" {
+        return nil, apperrors.ErrInvalidInput
+    }
+    
+    if msgType == "" {
+        msgType = "text"
+    }
+
 	newMessage := Message{
 		ID: uuid.New().String(),
 		ChatID: chatID,
@@ -45,6 +53,10 @@ func (s *messageService) SendMessage(ctx context.Context, chatID, senderID, reci
 }
 
 func (s *messageService) GetMessages(ctx context.Context, chatID, userID string, limit int, lastMessageID string) ([]*Message, error) {
+	if chatID == "" || userID == "" || lastMessageID == "" {
+		return nil, apperrors.ErrInvalidInput
+	}
+
 	if limit <= 0 || limit > 50 {
 		limit = 50
 	}
@@ -58,6 +70,9 @@ func (s *messageService) GetMessages(ctx context.Context, chatID, userID string,
 }
 
 func (s *messageService) DeleteMessage(ctx context.Context, messageID, userID string) error {
+	if messageID == "" || userID == "" {
+		return apperrors.ErrInvalidInput
+	}
 	msg, err := s.messageRepo.GetByID(ctx, messageID)
 	if err != nil {
 		return err
@@ -75,14 +90,14 @@ func (s *messageService) DeleteMessage(ctx context.Context, messageID, userID st
 }
 
 func (s *messageService) MarkAsRead(ctx context.Context, chatID, userID, lastMessageID string) error {
-	msg, err := s.messageRepo.GetByID(ctx, lastMessageID)
+	if chatID == "" || userID == "" || lastMessageID == "" {
+		return apperrors.ErrInvalidInput
+	}
+
+	_, err := s.messageRepo.GetByID(ctx, lastMessageID)
 	if err != nil {
 		return err
 	}
-
-	if msg.SenderID != userID {
-        return apperrors.ErrNotYourMessage
-    }
 
 	if err := s.messageRepo.UpdateStatusBatch(ctx, chatID, userID, lastMessageID, MessageStatusRead); err != nil {
 		return err
@@ -92,6 +107,10 @@ func (s *messageService) MarkAsRead(ctx context.Context, chatID, userID, lastMes
 }
 
 func (s *messageService) AlterMessage(ctx context.Context, messageID, userID, newContent string) error {
+	if messageID == "" || userID == "" || newContent == "" {
+		return apperrors.ErrInvalidInput
+	}
+
 	msg, err := s.messageRepo.GetByID(ctx, messageID)
 	if err != nil {
 		return err

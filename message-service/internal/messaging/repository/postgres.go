@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 
+	apperrors "message-service/internal/cores/errors"
     "github.com/jackc/pgx/v5"
     "github.com/jackc/pgx/v5/pgxpool"
     "message-service/internal/messaging/service"
@@ -115,7 +116,7 @@ func (r *postgresRepository) GetByID(ctx context.Context, messageID string) (*se
 	)
 
 	if err == pgx.ErrNoRows {
-		return nil, nil
+		return nil, apperrors.ErrNotFound
 	}
 
 	if err != nil {

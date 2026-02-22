@@ -8,6 +8,7 @@ service MessageService {
     rpc GetMessages(GetMessagesRequest) returns (GetMessagesResponse);
     rpc MarkAsRead(MarkAsReadRequest) returns (MarkAsReadResponse);
     rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
+    rpc AlterMessage(AlterMessageRequest) returns (AlterMessageResponse);
 }
 
 message SendMessageRequest {
@@ -36,12 +37,18 @@ message DeleteMessageRequest {
     string user_id = 2;
 }
 
+message AlterMessageRequest {
+    string message_id = 1;
+    string user_id = 2;
+    string new_content = 3;
+}
+
 message SendMessageResponse {
     Message message = 1;
 }
 
 message GetMessagesResponse {
-    repeated Message message = 1;
+    repeated Message messages = 1;
     string next_message_id = 2;
     bool has_more = 3;
 }
@@ -51,6 +58,10 @@ message MarkAsReadResponse {
 }
 
 message DeleteMessageResponse {
+    bool success = 1;
+}
+
+message AlterMessageResponse {
     bool success = 1;
 }
 
