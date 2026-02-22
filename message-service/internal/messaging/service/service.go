@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"time"
+	"log"
 
 	apperrors "message-service/internal/cores/errors"
 	"github.com/google/uuid"
@@ -45,8 +46,9 @@ func (s *messageService) SendMessage(ctx context.Context, chatID, senderID, reci
 	}
 
 	if err := s.kafkaProducer.PublishMessageSent(ctx, &newMessage); err != nil {
-		// Логировать ошибку, но не возвращать (сообщение уже в БД)
-        // TODO: добавить retry или DLQ
+		log.Printf("WARN: Failed to publish to Kafka: chat_id=%s, msg_id=%s, error=%v",
+            newMessage.ChatID, newMessage.ID, err)
+        // TODO: retry or DLQ or outbox pattern
 	}
 
 	return &newMessage, nil

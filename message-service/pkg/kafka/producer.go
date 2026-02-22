@@ -1,11 +1,13 @@
 package kafka
 
 import (
-    "context"
-    "encoding/json"
+	"context"
 
     "github.com/segmentio/kafka-go"
+    pb "message-service/gen/messagepb"
     "message-service/internal/messaging/service"
+    "google.golang.org/protobuf/proto"
+    "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Producer struct {
@@ -18,12 +20,25 @@ func NewProducer(brokers []string, topic string) *Producer {
 			Addr: kafka.TCP(brokers...),
 			Topic: topic,
 			Balancer: &kafka.LeastBytes{},
+			Compression: kafka.Snappy,
+			RequiredAcks: kafka.RequireOne,
 		},
 	}
 }
 
 func (p *Producer) PublishMessageSent(ctx context.Context, msg *service.Message) error {
-	data, err := json.Marshal(msg)
+	pbMsg := &pb.Message{
+		Id: msg.ID,
+		ChatId: msg.ChatID,
+		SenderId: msg.SenderID,
+		RecipientId: msg.RecipientID,
+		EncryptedContent: msg.EncryptedContent,
+		MessageType: msg.MessageType,
+		CreatedAt: timestamppb.New(msg.CreatedAt),
+		Status: pb.MessageStatus(msg.Status),
+	}
+
+	data, err := proto.Marshal(pbMsg)
 	if err != nil {
 		return err
 	}
@@ -31,6 +46,10 @@ func (p *Producer) PublishMessageSent(ctx context.Context, msg *service.Message)
 	return p.writer.WriteMessages(ctx, kafka.Message{
 		Key: []byte(msg.ChatID),
 		Value: data,
+		Headers: []kafka.Header{
+			{Key: "content-type", Value: []byte("application/protobuf")},
+			{Key: "scheme-version", Value: []byte("1.0")},
+		},
 	})	
 }
 
