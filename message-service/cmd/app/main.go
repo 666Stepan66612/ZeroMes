@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"google.golang.org/grpc/reflection" // for test
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
 )
@@ -57,6 +58,8 @@ func main() {
 	grpcServer := grpc.NewServer()
 	grpcHandler := transport.NewGRPCHandler(messageService)
 	pb.RegisterMessageServiceServer(grpcServer, grpcHandler)
+
+	reflection.Register(grpcServer) // for test
 
 	listener, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {

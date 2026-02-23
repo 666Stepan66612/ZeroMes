@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS messages (
     message_type VARCHAR(20) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     status SMALLINT NOT NULL DEFAULT 0
-) PARTITION BY RANGE (created_at)
+) PARTITION BY RANGE (created_at);
 
 CREATE TABLE messages_2026_01 PARTITION OF messages FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');
 CREATE TABLE messages_2026_02 PARTITION OF messages FOR VALUES FROM ('2026-02-01') TO ('2026-03-01');
@@ -23,4 +23,4 @@ CREATE TABLE messages_2026_11 PARTITION OF messages FOR VALUES FROM ('2026-11-01
 CREATE TABLE messages_2026_12 PARTITION OF messages FOR VALUES FROM ('2026-12-01') TO ('2027-01-01');
 
 CREATE INDEX idx_messages_chat_created ON messages (chat_id, created_at DESC);
-CREATE INDEX idx_messages_status ON messages (chat_id, recipient_id, status) WHERE status < 2
+CREATE INDEX idx_messages_status ON messages (chat_id, recipient_id, status) WHERE status < 2;
