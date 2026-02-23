@@ -17,6 +17,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  postgres-messages:
+    image: postgres:16-alpine
+    container_name: messages-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: messages_db
+    volumes:
+      - postgres_messages_data:/var/lib/postgresql/data
+    network:
+      - messenger-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
