@@ -22,6 +22,8 @@ func NewProducer(brokers []string, topic string) *Producer {
 			Balancer: &kafka.LeastBytes{},
 			Compression: kafka.Snappy,
 			RequiredAcks: kafka.RequireOne,
+			Async: false,
+			AllowAutoTopicCreation: true,  
 		},
 	}
 }

@@ -4,7 +4,7 @@ import "context"
 
 type MessageService interface {
 	SendMessage(ctx context.Context, chatID, senderID, recipientID, content, msgType string) (*Message, error)
-	GetMessages(ctx context.Context, chatID, userID string, limit int, lastMessageID string) ([]*Message, error)
+	GetMessages(ctx context.Context, chatID string, limit int, lastMessageID string) ([]*Message, error)
 	MarkAsRead(ctx context.Context, chatID, userID, lastMessageID string) error
 	AlterMessage(ctx context.Context, messageID, userID, newContent string) error
 	DeleteMessage(ctx context.Context, messageID, userID string) error
