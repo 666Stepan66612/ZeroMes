@@ -127,6 +127,25 @@ services:
         condition: service_healthy
     networks:
       - auth-network
+  
+  message-service:
+    build:
+      context: ./message-service
+      dockerfile: Dockerfile
+    container_name: message-service
+    environment:
+      POSTGRES_URL: postgres://postgres:postgres@postgres-messages:5432/messages_db?sslmode=disable
+      KAFKA_BROKERS: kafka:9092
+      GRPC_PORT: 50051
+    ports:
+      - "50051:50051"
+    depends_on:
+      postgres-messages:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - messenger-network
 
 networks:
   auth-network:
