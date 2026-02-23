@@ -20,7 +20,7 @@ import (
 func main() {
 	databaseURL := os.Getenv("POSTGRES_URL")
 	if databaseURL == "" {
-		log.Fatal("DATABASE_URL is required")
+		log.Fatal("POSTGRES_URL is required")
 	}
 
 	kafkaBrokers := os.Getenv("KAFKA_BROKERS")
@@ -66,7 +66,7 @@ func main() {
 	go func() {
 		log.Println("gRPC server listening on: ", grpcPort)
 		if err := grpcServer.Serve(listener); err != nil {
-			log.Fatal("Failer to server: ", err)
+			log.Fatal("Failed to serve: ", err)
 		}
 	}()
 
@@ -74,13 +74,9 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Gracefull shutdown start")
+	log.Println("Graceful shutdown start")
 
 	grpcServer.GracefulStop()
-
-	kafkaProducer.Close()
-
-	pgPool.Close()
 
 	log.Println("Server stopped")
 }
