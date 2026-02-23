@@ -1,0 +1,130 @@
+package service
+
+import (
+	"context"
+	"time"
+	"log"
+
+	apperrors "message-service/internal/cores/errors"
+	"github.com/google/uuid"
+)
+
+type messageService struct {
+	messageRepo MessageRepository
+	kafkaProducer KafkaProducer
+}
+
+func NewMessageService(messageRepo MessageRepository, kafkaProducer KafkaProducer) MessageService {
+	return &messageService{
+		messageRepo: messageRepo,
+		kafkaProducer: kafkaProducer,
+	}
+}
+
+func (s *messageService) SendMessage(ctx context.Context, chatID, senderID, recipientID, content, msgType string) (*Message, error) {
+	if chatID == "" || senderID == "" || recipientID == "" || content == "" {
+        return nil, apperrors.ErrInvalidInput
+    }
+    
+    if msgType == "" {
+        msgType = "text"
+    }
+
+	newMessage := Message{
+		ID: uuid.New().String(),
+		ChatID: chatID,
+		SenderID: senderID,
+		RecipientID: recipientID,
+		EncryptedContent: content,
+		MessageType: msgType,
+		CreatedAt: time.Now(),
+		Status: MessageStatusSent,
+	}
+
+	if err := s.messageRepo.Create(ctx, &newMessage); err != nil {
+		return nil, err
+	}
+
+	if err := s.kafkaProducer.PublishMessageSent(ctx, &newMessage); err != nil {
+		log.Printf("WARN: Failed to publish to Kafka: chat_id=%s, msg_id=%s, error=%v",
+            newMessage.ChatID, newMessage.ID, err)
+        // TODO: retry or DLQ or outbox pattern
+	}
+
+	return &newMessage, nil
+}
+
+func (s *messageService) GetMessages(ctx context.Context, chatID string, limit int, lastMessageID string) ([]*Message, error) {
+	if chatID == "" {
+		return nil, apperrors.ErrInvalidInput
+	}
+
+	if limit <= 0 || limit > 50 {
+		limit = 50
+	}
+
+	messages, err := s.messageRepo.GetByChatID(ctx, chatID, limit, lastMessageID)
+	if err != nil {
+		return nil, err
+	}
+
+	return messages, nil
+}
+
+func (s *messageService) DeleteMessage(ctx context.Context, messageID, userID string) error {
+	if messageID == "" || userID == "" {
+		return apperrors.ErrInvalidInput
+	}
+	msg, err := s.messageRepo.GetByID(ctx, messageID)
+	if err != nil {
+		return err
+	}
+
+	if msg.SenderID != userID {
+		return apperrors.ErrNotYourMessage
+	}
+
+	if err := s.messageRepo.Delete(ctx, messageID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *messageService) MarkAsRead(ctx context.Context, chatID, userID, lastMessageID string) error {
+	if chatID == "" || userID == "" || lastMessageID == "" {
+		return apperrors.ErrInvalidInput
+	}
+
+	_, err := s.messageRepo.GetByID(ctx, lastMessageID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.messageRepo.UpdateStatusBatch(ctx, chatID, userID, lastMessageID, MessageStatusRead); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *messageService) AlterMessage(ctx context.Context, messageID, userID, newContent string) error {
+	if messageID == "" || userID == "" || newContent == "" {
+		return apperrors.ErrInvalidInput
+	}
+
+	msg, err := s.messageRepo.GetByID(ctx, messageID)
+	if err != nil {
+		return err
+	}
+
+	if msg.SenderID != userID {
+        return apperrors.ErrNotYourMessage
+    }
+
+	if err := s.messageRepo.Alter(ctx, messageID, newContent); err != nil {
+		return err
+	}
+
+	return nil
+}

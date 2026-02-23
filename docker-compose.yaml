@@ -17,6 +17,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  postgres-messages:
+    image: postgres:16-alpine
+    container_name: messages-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: messages_db
+    volumes:
+      - postgres_messages_data:/var/lib/postgresql/data
+    networks:
+      - messenger-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -29,7 +45,47 @@ services:
       timeout: 5s
       retries: 5
 
-  migrate:
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      # KRaft mode (without Zookeeper)
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9094
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      
+      # Listeners
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:9093,CONTROLLER://0.0.0.0:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      
+      # Settings
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+      
+      # Logs
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk  # ID KRaft
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - messenger-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka:9092 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  migrate-auth:
     image: migrate/migrate
     volumes:
       - ./auth-service/migrations:/migrations
@@ -39,6 +95,17 @@ services:
         condition: service_healthy
     networks:
       - auth-network
+  
+  migrate-messages:
+    image: migrate/migrate
+    volumes:
+      - ./message-service/migrations:/migrations
+    command: ["-path", "/migrations", "-database", "postgres://postgres:postgres@postgres-messages:5432/messages_db?sslmode=disable", "up"]
+    depends_on:
+      postgres-messages:
+        condition: service_healthy
+    networks:
+      - messenger-network
 
   auth-service:
     build:
@@ -61,10 +128,33 @@ services:
         condition: service_healthy
     networks:
       - auth-network
+  
+  message-service:
+    build:
+      context: ./message-service
+      dockerfile: Dockerfile
+    container_name: message-service
+    environment:
+      POSTGRES_URL: postgres://postgres:postgres@postgres-messages:5432/messages_db?sslmode=disable
+      KAFKA_BROKERS: kafka:9092
+      GRPC_PORT: 50051
+    ports:
+      - "50051:50051"
+    depends_on:
+      postgres-messages:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - messenger-network
 
 networks:
   auth-network:
     driver: bridge
+  messenger-network:
+    driver: bridge
 
 volumes:
   postgres_data:
+  postgres_messages_data:
+  kafka_data: 
