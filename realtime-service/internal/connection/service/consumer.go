@@ -4,7 +4,7 @@ import (
 	"context"
 	
 	domain "realtime-service/internal/cores/domain"
-	messagepb "message-service/gen/messagepb"
+	messagepb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
 
     "github.com/segmentio/kafka-go"
     "google.golang.org/protobuf/proto"
