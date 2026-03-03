@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"log/slog"
 
 	"realtime-service/internal/connection/repository"
 	"realtime-service/internal/connection/service"
@@ -36,6 +37,7 @@ func main() {
 	})
 
 	if err := redisClient.Ping(ctx).Err(); err != nil {
+		slog.Error("failed to connect to redis", "err", err)
 		os.Exit(1)
 	}
 	defer redisClient.Close()
@@ -53,22 +55,24 @@ func main() {
 
 	go func() {
 		if err := consumer.Start(ctx); err != nil {
-
+			slog.Error("kafka consumer error", "err", err)
 		}
 	}()
-	
+
 	grpcServer := grpc.NewServer()
 	grpcHandler := transport.NewConncetionHandler(hub)
 	realtimepb.RegisterConnectionServiceServer(grpcServer, grpcHandler)
 
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
+		slog.Error("failed to listen", "err", err)
 		os.Exit(1)
 	}
 
 	go func() {
+		slog.Info("realtime-service started", "port", port)
 		if err := grpcServer.Serve(lis); err != nil {
-
+			slog.Error("grpc server error", "err", err)
 		}
 	}()
 
