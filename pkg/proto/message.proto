@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package message;
 
-option go_package = "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb";
+option go_package = "gen/messagepb";
 
 import "google/protobuf/timestamp.proto";
 

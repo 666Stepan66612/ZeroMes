@@ -785,7 +785,7 @@ const file_proto_message_proto_rawDesc = "" +
 	"\n" +
 	"MarkAsRead\x12\x1a.message.MarkAsReadRequest\x1a\x1b.message.MarkAsReadResponse\x12N\n" +
 	"\rDeleteMessage\x12\x1d.message.DeleteMessageRequest\x1a\x1e.message.DeleteMessageResponse\x12K\n" +
-	"\fAlterMessage\x12\x1c.message.AlterMessageRequest\x1a\x1d.message.AlterMessageResponseB5Z3github.com/666Stepan66612/ZeroMes/pkg/gen/messagepbb\x06proto3"
+	"\fAlterMessage\x12\x1c.message.AlterMessageRequest\x1a\x1d.message.AlterMessageResponseB\x0fZ\rgen/messagepbb\x06proto3"
 
 var (
 	file_proto_message_proto_rawDescOnce sync.Once

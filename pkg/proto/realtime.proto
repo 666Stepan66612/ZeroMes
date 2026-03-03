@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package realtime;
 
-option go_package = "github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepb";
+option go_package = "gen/realtimepb";
 
 service ConnectionService {
     rpc ConnectionStream(stream ConnectionRequest) returns (stream ConnectionResponse);

@@ -729,7 +729,7 @@ const file_proto_realtime_proto_rawDesc = "" +
 	"\x0eActionsService\x12?\n" +
 	"\n" +
 	"SendTyping\x12\x17.realtime.TypingRequest\x1a\x18.realtime.TypingResponse\x12N\n" +
-	"\x0fSendReadReceipt\x12\x1c.realtime.ReadReceiptRequest\x1a\x1d.realtime.ReadReceiptResponseB6Z4github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepbb\x06proto3"
+	"\x0fSendReadReceipt\x12\x1c.realtime.ReadReceiptRequest\x1a\x1d.realtime.ReadReceiptResponseB\x10Z\x0egen/realtimepbb\x06proto3"
 
 var (
 	file_proto_realtime_proto_rawDescOnce sync.Once
