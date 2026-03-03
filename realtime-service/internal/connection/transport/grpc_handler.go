@@ -13,13 +13,13 @@ type ConnectionHandler struct {
 	manager service.ConnectionManager
 }
 
-func NewConncetionHandler(manager service.ConnectionManager) *ConnectionHandler {
+func NewConnectionHandler(manager service.ConnectionManager) *ConnectionHandler {
 	return &ConnectionHandler{
 		manager: manager,
 	}
 }
 
-func (h *ConnectionHandler) ConnecionStream(stream pb.ConnectionService_ConnectionStreamServer) error {
+func (h *ConnectionHandler) ConnectionStream(stream pb.ConnectionService_ConnectionStreamServer) error {
 	msg, err := stream.Recv()
 	if err != nil {
 		return err

@@ -46,9 +46,9 @@ func main() {
 	hub := service.NewHub(redisRepo, instanceID)
 
 	consumer := service.NewKafkaConsumer(
-		[]string{os.Getenv("KAKFA_BROKERS")},
+		[]string{os.Getenv("KAFKA_BROKERS")},
 		os.Getenv("KAFKA_TOPIC"),
-		os.Getenv("KAFKA_TOPIC"),
+		os.Getenv("KAFKA_GROUP_ID"),
 		hub,
 	)
 	defer consumer.Close()
@@ -60,7 +60,7 @@ func main() {
 	}()
 
 	grpcServer := grpc.NewServer()
-	grpcHandler := transport.NewConncetionHandler(hub)
+	grpcHandler := transport.NewConnectionHandler(hub)
 	realtimepb.RegisterConnectionServiceServer(grpcServer, grpcHandler)
 
 	lis, err := net.Listen("tcp", ":"+port)
