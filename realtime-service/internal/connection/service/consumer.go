@@ -45,7 +45,7 @@ func (c *KafkaConsumer) Start(ctx context.Context) error {
 			MessageID: protoMsg.Id,
 			SenderID: protoMsg.SenderId,
 			RecipientID: protoMsg.RecipientId,
-			Content: protoMsg.Content,
+			Content: protoMsg.EncryptedContent,
 			Timestamp:   protoMsg.CreatedAt.AsTime().Unix(),
 		}
 
