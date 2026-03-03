@@ -4,7 +4,7 @@ import (
 	"context"
 
     "github.com/segmentio/kafka-go"
-    pb "message-service/gen/messagepb"
+    pb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
     "message-service/internal/messaging/service"
     "google.golang.org/protobuf/proto"
     "google.golang.org/protobuf/types/known/timestamppb"
