@@ -15,6 +15,7 @@ import (
 	realtimepb "github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepb"
 	redis "github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection" // for test
 )
 
 func main() {
@@ -61,6 +62,7 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	grpcHandler := transport.NewConnectionHandler(hub)
+	reflection.Register(grpcServer) // for test
 	realtimepb.RegisterConnectionServiceServer(grpcServer, grpcHandler)
 
 	lis, err := net.Listen("tcp", ":"+port)

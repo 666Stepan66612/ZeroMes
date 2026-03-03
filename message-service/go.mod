@@ -11,6 +11,7 @@ require (
 )
 
 require (
+	github.com/666Stepan66612/ZeroMes/pkg v0.0.0
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
@@ -22,7 +23,5 @@ require (
 	golang.org/x/text v0.32.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 )
-
-require github.com/666Stepan66612/ZeroMes/pkg v0.0.0
 
 replace github.com/666Stepan66612/ZeroMes/pkg => ../pkg

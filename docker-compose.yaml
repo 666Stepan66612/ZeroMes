@@ -132,8 +132,8 @@ services:
   
   message-service:
     build:
-      context: ./message-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: message-service/Dockerfile
     container_name: message-service
     environment:
       POSTGRES_URL: postgres://postgres:postgres@postgres-messages:5432/messages_db?sslmode=disable
@@ -151,8 +151,8 @@ services:
 
   realtime-service:
     build:
-      context: ./realtime-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: realtime-service/Dockerfile
     container_name: realtime-service
     environment:
       PORT: 8082
