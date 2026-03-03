@@ -4,7 +4,7 @@ import (
 	"context"
 
 	apperrors "realtime-service/internal/cores/errors"
-	pb "realtime-service/gen/realtimepb"
+	pb "github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepb"
     "realtime-service/internal/connection/service"
 )
 

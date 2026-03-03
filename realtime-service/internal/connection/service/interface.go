@@ -5,13 +5,13 @@ import (
 	"time"
 
 	domain "realtime-service/internal/cores/domain"
-	pb "realtime-service/gen/realtimepb"
+	pb "github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepb"
 )
 
 type ConnectionManager interface {
 	RegisterConnection(ctx context.Context, userID string, stream pb.ConnectionService_ConnectionStreamServer) error
 	UnregisterConnection(ctx context.Context, userID string) error
-	GetConnection(userID string) (pb.ConnectionService_ConnectionStreamServer, error)
+	GetStream(userID string) (pb.ConnectionService_ConnectionStreamServer, error)
 	GetAllUserIDs() []string
 	GetConnectionCount() int
 	CloseAll(ctx context.Context) error

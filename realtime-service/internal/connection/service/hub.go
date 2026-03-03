@@ -7,7 +7,7 @@ import (
 
 	domain "realtime-service/internal/cores/domain"
 	apperrors "realtime-service/internal/cores/errors"
-	pb "realtime-service/gen/realtimepb"
+	pb "github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepb"
 )
 
 type Hub struct {
