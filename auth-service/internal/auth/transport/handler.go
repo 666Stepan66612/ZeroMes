@@ -3,6 +3,7 @@ package transport
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"auth-service/internal/auth/service"
 	apperrors "auth-service/internal/cores/errors"
@@ -40,10 +41,9 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	setTokenCookies(w, tokens.AccessToken, tokens.RefreshToken)
 	respondJSON(w, http.StatusCreated, RegisterResponse{
 		User:         toUserDTO(user),
-		AccessToken:  tokens.AccessToken,
-		RefreshToken: tokens.RefreshToken,
 	})
 }
 
@@ -84,41 +84,79 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, RegisterResponse{
+	setTokenCookies(w, tokens.AccessToken, tokens.RefreshToken)
+	respondJSON(w, http.StatusOK, RegisterResponse{
 		User:         toUserDTO(user),
-		AccessToken:  tokens.AccessToken,
-		RefreshToken: tokens.RefreshToken,
 	})
 }
 
 func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-	var req RefreshTokenRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, http.StatusBadRequest, apperrors.ErrInvalidPayload.Error())
-	}
-
-	tokens, err := h.authService.RefreshToken(r.Context(), req.RefreshToken)
+	refreshToken, err := r.Cookie("refresh_token")
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, err.Error())
+		respondError(w, http.StatusUnauthorized, apperrors.ErrInvalidToken.Error())
 		return
 	}
 
-	respondJSON(w, http.StatusOK, TokenPairResponse{
-		AccessToken:  tokens.AccessToken,
-		RefreshToken: tokens.RefreshToken,
-	})
+	tokens, err := h.authService.RefreshToken(r.Context(), refreshToken.Value)
+	if err != nil {
+		respondError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	setTokenCookies(w, tokens.AccessToken, tokens.RefreshToken)
+	respondJSON(w, http.StatusOK, map[string]string{"message": "token refreshed"})
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
-	var req LogoutRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, http.StatusBadRequest, apperrors.ErrInvalidPayload.Error())
+	refreshToken, err := r.Cookie("refresh_token")
+	if err != nil {
+		respondError(w, http.StatusUnauthorized, apperrors.ErrInvalidToken.Error())
+		return
 	}
 
-	if err := h.authService.Logout(r.Context(), req.RefreshToken); err != nil {
+	if err := h.authService.Logout(r.Context(), refreshToken.Value); err != nil {
 		respondError(w, http.StatusInternalServerError, apperrors.ErrInternalServer.Error())
 		return
 	}
 
+	clearTokenCookies(w)
 	respondJSON(w, http.StatusOK, map[string]string{"message": "logged out successfully"})
+}
+
+func setTokenCookies(w http.ResponseWriter, accessToken, refreshToken string) {
+	http.SetCookie(w, &http.Cookie{
+		Name: "access_token",
+		Value: accessToken,
+		HttpOnly: true,
+		Secure: true,
+		SameSite: http.SameSiteStrictMode,
+		Path: "/",
+		MaxAge: int(15 * time.Minute.Seconds()), // == access token
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name: "refresh_token",
+		Value: refreshToken,
+		HttpOnly: true,
+		Secure: true,
+		SameSite: http.SameSiteStrictMode,
+		Path: "/auth/refresh", // only for refresh endpoint
+		MaxAge: int(7 * 24 * time.Hour.Seconds()),
+	})
+}
+
+func clearTokenCookies(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name: "access_token",
+		HttpOnly: true,
+		Secure: true,
+		Path: "/",
+		MaxAge: -1,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name: "refresh_token",
+		HttpOnly: true,
+		Secure: true,
+		Path: "/auth/refresh",
+		MaxAge: -1,
+	})
 }
