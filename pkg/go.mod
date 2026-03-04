@@ -3,6 +3,7 @@ module github.com/666Stepan66612/ZeroMes/pkg
 go 1.25.5
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	google.golang.org/grpc v1.79.1
 	google.golang.org/protobuf v1.36.11
 )
