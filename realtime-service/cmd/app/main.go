@@ -19,6 +19,9 @@ import (
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8082"
@@ -28,8 +31,6 @@ func main() {
     if instanceID == "" {
         instanceID = "realtime-1"
     }
-
-	ctx := context.Background()
 
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: os.Getenv("REDIS_URL"),
