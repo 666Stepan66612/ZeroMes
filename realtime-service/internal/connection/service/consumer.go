@@ -43,6 +43,7 @@ func (c *KafkaConsumer) Start(ctx context.Context) error {
 
 		msg := &domain.Message{
 			MessageID: protoMsg.Id,
+			ChatID:      protoMsg.ChatId,
 			SenderID: protoMsg.SenderId,
 			RecipientID: protoMsg.RecipientId,
 			Content: protoMsg.EncryptedContent,
