@@ -39,6 +39,7 @@ services:
     container_name: auth-redis
     networks:
       - auth-network
+      - realtime-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -131,8 +132,8 @@ services:
   
   message-service:
     build:
-      context: ./message-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: message-service/Dockerfile
     container_name: message-service
     environment:
       POSTGRES_URL: postgres://postgres:postgres@postgres-messages:5432/messages_db?sslmode=disable
@@ -148,10 +149,36 @@ services:
     networks:
       - messenger-network
 
+  realtime-service:
+    build:
+      context: .
+      dockerfile: realtime-service/Dockerfile
+    container_name: realtime-service
+    environment:
+      PORT: 8082
+      REDIS_URL: auth-redis:6379
+      REDIS_PASSWORD: ""
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC: messages.sent
+      KAFKA_GROUP_ID: realtime-service
+      INSTANCE_ID: realtime-1
+    ports:
+      - "8082:8082"
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - realtime-network
+      - messenger-network
+
 networks:
   auth-network:
     driver: bridge
   messenger-network:
+    driver: bridge
+  realtime-network:
     driver: bridge
 
 volumes:
