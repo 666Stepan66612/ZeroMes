@@ -7,7 +7,7 @@ type AuthClient interface {
 }
 
 type MessageClient interface {
-	SendMessage(ctx context.Context, userID, chatID, content string) error
+	SendMessage(ctx context.Context, chatID, senderID, recipientID, content, messageType string) (interface{}, error)
 	GetMessages(ctx context.Context, chatID, userID, lastMessageID string, limit int) (interface{}, error)
 	MarkAsRead(ctx context.Context, chatID, userID, lastMessageID string) error
 	DeleteMessage(ctx context.Context, messageID, userID string) error
