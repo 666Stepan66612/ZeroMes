@@ -11,3 +11,17 @@ type WSRequest struct {
     Limit         int32  `json:"limit"`
     NewContent    string `json:"new_content"`
 }
+
+type Message struct {
+    ID        string `json:"id"`
+    ChatID    string `json:"chat_id"`
+    SenderID  string `json:"sender_id"`
+    Content   string `json:"content"`
+    CreatedAt string `json:"created_at"`
+}
+
+type GetMessagesResponse struct {
+    Messages []*Message  `json:"messages"`
+	NextMessageId string `json:"next_message_id"`
+    HasMore  bool        `json:"has_more"`
+}

@@ -1,11 +1,12 @@
 package service
 
 import (
+	"api-gateway/internal/cores/domain"
 	"context"
 
 	messagepb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
 	"google.golang.org/grpc"
-    "google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type MessageClientService struct {
@@ -22,7 +23,7 @@ func NewMessageClient(addr string) (*MessageClientService, error) {
 	}, nil
 }
 
-func (c *MessageClientService) SendMessage(ctx context.Context, chatID, senderID, recipientID, encryptedContent, messageType string) (*messagepb.Message, error) {
+func (c *MessageClientService) SendMessage(ctx context.Context, chatID, senderID, recipientID, encryptedContent, messageType string) (*domain.Message, error) {
 	resp, err := c.client.SendMessage(ctx, &messagepb.SendMessageRequest{
 		ChatId: chatID,
 		SenderId: senderID,
@@ -33,16 +34,42 @@ func (c *MessageClientService) SendMessage(ctx context.Context, chatID, senderID
 	if err != nil {
 		return nil, err
 	}
-	return resp.Message, nil
+	return &domain.Message{
+		ID: resp.Message.Id,
+		ChatID: resp.Message.ChatId,
+		SenderID: resp.Message.SenderId,
+		Content: resp.Message.EncryptedContent,
+		CreatedAt: resp.Message.CreatedAt.AsTime().String(),
+	}, nil
 }
 
-func (c *MessageClientService) GetMessages(ctx context.Context, chatID, userID string, limit int32, lastMessageID string) (*messagepb.GetMessagesResponse, error){
-	return c.client.GetMessages(ctx, &messagepb.GetMessagesRequest{
+func (c *MessageClientService) GetMessages(ctx context.Context, chatID, userID, lastMessageID string, limit int32) (*domain.GetMessagesResponse, error){
+	resp, err := c.client.GetMessages(ctx, &messagepb.GetMessagesRequest{
 		ChatId: chatID,
 		UserId: userID,
 		Limit: limit,
 		LastMessageId: lastMessageID,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	messages := make([]*domain.Message, len(resp.Messages))
+	for i, m := range resp.Messages {
+		messages[i] = &domain.Message{
+			ID: m.Id,
+			ChatID: m.ChatId,
+			SenderID: m.SenderId,
+			Content: m.EncryptedContent,
+			CreatedAt: m.CreatedAt.AsTime().String(),
+		}
+	}
+
+	return &domain.GetMessagesResponse{
+		Messages: messages,
+		NextMessageId: resp.NextMessageId,
+		HasMore: resp.HasMore,
+	}, nil
 }
 
 func (c *MessageClientService) MarkAsRead(ctx context.Context, chatID, userID, lastMessageID string) error {

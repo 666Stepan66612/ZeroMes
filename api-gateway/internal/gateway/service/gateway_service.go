@@ -40,7 +40,7 @@ func (s *gatewayService) HandleWebSocket(ctx context.Context, userID string, sen
 			case "send_message":
 				s.messageClient.SendMessage(ctx, req.ChatID, userID, req.RecipientID, req.Content, req.MessageType)
 			case "get_messages":
-				s.messageClient.GetMessages(ctx, req.ChatID, userID, req.LastMessageID, int(req.Limit))
+				s.messageClient.GetMessages(ctx, req.ChatID, userID, req.LastMessageID, int32(req.Limit))
 			case "mark_as_read":
 				s.messageClient.MarkAsRead(ctx, req.ChatID, userID, req.LastMessageID)
 			case "delete_message":
