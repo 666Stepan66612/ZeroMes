@@ -78,6 +78,14 @@ func (s *gatewayService) HandleWebSocket(ctx context.Context, userID string, sen
                 }
                 sendResponse(send, "message_altered", nil)
 
+            case "get_chats":
+                result, err := s.messageClient.GetChats(ctx, userID)
+                if err != nil {
+                    sendResponse(send, "error", map[string]string{"error": err.Error()})
+                } else {
+                    sendResponse(send, "chats", result)
+                }
+
             default:
                 sendResponse(send, "error", map[string]string{"error": "unknown type"})
             }
