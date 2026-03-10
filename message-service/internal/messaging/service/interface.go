@@ -17,6 +17,8 @@ type MessageRepository interface {
 	Delete(ctx context.Context, messageID string) error
 	Alter(ctx context.Context, messageID, newContent string) error
 	UpdateStatusBatch(ctx context.Context, chatID, userID, lastMessageID string, status MessageStatus) error
+	UpsertChat(ctx context.Context, chatID, userID, companionID string) error
+	GetChats(ctx context.Context, userID string) error
 }
 
 type KafkaProducer interface {
