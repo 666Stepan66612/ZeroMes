@@ -16,6 +16,7 @@ type MessageClient interface {
 	MarkAsRead(ctx context.Context, chatID, userID, lastMessageID string) error
 	DeleteMessage(ctx context.Context, messageID, userID string) error
 	AlterMessage(ctx context.Context, messageID, userID, newContent string) error
+	GetChats(ctx context.Context, userID string) (*domain.GetChatsResponse, error)
 }
 
 type RealtimeClient interface {
