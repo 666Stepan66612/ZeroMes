@@ -4,9 +4,10 @@ import (
 	"context"
 
 	apperrors "message-service/internal/cores/errors"
-    "github.com/jackc/pgx/v5"
-    "github.com/jackc/pgx/v5/pgxpool"
-    "message-service/internal/messaging/service"
+	"message-service/internal/messaging/service"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type postgresRepository struct {
@@ -154,4 +155,55 @@ func (r *postgresRepository) UpdateStatusBatch(ctx context.Context, chatID, user
 
 	_, err := r.pool.Exec(ctx, query, status, chatID, userID, lastMessageID)
 	return err
+}
+
+func (r *postgresRepository) UpsertChat(ctx context.Context, chatID, userID, companionID string) error {
+	query := `
+		INSERT INTO chats (id, user_id, companion_id, last_message_at)
+		VALUES ($1, $2, $3, NOW())
+		ON CONFLICT (user_id, companion_id) DO UPDATE SET last_message_at = NOW();
+	`
+	
+	_, err := r.pool.Exec(ctx, query, chatID, userID, companionID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *postgresRepository) GetChats(ctx context.Context, userID string) ([]*service.ChatsList, error) {
+	query :=  `
+		SELECT * FROM chats
+		WHERE user_id = $1
+		ORDER BY last_message_at DESC
+	`
+
+	rows, err := r.pool.Query(ctx, query, userID)
+	if err == pgx.ErrNoRows {
+		return nil, apperrors.ErrNotFound
+	}
+	defer rows.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	chatList := make([]*service.ChatsList, 0)
+	for rows.Next() {
+		cht := &service.ChatsList{}
+		err := rows.Scan(
+			&cht.ChatID,
+    		&cht.UserID,
+    		&cht.CompanionID,
+    		&cht.CreatedAt,
+			&cht.LastMessageID,
+		)
+		if err != nil {
+			return nil, err
+		}
+		chatList = append(chatList, cht)
+	}
+
+	return chatList, rows.Err()
 }
