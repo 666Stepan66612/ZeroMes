@@ -8,6 +8,7 @@ type MessageService interface {
 	MarkAsRead(ctx context.Context, chatID, userID, lastMessageID string) error
 	AlterMessage(ctx context.Context, messageID, userID, newContent string) error
 	DeleteMessage(ctx context.Context, messageID, userID string) error
+	GetChats(ctx context.Context, userID string) ([]*ChatsList, error)
 }
 
 type MessageRepository interface {

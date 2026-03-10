@@ -2,11 +2,12 @@ package service
 
 import (
 	"context"
-	"time"
-	"log"
+	"log/slog"
 	"sort"
+	"time"
 
 	apperrors "message-service/internal/cores/errors"
+
 	"github.com/google/uuid"
 )
 
@@ -52,9 +53,19 @@ func (s *messageService) SendMessage(ctx context.Context, chatID, senderID, reci
 		return nil, err
 	}
 
+	if err := s.messageRepo.UpsertChat(ctx, chatID, senderID, recipientID); err != nil {
+		slog.Warn("Failed to upsert chat sender side", "err", err)
+	}
+
+	if err := s.messageRepo.UpsertChat(ctx, chatID, recipientID, senderID); err != nil {
+		slog.Warn("Failed to upsert chat recipient side", "err", err)
+	}
+
 	if err := s.kafkaProducer.PublishMessageSent(ctx, &newMessage); err != nil {
-		log.Printf("WARN: Failed to publish to Kafka: chat_id=%s, msg_id=%s, error=%v",
-            newMessage.ChatID, newMessage.ID, err)
+		slog.Warn("Failed to publish to Kafka",
+    		"chat_id", newMessage.ChatID,
+    		"msg_id", newMessage.ID,
+    		"error", err)
         // TODO: retry or DLQ or outbox pattern
 	}
 
@@ -134,4 +145,17 @@ func (s *messageService) AlterMessage(ctx context.Context, messageID, userID, ne
 	}
 
 	return nil
+}
+
+func (s *messageService) GetChats(ctx context.Context, userID string) ([]*ChatsList, error) {
+	if userID == "" {
+		return nil, apperrors.ErrInvalidInput
+	}
+
+	chats, err := s.messageRepo.GetChats(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return chats, nil
 }

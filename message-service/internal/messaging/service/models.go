@@ -18,7 +18,7 @@ type ChatsList struct {
     UserID string
     CompanionID string
     CreatedAt time.Time
-    LastMessageID time.Time
+    LastMessageAt time.Time
 }
 
 type MessageStatus int8

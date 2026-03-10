@@ -197,7 +197,7 @@ func (r *postgresRepository) GetChats(ctx context.Context, userID string) ([]*se
     		&cht.UserID,
     		&cht.CompanionID,
     		&cht.CreatedAt,
-			&cht.LastMessageID,
+			&cht.LastMessageAt,
 		)
 		if err != nil {
 			return nil, err
