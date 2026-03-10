@@ -97,3 +97,23 @@ func (c *MessageClientService) AlterMessage(ctx context.Context, messageID, user
 	})
 	return err
 }
+
+func (c *MessageClientService) GetChats(ctx context.Context, userID string) (*domain.GetChatsResponse, error) {
+	resp, err := c.client.GetChats(ctx, &messagepb.GetMessagesRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	chats := make([]*domain.Chat, len(resp.Chats))
+	for i, ch := range resp.Chats {
+		chats[i] = &domain.Chat{
+			ID: ch.Id,
+			CompanionID: ch.CompanionId,
+			LastMessageAt: ch.LastMessageAt.AsTime().String(),
+		}
+	}
+
+	return &domain.GetChatsResponse{Chats: chats}, nil
+}
