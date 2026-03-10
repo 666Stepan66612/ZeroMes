@@ -6,7 +6,7 @@ type AuthService interface {
 	Register(ctx context.Context, login, authHash, publicKey string) (*UserPublic, *TokenPair, error)
 	Login(ctx context.Context, login, authHash string) (*UserPublic, *TokenPair, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error)
-	Logout(ctx context.Context, refreshToken string) error
+	Logout(ctx context.Context, refreshToken, accessToken string) error
 }
 
 type UserRepository interface {
@@ -20,4 +20,5 @@ type TokenService interface {
 	ValidateAccessToken(token string) (string, error)
 	ValidateRefreshToken(token string) (string, error)
 	InvalidateRefreshToken(token string) error
+	InvalidateAccessToken(token string) error
 }

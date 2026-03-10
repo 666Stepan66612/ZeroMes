@@ -172,6 +172,33 @@ services:
     networks:
       - realtime-network
       - messenger-network
+  
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: api-gateway
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8080
+      MESSAGE_SERVICE_ADDR: message-service:50051
+      REALTIME_SERVICE_ADDR: realtime-service:8082
+      REDIS_ADDR: auth-redis:6379
+      JWT_SECRET: your-super-secret-access-key-change-in-production
+      JWT_ACCESS_SECRET: your-super-secret-access-key-change-in-production
+      PORT: 8083
+    ports:
+      - "8083:8083"
+    depends_on:
+      auth-service:
+        condition: service_started
+      message-service:
+        condition: service_started
+      realtime-service:
+        condition: service_started
+    networks:
+      - auth-network
+      - messenger-network
+      - realtime-network
 
 networks:
   auth-network:

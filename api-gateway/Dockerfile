@@ -1,0 +1,12 @@
+FROM golang:1.26-bookworm
+
+WORKDIR /app
+
+COPY pkg/ /pkg/
+COPY api-gateway/go.mod api-gateway/go.sum ./
+RUN go mod download
+
+COPY api-gateway/ .
+RUN go build -o /app/exe ./cmd/app/main.go
+
+CMD ["/app/exe"]

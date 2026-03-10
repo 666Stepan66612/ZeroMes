@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	github.com/666Stepan66612/ZeroMes/pkg v0.0.0
+	github.com/666Stepan66612/ZeroMes/pkg v0.0.0-20260306121551-d8ea64c3edcf
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect

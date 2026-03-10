@@ -27,9 +27,10 @@ func (s *authService) Register(ctx context.Context, login, authHash, publicKey s
         return nil, nil, errors.ErrUserAlreadyExists
     }
 
-    user := &User {
+    user := &User{
         ID: uuid.New().String(),
         Login: login,
+        AuthHash: authHash,
         PublicKey: publicKey,
         CreatedAt: time.Now(),
         UpdatedAt: time.Now(),
@@ -74,6 +75,9 @@ func (s *authService) RefreshToken(ctx context.Context, refreshToken string) (*T
     return s.tokenSvc.GenerateTokenPair(userID)
 }
 
-func (s *authService) Logout(ctx context.Context, refreshToken string) error {
-    return s.tokenSvc.InvalidateRefreshToken(refreshToken)
+func (s *authService) Logout(ctx context.Context, refreshToken, accessToken string) error {
+    if err := s.tokenSvc.InvalidateRefreshToken(refreshToken); err != nil {
+        return err
+    }
+    return s.tokenSvc.InvalidateRefreshToken(accessToken)
 }

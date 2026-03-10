@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS messages (
     id UUID DEFAULT gen_random_uuid(),
-    chat_id UUID NOT NULL,
+    chat_id TEXT NOT NULL,
     sender_id UUID NOT NULL,
     recipient_id UUID NOT NULL,
     encrypted_content TEXT NOT NULL,
