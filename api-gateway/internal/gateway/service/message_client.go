@@ -99,7 +99,7 @@ func (c *MessageClientService) AlterMessage(ctx context.Context, messageID, user
 }
 
 func (c *MessageClientService) GetChats(ctx context.Context, userID string) (*domain.GetChatsResponse, error) {
-	resp, err := c.client.GetChats(ctx, &messagepb.GetMessagesRequest{
+	resp, err := c.client.GetChats(ctx, &messagepb.GetChatsRequest{
 		UserId: userID,
 	})
 	if err != nil {
