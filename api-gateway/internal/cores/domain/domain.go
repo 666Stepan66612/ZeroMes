@@ -30,3 +30,13 @@ type WSResponse struct {
     Type    string      `json:"type"`
     Payload interface{} `json:"payload,omitempty"`
 }
+
+type Chat struct {
+    ID            string `json:"id"`
+    CompanionID   string `json:"companion_id"`
+    LastMessageAt string `json:"last_message_at"`
+}
+
+type GetChatsResponse struct {
+    Chats []*Chat `json:"chats"`
+}

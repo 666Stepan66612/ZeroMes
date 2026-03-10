@@ -13,6 +13,14 @@ type Message struct {
     Status           MessageStatus
 }
 
+type ChatsList struct {
+    ChatID string
+    UserID string
+    CompanionID string
+    CreatedAt time.Time
+    LastMessageAt time.Time
+}
+
 type MessageStatus int8
 
 const (

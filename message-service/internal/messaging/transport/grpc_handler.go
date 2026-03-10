@@ -128,6 +128,28 @@ func (h *GRPCHandler) DeleteMessage(ctx context.Context, req *pb.DeleteMessageRe
     }, nil
 }
 
+func (h *GRPCHandler) GetChats(ctx context.Context, req *pb.GetChatsRequest) (*pb.GetChatsResponse, error) {
+    chats, err := h.messageService.GetChats(ctx, req.UserId)
+    if err != nil {
+        return nil, toGRPCError(err)
+    }
+
+    pbChats := make([]*pb.Chat, 0, len(chats))
+    for _, cht := range chats {
+        pbChats = append(pbChats, &pb.Chat{
+            Id:               cht.ChatID,
+            UserId:           cht.UserID,
+            CompanionId:      cht.CompanionID,
+            CreatedAt:        timestamppb.New(cht.CreatedAt),
+            LastMessageAt:    timestamppb.New(cht.LastMessageAt),
+        })
+    }
+
+    return &pb.GetChatsResponse{
+        Chats: pbChats,
+    }, nil
+}
+
 func toGRPCError(err error) error {
     switch {
     case errors.Is(err, apperrors.ErrNotFound):

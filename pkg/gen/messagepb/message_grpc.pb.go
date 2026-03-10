@@ -24,6 +24,7 @@ const (
 	MessageService_MarkAsRead_FullMethodName    = "/message.MessageService/MarkAsRead"
 	MessageService_DeleteMessage_FullMethodName = "/message.MessageService/DeleteMessage"
 	MessageService_AlterMessage_FullMethodName  = "/message.MessageService/AlterMessage"
+	MessageService_GetChats_FullMethodName      = "/message.MessageService/GetChats"
 )
 
 // MessageServiceClient is the client API for MessageService service.
@@ -35,6 +36,7 @@ type MessageServiceClient interface {
 	MarkAsRead(ctx context.Context, in *MarkAsReadRequest, opts ...grpc.CallOption) (*MarkAsReadResponse, error)
 	DeleteMessage(ctx context.Context, in *DeleteMessageRequest, opts ...grpc.CallOption) (*DeleteMessageResponse, error)
 	AlterMessage(ctx context.Context, in *AlterMessageRequest, opts ...grpc.CallOption) (*AlterMessageResponse, error)
+	GetChats(ctx context.Context, in *GetChatsRequest, opts ...grpc.CallOption) (*GetChatsResponse, error)
 }
 
 type messageServiceClient struct {
@@ -95,6 +97,16 @@ func (c *messageServiceClient) AlterMessage(ctx context.Context, in *AlterMessag
 	return out, nil
 }
 
+func (c *messageServiceClient) GetChats(ctx context.Context, in *GetChatsRequest, opts ...grpc.CallOption) (*GetChatsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetChatsResponse)
+	err := c.cc.Invoke(ctx, MessageService_GetChats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MessageServiceServer is the server API for MessageService service.
 // All implementations must embed UnimplementedMessageServiceServer
 // for forward compatibility.
@@ -104,6 +116,7 @@ type MessageServiceServer interface {
 	MarkAsRead(context.Context, *MarkAsReadRequest) (*MarkAsReadResponse, error)
 	DeleteMessage(context.Context, *DeleteMessageRequest) (*DeleteMessageResponse, error)
 	AlterMessage(context.Context, *AlterMessageRequest) (*AlterMessageResponse, error)
+	GetChats(context.Context, *GetChatsRequest) (*GetChatsResponse, error)
 	mustEmbedUnimplementedMessageServiceServer()
 }
 
@@ -128,6 +141,9 @@ func (UnimplementedMessageServiceServer) DeleteMessage(context.Context, *DeleteM
 }
 func (UnimplementedMessageServiceServer) AlterMessage(context.Context, *AlterMessageRequest) (*AlterMessageResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AlterMessage not implemented")
+}
+func (UnimplementedMessageServiceServer) GetChats(context.Context, *GetChatsRequest) (*GetChatsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetChats not implemented")
 }
 func (UnimplementedMessageServiceServer) mustEmbedUnimplementedMessageServiceServer() {}
 func (UnimplementedMessageServiceServer) testEmbeddedByValue()                        {}
@@ -240,6 +256,24 @@ func _MessageService_AlterMessage_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MessageService_GetChats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetChatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).GetChats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_GetChats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).GetChats(ctx, req.(*GetChatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MessageService_ServiceDesc is the grpc.ServiceDesc for MessageService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -266,6 +300,10 @@ var MessageService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AlterMessage",
 			Handler:    _MessageService_AlterMessage_Handler,
+		},
+		{
+			MethodName: "GetChats",
+			Handler:    _MessageService_GetChats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
