@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 	"log"
+	"sort"
 
 	apperrors "message-service/internal/cores/errors"
 	"github.com/google/uuid"
@@ -22,9 +23,15 @@ func NewMessageService(messageRepo MessageRepository, kafkaProducer KafkaProduce
 }
 
 func (s *messageService) SendMessage(ctx context.Context, chatID, senderID, recipientID, content, msgType string) (*Message, error) {
-	if chatID == "" || senderID == "" || recipientID == "" || content == "" {
+	if senderID == "" || recipientID == "" || content == "" {
         return nil, apperrors.ErrInvalidInput
     }
+
+	if chatID == ""  {
+		ids := []string{senderID, recipientID}
+		sort.Strings(ids)
+		chatID = ids[0] + ":" + ids[1]
+	}
     
     if msgType == "" {
         msgType = "text"

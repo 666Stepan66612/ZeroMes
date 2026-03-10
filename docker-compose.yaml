@@ -182,7 +182,9 @@ services:
       AUTH_SERVICE_URL: http://auth-service:8080
       MESSAGE_SERVICE_ADDR: message-service:50051
       REALTIME_SERVICE_ADDR: realtime-service:8082
+      REDIS_ADDR: auth-redis:6379
       JWT_SECRET: your-super-secret-access-key-change-in-production
+      JWT_ACCESS_SECRET: your-super-secret-access-key-change-in-production
       PORT: 8083
     ports:
       - "8083:8083"

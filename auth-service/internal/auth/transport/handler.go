@@ -22,7 +22,7 @@ func NewHandler(authService service.AuthService) *Handler {
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, http.StatusBadRequest, apperrors.ErrInvalidPayload.Error())
+		respondError(w, http.StatusInternalServerError, apperrors.ErrInvalidPayload.Error())
 		return
 	}
 
@@ -34,10 +34,10 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	)
 	if err != nil {
 		if err == apperrors.ErrUserAlreadyExists {
-			respondError(w, http.StatusBadRequest, err.Error())
+			respondError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		respondError(w, http.StatusBadRequest, apperrors.ErrInternalServer.Error())
+		respondError(w, http.StatusInternalServerError, apperrors.ErrInternalServer.Error())
 		return
 	}
 
@@ -69,7 +69,7 @@ func toUserDTO(user *service.UserPublic) UserDTO {
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, http.StatusBadRequest, apperrors.ErrInvalidPayload.Error())
+		respondError(w, http.StatusInternalServerError, apperrors.ErrInvalidPayload.Error())
 		return
 	}
 
@@ -80,12 +80,12 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		respondError(w, http.StatusBadRequest, err.Error())
+		respondError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	setTokenCookies(w, tokens.AccessToken, tokens.RefreshToken)
-	respondJSON(w, http.StatusOK, RegisterResponse{
+	respondJSON(w, http.StatusOK, LoginResponse{
 		User:         toUserDTO(user),
 	})
 }
@@ -113,8 +113,14 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusUnauthorized, apperrors.ErrInvalidToken.Error())
 		return
 	}
+	
+	accessToken, err := r.Cookie("access_token")
+	if err != nil {
+		respondError(w, http.StatusUnauthorized, apperrors.ErrInvalidToken.Error())
+		return
+	}
 
-	if err := h.authService.Logout(r.Context(), refreshToken.Value); err != nil {
+	if err := h.authService.Logout(r.Context(), refreshToken.Value, accessToken.Value); err != nil {
 		respondError(w, http.StatusInternalServerError, apperrors.ErrInternalServer.Error())
 		return
 	}
@@ -139,7 +145,7 @@ func setTokenCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 		HttpOnly: true,
 		Secure: true,
 		SameSite: http.SameSiteStrictMode,
-		Path: "/auth/refresh", // only for refresh endpoint
+		Path: "/auth", // only for refresh endpoint
 		MaxAge: int(7 * 24 * time.Hour.Seconds()),
 	})
 }
@@ -156,7 +162,7 @@ func clearTokenCookies(w http.ResponseWriter) {
 		Name: "refresh_token",
 		HttpOnly: true,
 		Secure: true,
-		Path: "/auth/refresh",
+		Path: "/auth",
 		MaxAge: -1,
 	})
 }

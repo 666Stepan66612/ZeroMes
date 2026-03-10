@@ -7,7 +7,7 @@ import (
 )
 
 type AuthClient interface {
-	ValidateToken(ctx context.Context, token string) (userID string, err error)
+	ValidateToken(token string) (userID string, err error)
 }
 
 type MessageClient interface {

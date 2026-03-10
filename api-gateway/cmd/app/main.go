@@ -10,13 +10,14 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
 	authServiceURL := os.Getenv("AUTH_SERVICE_URL")
 	messageServiceAddr := os.Getenv("MESSAGE_SERVICE_ADDR")
 	realtimeServiceAddr := os.Getenv("REALTIME_SERVICE_ADDR")
-	jwtSecret := os.Getenv("JWT_SECRET")
+	jwtSecret := os.Getenv("JWT_ACCESS_SECRET")
 
 	messageClient, err := service.NewMessageClient(messageServiceAddr)
 	if err != nil {
@@ -27,6 +28,10 @@ func main() {
 	if err != nil {
 		slog.Error("failed to connect to realtime client", "err", err)
 	}
+
+	redisClient := redis.NewClient(&redis.Options{
+    	Addr: os.Getenv("REDIS_ADDR"),
+	})
 
 	gatewaySvc := service.NewGatewayService(messageClient, realtimeClient)
 
@@ -46,7 +51,7 @@ func main() {
 		auth.POST("/logout", authProxy.Logout)
 	}
 
-	r.GET("/ws", middleware.JWTMiddleware(jwtSecret), wsHandler.Handle)
+	r.GET("/ws", middleware.JWTMiddleware(jwtSecret, redisClient), wsHandler.Handle)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)

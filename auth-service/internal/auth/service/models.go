@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/redis/go-redis/v9"
 )
 
 type User struct {
@@ -43,5 +42,4 @@ func NewUserID() string {
 type TokenPair struct {
 	AccessToken  string
 	RefreshToken string
-	redis        *redis.Client
 }

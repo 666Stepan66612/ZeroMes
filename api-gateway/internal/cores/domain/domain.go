@@ -25,3 +25,8 @@ type GetMessagesResponse struct {
 	NextMessageId string `json:"next_message_id"`
     HasMore  bool        `json:"has_more"`
 }
+
+type WSResponse struct {
+    Type    string      `json:"type"`
+    Payload interface{} `json:"payload,omitempty"`
+}

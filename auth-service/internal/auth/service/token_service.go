@@ -97,10 +97,16 @@ func (s *tokenService) InvalidateRefreshToken(token string) error {
 	tokenHash := hex.EncodeToString(hash[:])
 
 	ctx := context.Background()
-	err := s.redis.Set(ctx, "blacklist"+tokenHash, "revoked", 7*24*time.Hour).Err()
+	err := s.redis.Set(ctx, "blacklist:"+tokenHash, "revoked", 7*24*time.Hour).Err()
 	if err != nil {
 		return apperrors.ErrInternalServer
 	}
 
 	return nil
+}
+
+func (s *tokenService) InvalidateAccessToken(token string) error {
+    hash := sha256.Sum256([]byte(token))
+    tokenHash := hex.EncodeToString(hash[:])
+    return s.redis.Set(context.Background(), "blacklist:"+tokenHash, "1", 15*time.Minute).Err()
 }
