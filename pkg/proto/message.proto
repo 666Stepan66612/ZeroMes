@@ -12,6 +12,7 @@ service MessageService {
     rpc MarkAsRead(MarkAsReadRequest) returns (MarkAsReadResponse);
     rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
     rpc AlterMessage(AlterMessageRequest) returns (AlterMessageResponse);
+    rpc GetChats(GetChatsRequest) returns (GetChatsResponse);
 }
 
 message SendMessageRequest {
@@ -83,6 +84,22 @@ enum MessageStatus {
     SENT = 0; // to Kafka
     DELIVERED = 1; // recipient is online
     READ = 2; // readed
+}
+
+message GetChatsRequest {
+    string user_id = 1;
+}
+
+message GetChatsResponse {
+    repeated Chat chats = 1;
+}
+
+message Chat {
+    string id = 1;
+    string user_id = 2;
+    string companion_id = 3;
+    google.protobuf.Timestamp created_at = 4;
+    google.protobuf.Timestamp last_message_at = 5;
 }
 
 // generate
