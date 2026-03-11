@@ -6,6 +6,7 @@ import (
     "time"
 
     "github.com/google/uuid"
+    apperrors "auth-service/internal/cores/errors"
 )
 
 type authService struct {
@@ -79,5 +80,16 @@ func (s *authService) Logout(ctx context.Context, refreshToken, accessToken stri
     if err := s.tokenSvc.InvalidateRefreshToken(refreshToken); err != nil {
         return err
     }
-    return s.tokenSvc.InvalidateRefreshToken(accessToken)
+    return s.tokenSvc.InvalidateAccessToken(accessToken)
+}
+
+func (s *authService) Search(ctx context.Context, login string) ([]*UserPublic, error) {
+    users, err := s.userRepo.SearchUsers(ctx, login)
+    if err != nil {
+        return nil, err
+    }
+    if users == nil {
+        return []*UserPublic{}, apperrors.ErrNoResult
+    }
+    return users, nil
 }

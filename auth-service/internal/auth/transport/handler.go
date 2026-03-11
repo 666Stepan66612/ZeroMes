@@ -129,6 +129,39 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]string{"message": "logged out successfully"})
 }
 
+func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
+	login := r.URL.Query().Get("login")
+    if login == "" {
+        respondError(w, http.StatusBadRequest, "login is required")
+        return
+    }
+
+	var req SearchRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusInternalServerError, apperrors.ErrInvalidPayload.Error())
+		return
+	}
+
+	users, err := h.authService.Search(r.Context(), req.Login)
+	if err != nil {
+		if err == apperrors.ErrNoResult {
+			respondError(w, http.StatusNotFound, err.Error())
+			return
+		}
+		respondError(w, http.StatusInternalServerError, apperrors.ErrInvalidPayload.Error())
+		return
+	}
+
+	dtos := make([]UserDTO, len(users))
+	for i, u := range users {
+		dtos[i] = toUserDTO(u)
+	}
+
+	respondJSON(w, http.StatusOK, SearchUserResponse{
+		Users: dtos,
+	})
+}
+
 func setTokenCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 	http.SetCookie(w, &http.Cookie{
 		Name: "access_token",

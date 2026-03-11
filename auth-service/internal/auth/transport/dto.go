@@ -29,3 +29,11 @@ type UserDTO struct {
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
+
+type SearchRequest struct {
+	Login string `json:"login" validate:"required"`
+}
+
+type SearchUserResponse struct {
+	Users []UserDTO `json:"users"`
+}
