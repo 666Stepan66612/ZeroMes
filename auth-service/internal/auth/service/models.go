@@ -19,7 +19,7 @@ type UserPublic struct {
 	ID        string
 	Login     string
 	PublicKey string
-	CreatedAt string
+	CreatedAt time.Time
 }
 
 func (u *User) ToPublic() *UserPublic {
@@ -27,7 +27,7 @@ func (u *User) ToPublic() *UserPublic {
 		ID:        u.ID,
 		Login:     u.Login,
 		PublicKey: u.PublicKey,
-		CreatedAt: u.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		CreatedAt: u.CreatedAt,
 	}
 }
 

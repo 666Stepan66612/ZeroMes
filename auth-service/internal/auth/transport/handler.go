@@ -129,6 +129,29 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]string{"message": "logged out successfully"})
 }
 
+func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
+	login := r.URL.Query().Get("login")
+    if login == "" {
+        respondError(w, http.StatusBadRequest, "login is required")
+        return
+    }
+
+	users, err := h.authService.Search(r.Context(), login)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	dtos := make([]UserDTO, len(users))
+	for i, u := range users {
+		dtos[i] = toUserDTO(u)
+	}
+
+	respondJSON(w, http.StatusOK, SearchUserResponse{
+		Users: dtos,
+	})
+}
+
 func setTokenCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 	http.SetCookie(w, &http.Cookie{
 		Name: "access_token",

@@ -49,6 +49,7 @@ func main() {
 		auth.POST("/login", authProxy.Login)
 		auth.POST("/refresh", authProxy.Refresh)
 		auth.POST("/logout", authProxy.Logout)
+		auth.GET("/search", authProxy.Search)
 	}
 
 	r.GET("/ws", middleware.JWTMiddleware(jwtSecret, redisClient), wsHandler.Handle)
