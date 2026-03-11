@@ -136,19 +136,9 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-	var req SearchRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, http.StatusInternalServerError, apperrors.ErrInvalidPayload.Error())
-		return
-	}
-
-	users, err := h.authService.Search(r.Context(), req.Login)
+	users, err := h.authService.Search(r.Context(), login)
 	if err != nil {
-		if err == apperrors.ErrNoResult {
-			respondError(w, http.StatusNotFound, err.Error())
-			return
-		}
-		respondError(w, http.StatusInternalServerError, apperrors.ErrInvalidPayload.Error())
+		respondError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 

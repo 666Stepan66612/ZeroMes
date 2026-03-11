@@ -6,7 +6,6 @@ import (
     "time"
 
     "github.com/google/uuid"
-    apperrors "auth-service/internal/cores/errors"
 )
 
 type authService struct {
@@ -89,7 +88,7 @@ func (s *authService) Search(ctx context.Context, login string) ([]*UserPublic, 
         return nil, err
     }
     if users == nil {
-        return []*UserPublic{}, apperrors.ErrNoResult
+        return []*UserPublic{}, nil
     }
     return users, nil
 }
