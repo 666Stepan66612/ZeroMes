@@ -43,7 +43,33 @@ func (c *RealtimeClientService) Connect(ctx context.Context, userID string, send
 			if err != nil {
 				return 
 			}
-			data, err := json.Marshal(msg)
+
+			var msgType string
+			var payload interface{}
+
+			switch p := msg.Payload.(type) {
+			case *realtimepb.ConnectionResponse_Status:
+				msgType = "status"
+				payload = map[string]interface{}{
+					"user_id": p.Status.UserId,
+					"connected": p.Status.Connected,
+				}
+			case *realtimepb.ConnectionResponse_Message:
+				msgType = "new_message"
+				payload = map[string]interface{}{
+					"message_id": p.Message.MessageId,
+					"sender_id": p.Message.SenderId,
+					"content": p.Message.Content,
+					"timestamp": p.Message.Timestamp,
+				}
+			default:
+				continue
+			}
+
+			data, err := json.Marshal(map[string]interface{}{
+				"type": msgType,
+				"payload": payload,
+			})
 			if err != nil {
 				return
 			}
