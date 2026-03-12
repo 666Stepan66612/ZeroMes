@@ -11,4 +11,5 @@ var (
     ErrInternalServer     = errors.New("internal server error")
     ErrNoRows             = errors.New("no rows in result set")
     ErrInvalidPayload     = errors.New("invalid requerst payload")
+    ErrNoResult           = errors.New("no results")
 )

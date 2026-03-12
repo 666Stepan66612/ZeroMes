@@ -72,3 +72,36 @@ func (r *postgresUserRepository) GetByLogin(ctx context.Context, login string) (
 
 	return user, nil
 }
+
+func (r *postgresUserRepository) SearchUsers(ctx context.Context, login string) ([]*service.UserPublic, error) {
+	query := `
+		SELECT id, login, public_key, created_at
+		FROM users
+		WHERE login ILIKE $1
+		LIMIT 10
+	`
+
+	rows, err := r.pool.Query(ctx, query, "%"+login+"%")
+
+	if err == errors.ErrNoRows {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := make([]*service.UserPublic, 0)
+	for rows.Next() {
+		user := &service.UserPublic{}
+		if err := rows.Scan(
+			&user.ID, &user.Login, &user.PublicKey, &user.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	return users, rows.Err()
+}
