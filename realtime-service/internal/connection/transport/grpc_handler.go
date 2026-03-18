@@ -70,7 +70,7 @@ func (h *ConnectionHandler) ConnectionStream(stream pb.ConnectionService_Connect
             return err
         }
 		if err != nil {
-			slog.Warn("stream receive error", "user_id", userID, "err")
+			slog.Warn("stream receive error", "user_id", userID, "err", err)
 			return status.Error(codes.Internal, "connection error")
 		}
 
