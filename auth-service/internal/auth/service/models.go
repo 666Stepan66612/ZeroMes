@@ -2,6 +2,7 @@ package service
 
 import (
 	"time"
+	"crypto/subtle"
 
 	"github.com/google/uuid"
 )
@@ -32,7 +33,10 @@ func (u *User) ToPublic() *UserPublic {
 }
 
 func (u *User) ValidateAuthHash(authHash string) bool {
-	return u.AuthHash == authHash
+	return subtle.ConstantTimeCompare(
+		[]byte(u.AuthHash),
+		[]byte(authHash),
+	) == 1
 }
 
 func NewUserID() string {
