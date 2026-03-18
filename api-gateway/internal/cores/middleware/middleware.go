@@ -9,6 +9,7 @@ import (
 
 	pkgjwt "github.com/666Stepan66612/ZeroMes/pkg/jwt"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -32,6 +33,11 @@ func JWTMiddleware(secret string, redisClient *redis.Client) gin.HandlerFunc {
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return 
+		}
+
+		if _, err := uuid.Parse(userID); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid user ID format"})
+			return
 		}
 
 		hash := sha256.Sum256([]byte(token))
