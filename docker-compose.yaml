@@ -160,6 +160,7 @@ services:
       REDIS_PASSWORD: ""
       KAFKA_BROKERS: kafka:9092
       KAFKA_TOPIC: messages.sent
+      JWT_SECRET: littlesecret
       KAFKA_GROUP_ID: realtime-service
       INSTANCE_ID: realtime-1
     ports:
