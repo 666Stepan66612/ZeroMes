@@ -60,9 +60,10 @@ func main() {
 			slog.Error("kafka consumer error", "err", err)
 		}
 	}()
-
+	
+	jwtSecret := os.Getenv("JWT_SECRET")
 	grpcServer := grpc.NewServer()
-	grpcHandler := transport.NewConnectionHandler(hub)
+	grpcHandler := transport.NewConnectionHandler(hub, jwtSecret)
 	reflection.Register(grpcServer) // for test
 	realtimepb.RegisterConnectionServiceServer(grpcServer, grpcHandler)
 

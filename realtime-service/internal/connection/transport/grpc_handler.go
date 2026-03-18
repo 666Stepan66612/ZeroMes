@@ -2,6 +2,8 @@ package transport
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"time"
 
 	"realtime-service/internal/connection/service"
@@ -27,18 +29,21 @@ func NewConnectionHandler(manager service.ConnectionManager, jwtSecret string) *
 }
 
 func (h *ConnectionHandler) ConnectionStream(stream pb.ConnectionService_ConnectionStreamServer) error {
-	claims, err := h.authenticate(stream.Context(), stream)
+	claims, err := h.authenticate(stream.Context())
 	if err != nil {
+		slog.Warn("authentication failed", "err", err)
 		return err
 	}
 
 	userID := claims.UserID
 	_, err = stream.Recv()
 	if err != nil {
+		slog.Debug("stream recv error during setup", "user_id", userID, "err", err)
 		return err
 	}
 
 	if err := h.manager.RegisterConnection(stream.Context(), userID, stream); err != nil {
+		slog.Error("failed to register connection", "user_id", userID, "err", err)
 		return status.Error(codes.Internal, "conncetion failed")
 	}
 	defer func() {
@@ -60,12 +65,18 @@ func (h *ConnectionHandler) ConnectionStream(stream pb.ConnectionService_Connect
 
     for {
         msg, err := stream.Recv()
-        if err != nil {
+        if err == io.EOF {
+				slog.Debug("client closed stream", "user_id", userID)
             return err
         }
+		if err != nil {
+			slog.Warn("stream receive error", "user_id", userID, "err")
+			return status.Error(codes.Internal, "connection error")
+		}
 
         switch msg.Payload.(type) {
         case *pb.ConnectionRequest_Disconnect:
+			slog.Debug("disconnect requested", "user_id", userID)
             return nil
         }
     }
@@ -95,7 +106,7 @@ func (h *ConnectionHandler) validateToken(tokenString string) (*Claims, error) {
 	return claims, nil
 }
 
-func (h *ConnectionHandler) authenticate(ctx context.Context, stream pb.ConnectionService_ConnectionStreamServer) (*Claims, error) {
+func (h *ConnectionHandler) authenticate(ctx context.Context) (*Claims, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.Unauthenticated, "missing metadata")
