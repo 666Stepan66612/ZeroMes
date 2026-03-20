@@ -1,57 +1,78 @@
-version: '3.8'
-
 services:
-  postgres:
+  postgres-auth:
     image: postgres:16-alpine
     container_name: auth-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: auth_db
+      POSTGRES_USER: ${POSTGRES_AUTH_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_AUTH_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_AUTH_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - auth-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_AUTH_USER} -d ${POSTGRES_AUTH_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
   postgres-messages:
     image: postgres:16-alpine
+    restart: unless-stopped
     container_name: messages-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: messages_db
+      POSTGRES_USER: ${POSTGRES_MSG_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_MSG_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_MSG_DB}
     volumes:
       - postgres_messages_data:/var/lib/postgresql/data
     networks:
       - messenger-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_MSG_USER} -d ${POSTGRES_MSG_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
 
   redis:
     image: redis:7-alpine
     container_name: auth-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
     networks:
       - auth-network
       - realtime-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 300m
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
+    restart: unless-stopped
     ports:
-      - "9092:9092"
-      - "9093:9093"
+      - "${KAFKA_EXTERNAL_PORT}:9093"
     environment:
       # KRaft mode (without Zookeeper)
       KAFKA_NODE_ID: 1
@@ -74,7 +95,7 @@ services:
       
       # Logs
       KAFKA_LOG_DIRS: /var/lib/kafka/data
-      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk  # ID KRaft
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID} # ID KRaft
     volumes:
       - kafka_data:/var/lib/kafka/data
     networks:
@@ -85,23 +106,35 @@ services:
       timeout: 10s
       retries: 5
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1g
 
   migrate-auth:
     image: migrate/migrate
+    restart: on-failure
     volumes:
       - ./auth-service/migrations:/migrations
-    command: ["-path", "/migrations", "-database", "postgres://postgres:postgres@postgres:5432/auth_db?sslmode=disable", "up"]
+    command:
+      - "-path=/migrations"
+      - "-database=postgres://${POSTGRES_AUTH_USER}:${POSTGRES_AUTH_PASSWORD}@postgres-auth:5432/${POSTGRES_AUTH_DB}?sslmode=disable"
+      - "up"
     depends_on:
-      postgres:
+      postgres-auth:
         condition: service_healthy
     networks:
       - auth-network
   
   migrate-messages:
     image: migrate/migrate
+    restart: on-failure
     volumes:
       - ./message-service/migrations:/migrations
-    command: ["-path", "/migrations", "-database", "postgres://postgres:postgres@postgres-messages:5432/messages_db?sslmode=disable", "up"]
+    command:
+      - "-path=/migrations"
+      - "-database=postgres://${POSTGRES_MSG_USER}:${POSTGRES_MSG_PASSWORD}@postgres-messages:5432/${POSTGRES_MSG_DB}?sslmode=disable"
+      - "up"
     depends_on:
       postgres-messages:
         condition: service_healthy
@@ -113,22 +146,33 @@ services:
       context: ./auth-service
       dockerfile: Dockerfile
     container_name: auth-service
+    restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/auth_db?sslmode=disable
-      REDIS_URL: redis:6379
-      REDIS_PASSWORD: ""
-      JWT_ACCESS_SECRET: your-super-secret-access-key-change-in-production
-      JWT_REFRESH_SECRET: your-super-secret-refresh-key-change-in-production
-      PORT: 8080
-    ports:
-      - "8080:8080"
+      DATABASE_URL: postgres://${POSTGRES_AUTH_USER}:${POSTGRES_AUTH_PASSWORD}@postgres-auth:5432/${POSTGRES_AUTH_DB}?sslmode=disable
+      REDIS_URL: auth-redis:${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      PORT: ${AUTH_SERVICE_PORT}
     depends_on:
-      postgres:
+      postgres-auth:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate-auth:
+        condition: service_completed_successfully
     networks:
       - auth-network
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8080'"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256m
   
   message-service:
     build:
@@ -136,18 +180,28 @@ services:
       dockerfile: message-service/Dockerfile
     container_name: message-service
     environment:
-      POSTGRES_URL: postgres://postgres:postgres@postgres-messages:5432/messages_db?sslmode=disable
+      POSTGRES_URL: postgres://${POSTGRES_MSG_USER}:${POSTGRES_MSG_PASSWORD}@postgres-messages:5432/${POSTGRES_MSG_DB}?sslmode=disable
+      GRPC_PORT: ${MESSAGE_SERVICE_GRPC_PORT}
       KAFKA_BROKERS: kafka:9092
-      GRPC_PORT: 50051
-    ports:
-      - "50051:50051"
     depends_on:
       postgres-messages:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      migrate-messages:
+        condition: service_completed_successfully
     networks:
       - messenger-network
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/50051'"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256m
 
   realtime-service:
     build:
@@ -155,16 +209,14 @@ services:
       dockerfile: realtime-service/Dockerfile
     container_name: realtime-service
     environment:
-      PORT: 8082
-      REDIS_URL: auth-redis:6379
-      REDIS_PASSWORD: ""
+      PORT: ${REALTIME_SERVICE_PORT}
+      REDIS_URL: auth-redis:${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       KAFKA_BROKERS: kafka:9092
       KAFKA_TOPIC: messages.sent
-      JWT_SECRET: littlesecret
-      KAFKA_GROUP_ID: realtime-service
-      INSTANCE_ID: realtime-1
-    ports:
-      - "8082:8082"
+      JWT_SECRET: ${JWT_ACCESS_SECRET}
+      KAFKA_GROUP_ID: ${REALTIME_KAFKA_GROUP_ID}
+      INSTANCE_ID: ${REALTIME_INSTANCE_ID}
     depends_on:
       redis:
         condition: service_healthy
@@ -173,33 +225,52 @@ services:
     networks:
       - realtime-network
       - messenger-network
-  
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8082'"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+
   api-gateway:
     build:
       context: .
       dockerfile: api-gateway/Dockerfile
     container_name: api-gateway
     environment:
-      AUTH_SERVICE_URL: http://auth-service:8080
-      MESSAGE_SERVICE_ADDR: message-service:50051
-      REALTIME_SERVICE_ADDR: realtime-service:8082
-      REDIS_ADDR: auth-redis:6379
-      JWT_SECRET: your-super-secret-access-key-change-in-production
-      JWT_ACCESS_SECRET: your-super-secret-access-key-change-in-production
-      PORT: 8083
+      AUTH_SERVICE_URL: http://auth-service:${AUTH_SERVICE_PORT}
+      MESSAGE_SERVICE_ADDR: message-service:${MESSAGE_SERVICE_GRPC_PORT}
+      REALTIME_SERVICE_ADDR: realtime-service:${REALTIME_SERVICE_PORT}
+      REDIS_ADDR: auth-redis:${REDIS_PORT}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      PORT: ${API_GATEWAY_PORT}
     ports:
-      - "8083:8083"
+      - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
     depends_on:
       auth-service:
-        condition: service_started
+        condition: service_healthy
       message-service:
-        condition: service_started
+        condition: service_healthy
       realtime-service:
-        condition: service_started
+        condition: service_healthy
     networks:
       - auth-network
       - messenger-network
       - realtime-network
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8083'"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 128m
 
 networks:
   auth-network:
