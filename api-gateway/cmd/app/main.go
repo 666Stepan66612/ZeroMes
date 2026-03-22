@@ -4,11 +4,12 @@ import (
 	"api-gateway/internal/cores/middleware"
 	"api-gateway/internal/gateway/service"
 	"api-gateway/internal/gateway/transport"
+	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-	"log/slog"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -30,6 +31,7 @@ func main() {
 	realtimeClient, err := service.NewRealtimeClient(realtimeServiceAddr)
 	if err != nil {
 		slog.Error("failed to connect to realtime client", "err", err)
+		os.Exit(1)
 	}
 	defer realtimeClient.Close()
 
@@ -46,6 +48,10 @@ func main() {
 	}
 
 	r := gin.Default()
+	r.Use(func(c *gin.Context) {
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 1<<20)
+		c.Next()
+	})
 	
 	authLimit := middleware.RateLimiter(redisClient, 120, time.Minute)
 
@@ -65,6 +71,9 @@ func main() {
 
 	go func() {
 		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8083"
+		}
 		if err := r.Run(":" + port); err != nil {
 			slog.Error("failed to start server", "err", err)
 		}
