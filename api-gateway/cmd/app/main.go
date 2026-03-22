@@ -23,11 +23,13 @@ func main() {
 	if err != nil {
 		slog.Error("failed to connect to message client", "err", err)
 	}
+	defer messageClient.Close()
 
 	realtimeClient, err := service.NewRealtimeClient(realtimeServiceAddr)
 	if err != nil {
 		slog.Error("failed to connect to realtime client", "err", err)
 	}
+	defer realtimeClient.Close()
 
 	redisClient := redis.NewClient(&redis.Options{
     	Addr: os.Getenv("REDIS_ADDR"),

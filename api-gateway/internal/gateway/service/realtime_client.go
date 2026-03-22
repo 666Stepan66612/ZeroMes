@@ -10,6 +10,7 @@ import (
 )
 
 type RealtimeClientService struct {
+	conn *grpc.ClientConn
 	client realtimepb.ConnectionServiceClient
 }
 
@@ -19,8 +20,13 @@ func NewRealtimeClient(addr string) (*RealtimeClientService, error){
 		return nil, err
 	}
 	return &RealtimeClientService{
+		conn: conn,
 		client: realtimepb.NewConnectionServiceClient(conn),
 	}, nil
+}
+
+func (c *RealtimeClientService) Close() error {
+	return c.conn.Close()
 }
 
 func (c *RealtimeClientService) Connect(ctx context.Context, userID string, send chan<- []byte) error{

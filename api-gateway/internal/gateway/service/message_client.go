@@ -10,6 +10,7 @@ import (
 )
 
 type MessageClientService struct {
+	conn *grpc.ClientConn
 	client messagepb.MessageServiceClient
 }
 
@@ -19,8 +20,13 @@ func NewMessageClient(addr string) (*MessageClientService, error) {
 		return nil, err
 	}
 	return &MessageClientService{
+		conn: conn,
 		client: messagepb.NewMessageServiceClient(conn),
 	}, nil
+}
+
+func (c *MessageClientService) Close() error {
+	return c.conn.Close()
 }
 
 func (c *MessageClientService) SendMessage(ctx context.Context, chatID, senderID, recipientID, encryptedContent, messageType string) (*domain.Message, error) {
