@@ -170,7 +170,8 @@ func (r *postgresRepository) UpdateStatusBatch(ctx context.Context, chatID, user
 
 func (r *postgresRepository) GetChats(ctx context.Context, userID string) ([]*service.ChatsList, error) {
 	query :=  `
-		SELECT * FROM chats
+		SELECT id, user_id, companion_id, created_at, last_message_at
+		FROM chats
 		WHERE user_id = $1
 		ORDER BY last_message_at DESC
 	`
