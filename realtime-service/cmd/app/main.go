@@ -63,7 +63,7 @@ func main() {
 	
 	jwtSecret := os.Getenv("JWT_SECRET")
 	grpcServer := grpc.NewServer()
-	grpcHandler := transport.NewConnectionHandler(hub, jwtSecret)
+	grpcHandler := transport.NewConnectionHandler(hub, jwtSecret, redisClient)
 	reflection.Register(grpcServer) // for test
 	realtimepb.RegisterConnectionServiceServer(grpcServer, grpcHandler)
 

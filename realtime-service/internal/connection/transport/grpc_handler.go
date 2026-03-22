@@ -2,6 +2,8 @@ package transport
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"io"
 	"log/slog"
 	"time"
@@ -10,6 +12,7 @@ import (
 
 	pb "github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepb"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -19,12 +22,14 @@ type ConnectionHandler struct {
 	pb.UnimplementedConnectionServiceServer
 	manager service.ConnectionManager
 	jwtSecret []byte
+	redis *redis.Client
 }
 
-func NewConnectionHandler(manager service.ConnectionManager, jwtSecret string) *ConnectionHandler {
+func NewConnectionHandler(manager service.ConnectionManager, jwtSecret string, redisClient *redis.Client) *ConnectionHandler {
 	return &ConnectionHandler{
 		manager: manager,
 		jwtSecret: []byte(jwtSecret),
+		redis: redisClient,
 	}
 }
 
@@ -120,6 +125,13 @@ func (h *ConnectionHandler) authenticate(ctx context.Context) (*Claims, error) {
 	tokenStr := token[0]
 	if len(tokenStr) > 7 && tokenStr[:7] == "Bearer " {
 		tokenStr = tokenStr[7:]
+	}
+
+	hash := sha256.Sum256([]byte(tokenStr))
+	tokenHash := hex.EncodeToString(hash[:])
+	val, _ := h.redis.Get(ctx, "blacklist:"+tokenHash).Result()
+	if val != "" {
+		return nil, status.Error(codes.Unauthenticated, "token revoked")
 	}
 
 	return h.validateToken(tokenStr)
