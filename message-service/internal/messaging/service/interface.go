@@ -12,13 +12,12 @@ type MessageService interface {
 }
 
 type MessageRepository interface {
-	Create(ctx context.Context, msg *Message) error
+	CreateWithChats(ctx context.Context, msg *Message) error
 	GetByChatID(ctx context.Context, chatID string, limit int, lastMessageID string) ([]*Message, error)
 	GetByID(ctx context.Context, messageID string) (*Message, error)
 	Delete(ctx context.Context, messageID string) error
 	Alter(ctx context.Context, messageID, newContent string) error
 	UpdateStatusBatch(ctx context.Context, chatID, userID, lastMessageID string, status MessageStatus) error
-	UpsertChat(ctx context.Context, chatID, userID, companionID string) error
 	GetChats(ctx context.Context, userID string) ([]*ChatsList, error)
 }
 

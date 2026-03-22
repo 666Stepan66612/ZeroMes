@@ -20,24 +20,35 @@ func NewPostgresRepository(pool *pgxpool.Pool) service.MessageRepository {
 	}
 }
 
-func (r *postgresRepository) Create(ctx context.Context, msg *service.Message) error {
-	query := `
+func (r *postgresRepository) CreateWithChats(ctx context.Context, msg *service.Message) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+ 
+	_, err = tx.Exec(ctx, `
 		INSERT INTO messages (id, chat_id, sender_id, recipient_id, encrypted_content, message_type, created_at, status)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`, msg.ID, msg.ChatID, msg.SenderID, msg.RecipientID,
+		msg.EncryptedContent, msg.MessageType, msg.CreatedAt, msg.Status)
+	if err != nil {
+		return err
+	}
+ 
+	upsert := `
+		INSERT INTO chats (id, user_id, companion_id, last_message_at)
+		VALUES ($1, $2, $3, NOW())
+		ON CONFLICT (user_id, companion_id) DO UPDATE SET last_message_at = NOW()
 	`
-
-	_, err := r.pool.Exec(ctx, query,
-		msg.ID,
-		msg.ChatID,
-		msg.SenderID,
-		msg.RecipientID,
-		msg.EncryptedContent,
-		msg.MessageType,
-		msg.CreatedAt,
-		msg.Status,
-	)
-
-	return err
+	if _, err = tx.Exec(ctx, upsert, msg.ChatID, msg.SenderID, msg.RecipientID); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, upsert, msg.ChatID, msg.RecipientID, msg.SenderID); err != nil {
+		return err
+	}
+ 
+	return tx.Commit(ctx)
 }
 
 func (r *postgresRepository) GetByChatID(ctx context.Context, chatID string, limit int, lastMessageID string) ([]*service.Message, error) {
@@ -155,21 +166,6 @@ func (r *postgresRepository) UpdateStatusBatch(ctx context.Context, chatID, user
 
 	_, err := r.pool.Exec(ctx, query, status, chatID, userID, lastMessageID)
 	return err
-}
-
-func (r *postgresRepository) UpsertChat(ctx context.Context, chatID, userID, companionID string) error {
-	query := `
-		INSERT INTO chats (id, user_id, companion_id, last_message_at)
-		VALUES ($1, $2, $3, NOW())
-		ON CONFLICT (user_id, companion_id) DO UPDATE SET last_message_at = NOW();
-	`
-	
-	_, err := r.pool.Exec(ctx, query, chatID, userID, companionID)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (r *postgresRepository) GetChats(ctx context.Context, userID string) ([]*service.ChatsList, error) {

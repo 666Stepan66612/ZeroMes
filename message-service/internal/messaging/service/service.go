@@ -47,16 +47,8 @@ func (s *messageService) SendMessage(ctx context.Context, chatID, senderID, reci
 		Status: MessageStatusSent,
 	}
 
-	if err := s.messageRepo.Create(ctx, &newMessage); err != nil {
+	if err := s.messageRepo.CreateWithChats(ctx, &newMessage); err != nil {
 		return nil, err
-	}
-
-	if err := s.messageRepo.UpsertChat(ctx, chatID, senderID, recipientID); err != nil {
-		slog.Warn("Failed to upsert chat sender side", "err", err)
-	}
-
-	if err := s.messageRepo.UpsertChat(ctx, chatID, recipientID, senderID); err != nil {
-		slog.Warn("Failed to upsert chat recipient side", "err", err)
 	}
 
 	if err := s.kafkaProducer.PublishMessageSent(ctx, &newMessage); err != nil {
