@@ -49,7 +49,7 @@ func (h *ConnectionHandler) ConnectionStream(stream pb.ConnectionService_Connect
 
 	if err := h.manager.RegisterConnection(stream.Context(), userID, stream); err != nil {
 		slog.Error("failed to register connection", "user_id", userID, "err", err)
-		return status.Error(codes.Internal, "conncetion failed")
+		return status.Error(codes.Internal, "connection failed")
 	}
 	defer func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

@@ -37,6 +37,7 @@ func main() {
 
 	redisClient := redis.NewClient(&redis.Options{
     	Addr: os.Getenv("REDIS_ADDR"),
+		Password: os.Getenv("REDIS_PASSWORD"),
 	})
 
 	gatewaySvc := service.NewGatewayService(messageClient, realtimeClient)
