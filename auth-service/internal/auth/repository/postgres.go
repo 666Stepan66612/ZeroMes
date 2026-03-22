@@ -81,7 +81,7 @@ func (r *postgresUserRepository) SearchUsers(ctx context.Context, login string) 
 		LIMIT 10
 	`
 
-	rows, err := r.pool.Query(ctx, query, "%"+login+"%")
+	rows, err := r.pool.Query(ctx, query, login+"%")
 
 	if err == errors.ErrNoRows {
 		return nil, nil

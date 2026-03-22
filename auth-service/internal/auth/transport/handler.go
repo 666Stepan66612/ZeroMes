@@ -131,7 +131,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	login := r.URL.Query().Get("login")
-    if login == "" {
+    if len(login) < 3 {
         respondError(w, http.StatusBadRequest, "login is required")
         return
     }
