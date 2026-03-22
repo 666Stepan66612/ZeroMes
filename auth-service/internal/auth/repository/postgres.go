@@ -2,10 +2,11 @@ package repository
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"auth-service/internal/auth/service"
-	"auth-service/internal/cores/errors"
 )
 
 type postgresUserRepository struct {
@@ -39,7 +40,7 @@ func (r *postgresUserRepository) GetByID(ctx context.Context, id string) (*servi
 		&user.ID, &user.Login, &user.AuthHash, &user.PublicKey, &user.CreatedAt, &user.UpdatedAt,
 	)
 
-	if err == errors.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -62,7 +63,7 @@ func (r *postgresUserRepository) GetByLogin(ctx context.Context, login string) (
 		&user.ID, &user.Login, &user.AuthHash, &user.PublicKey, &user.CreatedAt, &user.UpdatedAt,
 	)
 
-	if err == errors.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -83,7 +84,7 @@ func (r *postgresUserRepository) SearchUsers(ctx context.Context, login string) 
 
 	rows, err := r.pool.Query(ctx, query, login+"%")
 
-	if err == errors.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 
