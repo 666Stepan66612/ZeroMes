@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+	"strings"
 
 	"auth-service/internal/auth/service"
 	apperrors "auth-service/internal/cores/errors"
@@ -24,6 +25,19 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusInternalServerError, apperrors.ErrInvalidPayload.Error())
 		return
+	}
+
+	if len(strings.TrimSpace(req.Login)) < 3 || len(req.Login) > 32 {
+    	respondError(w, http.StatusBadRequest, "login must be 3–32 characters")
+    	return
+	}
+	if req.AuthHash == "" {
+    	respondError(w, http.StatusBadRequest, "auth_hash is required")
+    	return
+	}
+	if req.PublicKey == "" {
+    	respondError(w, http.StatusBadRequest, "public_key is required")
+    	return
 	}
 
 	user, tokens, err := h.authService.Register(
@@ -70,6 +84,15 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusInternalServerError, apperrors.ErrInvalidPayload.Error())
+		return
+	}
+ 
+	if strings.TrimSpace(req.Login) == "" {
+		respondError(w, http.StatusBadRequest, "login is required")
+		return
+	}
+	if req.AuthHash == "" {
+		respondError(w, http.StatusBadRequest, "auth_hash is required")
 		return
 	}
 

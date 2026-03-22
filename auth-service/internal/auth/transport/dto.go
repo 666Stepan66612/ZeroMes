@@ -3,14 +3,14 @@ package transport
 import "time"
 
 type RegisterRequest struct {
-	Login     string `json:"login" validate:"required,min=3,max=32"`
-	AuthHash  string `json:"auth_hash" validate:"required"`  // PBKDF2 password for auth
-	PublicKey string `json:"public_key" validate:"required"` // for E2E encryprion
+	Login     string `json:"login"`
+	AuthHash  string `json:"auth_hash"`  // PBKDF2 password for auth
+	PublicKey string `json:"public_key"` // for E2E encryprion
 }
 
 type LoginRequest struct {
-	Login    string `json:"login" validate:"required"`
-	AuthHash string `json:"auth_hash" validate:"required"` // PBKDF2 of password
+	Login    string `json:"login"`
+	AuthHash string `json:"auth_hash"` // PBKDF2 of password
 }
 
 type RegisterResponse struct {
