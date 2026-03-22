@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	
 	domain "realtime-service/internal/cores/domain"
 	messagepb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
@@ -38,6 +39,7 @@ func (c *KafkaConsumer) Start(ctx context.Context) error {
 
 		var protoMsg messagepb.Message
 		if err := proto.Unmarshal(kafkaMsg.Value, &protoMsg); err != nil {
+			slog.Error("failed to unmarshal kafka message", "offset", kafkaMsg.Offset, "err", err)
 			continue
 		}
 
@@ -51,6 +53,10 @@ func (c *KafkaConsumer) Start(ctx context.Context) error {
 		}
 
 		if err := c.manager.DeliverMessage(ctx, msg); err != nil {
+			slog.Warn("failed to deliver message",
+				"msg_id", msg.MessageID,
+				"recipient_id", msg.RecipientID,
+				"err", err)
 			continue
 		}
 	}
