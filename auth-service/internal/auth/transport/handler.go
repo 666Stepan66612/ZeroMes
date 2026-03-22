@@ -3,8 +3,8 @@ package transport
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 	"strings"
+	"time"
 
 	"auth-service/internal/auth/service"
 	apperrors "auth-service/internal/cores/errors"
@@ -23,7 +23,7 @@ func NewHandler(authService service.AuthService) *Handler {
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, http.StatusInternalServerError, apperrors.ErrInvalidPayload.Error())
+		respondError(w, http.StatusBadRequest, apperrors.ErrInvalidPayload.Error())
 		return
 	}
 
@@ -48,7 +48,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	)
 	if err != nil {
 		if err == apperrors.ErrUserAlreadyExists {
-			respondError(w, http.StatusInternalServerError, err.Error())
+			respondError(w, http.StatusConflict, err.Error())
 			return
 		}
 		respondError(w, http.StatusInternalServerError, apperrors.ErrInternalServer.Error())
@@ -83,7 +83,7 @@ func toUserDTO(user *service.UserPublic) UserDTO {
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, http.StatusInternalServerError, apperrors.ErrInvalidPayload.Error())
+		respondError(w, http.StatusBadRequest, apperrors.ErrInvalidPayload.Error())
 		return
 	}
  
@@ -103,7 +103,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, err.Error())
+		respondError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
@@ -155,7 +155,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	login := r.URL.Query().Get("login")
     if len(login) < 3 {
-        respondError(w, http.StatusBadRequest, "login is required")
+        respondError(w, http.StatusBadRequest, "login must be at least 3 characters")
         return
     }
 
