@@ -28,11 +28,9 @@ func (s *messageService) SendMessage(ctx context.Context, chatID, senderID, reci
         return nil, apperrors.ErrInvalidInput
     }
 
-	if chatID == ""  {
-		ids := []string{senderID, recipientID}
-		sort.Strings(ids)
-		chatID = ids[0] + ":" + ids[1]
-	}
+	ids := []string{senderID, recipientID}
+	sort.Strings(ids)
+	chatID = ids[0] + ":" + ids[1]
     
     if msgType == "" {
         msgType = "text"
