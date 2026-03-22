@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +23,7 @@ func main() {
 	messageClient, err := service.NewMessageClient(messageServiceAddr)
 	if err != nil {
 		slog.Error("failed to connect to message client", "err", err)
+		os.Exit(1)
 	}
 	defer messageClient.Close()
 
@@ -44,13 +46,15 @@ func main() {
 	}
 
 	r := gin.Default()
+	
+	authLimit := middleware.RateLimiter(redisClient, 120, time.Minute)
 
 	auth := r.Group("/auth")
 	{
-		auth.POST("/register", authProxy.Register)
-		auth.POST("/login", authProxy.Login)
-		auth.POST("/refresh", authProxy.Refresh)
-		auth.POST("/logout", authProxy.Logout)
+		auth.POST("/register", authLimit, authProxy.Register)
+		auth.POST("/login", authLimit, authProxy.Login)
+		auth.POST("/refresh", authLimit, authProxy.Refresh)
+		auth.POST("/logout", authLimit, authProxy.Logout)
 		auth.GET("/search", middleware.JWTMiddleware(jwtSecret, redisClient), authProxy.Search)
 	}
 
@@ -60,7 +64,8 @@ func main() {
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
 	go func() {
-		if err := r.Run(":8083"); err != nil {
+		port := os.Getenv("PORT")
+		if err := r.Run(":" + port); err != nil {
 			slog.Error("failed to start server", "err", err)
 		}
 	}()
