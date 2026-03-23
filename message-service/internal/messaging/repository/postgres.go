@@ -37,14 +37,14 @@ func (r *postgresRepository) CreateWithChats(ctx context.Context, msg *service.M
 	}
  
 	upsert := `
-		INSERT INTO chats (id, user_id, companion_id, last_message_at)
-		VALUES ($1, $2, $3, NOW())
+		INSERT INTO chats (user_id, companion_id, last_message_at)
+		VALUES ($1, $2, NOW())
 		ON CONFLICT (user_id, companion_id) DO UPDATE SET last_message_at = NOW()
 	`
-	if _, err = tx.Exec(ctx, upsert, msg.ChatID, msg.SenderID, msg.RecipientID); err != nil {
+	if _, err = tx.Exec(ctx, upsert, msg.SenderID, msg.RecipientID); err != nil {
 		return err
 	}
-	if _, err = tx.Exec(ctx, upsert, msg.ChatID, msg.RecipientID, msg.SenderID); err != nil {
+	if _, err = tx.Exec(ctx, upsert, msg.RecipientID, msg.SenderID); err != nil {
 		return err
 	}
  
@@ -170,7 +170,7 @@ func (r *postgresRepository) UpdateStatusBatch(ctx context.Context, chatID, user
 
 func (r *postgresRepository) GetChats(ctx context.Context, userID string) ([]*service.ChatsList, error) {
 	query :=  `
-		SELECT id, user_id, companion_id, created_at, last_message_at
+		SELECT user_id, companion_id, created_at, last_message_at
 		FROM chats
 		WHERE user_id = $1
 		ORDER BY last_message_at DESC
@@ -190,7 +190,6 @@ func (r *postgresRepository) GetChats(ctx context.Context, userID string) ([]*se
 	for rows.Next() {
 		cht := &service.ChatsList{}
 		err := rows.Scan(
-			&cht.ChatID,
     		&cht.UserID,
     		&cht.CompanionID,
     		&cht.CreatedAt,
