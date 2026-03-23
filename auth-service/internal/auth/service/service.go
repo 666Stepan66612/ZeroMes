@@ -1,11 +1,11 @@
 package service
 
 import (
-	"context"
 	"auth-service/internal/cores/errors"
-    "time"
+	"context"
+	"time"
 
-    "github.com/google/uuid"
+	"github.com/google/uuid"
 )
 
 type authService struct {
@@ -27,10 +27,21 @@ func (s *authService) Register(ctx context.Context, login, authHash, publicKey s
         return nil, nil, errors.ErrUserAlreadyExists
     }
 
+    serverSalt, err := GenerateServerSalt()
+    if err != nil {
+        return nil, nil, err
+    }
+
+    storedHash, err := HashAuthHash(authHash, serverSalt)
+    if err != nil {
+        return nil, nil, err
+    }
+
     user := &User{
         ID: uuid.New().String(),
         Login: login,
-        AuthHash: authHash,
+        AuthHash: storedHash,
+        ServerSalt: serverSalt,
         PublicKey: publicKey,
         CreatedAt: time.Now(),
         UpdatedAt: time.Now(),
