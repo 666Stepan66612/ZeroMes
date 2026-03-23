@@ -19,25 +19,25 @@ func NewPostgresUserRepository(pool *pgxpool.Pool) service.UserRepository {
 
 func (r *postgresUserRepository) Create(ctx context.Context, user *service.User) error {
 	query := `
-		INSERT INTO users (id, login, auth_hash, public_key, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO users (id, login, auth_hash, server_salt, public_key, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 
-	_, err := r.pool.Exec(ctx, query, user.ID, user.Login, user.AuthHash, user.PublicKey, user.CreatedAt, user.UpdatedAt)
+	_, err := r.pool.Exec(ctx, query, user.ID, user.Login, user.AuthHash, user.ServerSalt, user.PublicKey, user.CreatedAt, user.UpdatedAt)
 	
 	return err
 }
 
 func (r *postgresUserRepository) GetByID(ctx context.Context, id string) (*service.User, error) {
 	query := `
-		SELECT id, login, auth_hash, public_key, created_at, updated_at
+		SELECT id, login, auth_hash, server_salt, public_key, created_at, updated_at
 		FROM users
 		WHERE id = $1
 	`
 
 	user := &service.User{}
 	err := r.pool.QueryRow(ctx, query, id).Scan(
-		&user.ID, &user.Login, &user.AuthHash, &user.PublicKey, &user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Login, &user.AuthHash, &user.ServerSalt, &user.PublicKey, &user.CreatedAt, &user.UpdatedAt,
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -53,14 +53,14 @@ func (r *postgresUserRepository) GetByID(ctx context.Context, id string) (*servi
 
 func (r *postgresUserRepository) GetByLogin(ctx context.Context, login string) (*service.User, error){
 	query := `
-		SELECT id, login, auth_hash, public_key, created_at, updated_at
+		SELECT id, login, auth_hash, server_salt, public_key, created_at, updated_at
 		FROM users
 		WHERE login = $1
 	`
 
 	user := &service.User{}
 	err := r.pool.QueryRow(ctx, query, login).Scan(
-		&user.ID, &user.Login, &user.AuthHash, &user.PublicKey, &user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Login, &user.AuthHash, &user.ServerSalt, &user.PublicKey, &user.CreatedAt, &user.UpdatedAt,
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
