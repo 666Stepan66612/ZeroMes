@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 
+	"api-gateway/internal/cores/domain"
 	realtimepb "github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
 
 type RealtimeClientService struct {
@@ -30,6 +32,10 @@ func (c *RealtimeClientService) Close() error {
 }
 
 func (c *RealtimeClientService) Connect(ctx context.Context, userID string, send chan<- []byte) error{
+	token, _ := ctx.Value(domain.AccessTokenKey).(string)
+	md := metadata.Pairs("authorization", "Bearer "+token)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
 	stream, err := c.client.ConnectionStream(ctx)
 	if err != nil {
 		return err

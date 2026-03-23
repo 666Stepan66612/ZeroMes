@@ -40,3 +40,6 @@ type Chat struct {
 type GetChatsResponse struct {
     Chats []*Chat `json:"chats"`
 }
+
+type contextKey string
+const AccessTokenKey contextKey = "access_token"

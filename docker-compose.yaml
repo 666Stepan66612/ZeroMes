@@ -183,6 +183,7 @@ services:
       POSTGRES_URL: postgres://${POSTGRES_MSG_USER}:${POSTGRES_MSG_PASSWORD}@postgres-messages:5432/${POSTGRES_MSG_DB}?sslmode=disable
       GRPC_PORT: ${MESSAGE_SERVICE_GRPC_PORT}
       KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC: messages.sent
     depends_on:
       postgres-messages:
         condition: service_healthy

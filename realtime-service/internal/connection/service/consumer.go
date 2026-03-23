@@ -34,7 +34,10 @@ func (c *KafkaConsumer) Start(ctx context.Context) error {
 			if ctx.Err() != nil {
 				return nil
 			}
+			slog.Error("kafka read error", "err", err)
 			continue
+		} else {
+			slog.Info("kafka message received", "offset", kafkaMsg.Offset)
 		}
 
 		var protoMsg messagepb.Message

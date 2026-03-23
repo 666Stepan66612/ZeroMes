@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"api-gateway/internal/cores/domain"
 	"api-gateway/internal/gateway/service"
 	apperrors "api-gateway/internal/cores/errors"
 
@@ -42,7 +43,8 @@ func (h *WebSocketHandler) Handle(c *gin.Context) {
 	defer conn.Close()
 
 	userID := c.GetString("userID")
-	ctx, cancel := context.WithCancel(c.Request.Context())
+	token, _ := c.Cookie("access_token")
+	ctx, cancel := context.WithCancel(context.WithValue(c.Request.Context(), domain.AccessTokenKey, token))
 	defer cancel()
 
 	send := make(chan []byte, 256)
