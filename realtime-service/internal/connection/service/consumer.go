@@ -2,17 +2,20 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
-	
-	domain "realtime-service/internal/cores/domain"
-	messagepb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
 
-    "github.com/segmentio/kafka-go"
-    "google.golang.org/protobuf/proto"
+	domain "realtime-service/internal/cores/domain"
+
+	messagepb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
+	realtimepb "github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepb"
+
+	"github.com/segmentio/kafka-go"
+	"google.golang.org/protobuf/proto"
 )
 
 type KafkaConsumer struct {
-	reader *kafka.Reader
+	reader  *kafka.Reader
 	manager ConnectionManager
 }
 
@@ -20,7 +23,7 @@ func NewKafkaConsumer(brokers []string, topic, groupID string, manager Connectio
 	return &KafkaConsumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
 			Brokers: brokers,
-			Topic: topic,
+			Topic:   topic,
 			GroupID: groupID,
 		}),
 		manager: manager,
@@ -28,6 +31,7 @@ func NewKafkaConsumer(brokers []string, topic, groupID string, manager Connectio
 }
 
 func (c *KafkaConsumer) Start(ctx context.Context) error {
+	slog.Info("Kafka consumer started, waiting for messages...")
 	for {
 		kafkaMsg, err := c.reader.ReadMessage(ctx)
 		if err != nil {
@@ -36,31 +40,97 @@ func (c *KafkaConsumer) Start(ctx context.Context) error {
 			}
 			slog.Error("kafka read error", "err", err)
 			continue
+		}
+
+		slog.Info("Kafka message received", "topic", kafkaMsg.Topic, "partition", kafkaMsg.Partition, "offset", kafkaMsg.Offset)
+
+		contentType := ""
+		for _, h := range kafkaMsg.Headers {
+			if h.Key == "content-type" {
+				contentType = string(h.Value)
+				break
+			}
+		}
+
+		if contentType == "application/protobuf" {
+			var protoMsg messagepb.Message
+			if err := proto.Unmarshal(kafkaMsg.Value, &protoMsg); err != nil {
+				slog.Error("failed to unmarshal proto", "err", err)
+				continue
+			}
+
+			slog.Info("new message received", "msg_id", protoMsg.Id)
+
+			msg := &domain.Message{
+				MessageID:   protoMsg.Id,
+				ChatID:      protoMsg.ChatId,
+				SenderID:    protoMsg.SenderId,
+				RecipientID: protoMsg.RecipientId,
+				Content:     protoMsg.EncryptedContent,
+				Timestamp:   protoMsg.CreatedAt.AsTime().Unix(),
+			}
+
+			if err := c.manager.DeliverMessage(ctx, msg); err != nil {
+				slog.Warn("failed to deliver message", "msg_id", msg.MessageID, "err", err)
+			}
+
 		} else {
-			slog.Info("kafka message received", "offset", kafkaMsg.Offset)
-		}
+			var event struct {
+				Type          string `json:"type"`
+				MessageID     string `json:"message_id"`
+				ChatID        string `json:"chat_id"`
+				SenderID      string `json:"sender_id"`
+				RecipientID   string `json:"recipient_id"`
+				NewContent    string `json:"new_content,omitempty"`
+				LastMessageID string `json:"last_message_id,omitempty"`
+			}
+			if err := json.Unmarshal(kafkaMsg.Value, &event); err != nil {
+				slog.Error("failed to unmarshal event", "err", err)
+				continue
+			}
 
-		var protoMsg messagepb.Message
-		if err := proto.Unmarshal(kafkaMsg.Value, &protoMsg); err != nil {
-			slog.Error("failed to unmarshal kafka message", "offset", kafkaMsg.Offset, "err", err)
-			continue
-		}
+			slog.Info("event received", "type", event.Type, "msg_id", event.MessageID)
 
-		msg := &domain.Message{
-			MessageID: protoMsg.Id,
-			ChatID:      protoMsg.ChatId,
-			SenderID: protoMsg.SenderId,
-			RecipientID: protoMsg.RecipientId,
-			Content: protoMsg.EncryptedContent,
-			Timestamp:   protoMsg.CreatedAt.AsTime().Unix(),
-		}
+			data, _ := json.Marshal(map[string]interface{}{
+				"type":    event.Type,
+				"payload": event,
+			})
 
-		if err := c.manager.DeliverMessage(ctx, msg); err != nil {
-			slog.Warn("failed to deliver message",
-				"msg_id", msg.MessageID,
-				"recipient_id", msg.RecipientID,
-				"err", err)
-			continue
+			recipientStream, err := c.manager.GetStream(event.RecipientID)
+			if err == nil {
+				if err := recipientStream.Send(&realtimepb.ConnectionResponse{
+					Payload: &realtimepb.ConnectionResponse_Message{
+						Message: &realtimepb.IncomingMessage{
+							MessageId: event.MessageID,
+							SenderId:  event.SenderID,
+							Content:   string(data),
+						},
+					},
+				}); err != nil {
+					slog.Warn("failed to send event to recipient", "recipient_id", event.RecipientID, "err", err)
+				}
+			} else {
+				slog.Debug("recipient offline", "recipient_id", event.RecipientID)
+			}
+
+			if event.Type == "message_read" || event.Type == "message_altered" || event.Type == "message_deleted" {
+				senderStream, err := c.manager.GetStream(event.SenderID)
+				if err == nil {
+					if err := senderStream.Send(&realtimepb.ConnectionResponse{
+						Payload: &realtimepb.ConnectionResponse_Message{
+							Message: &realtimepb.IncomingMessage{
+								MessageId: event.MessageID,
+								SenderId:  event.SenderID,
+								Content:   string(data),
+							},
+						},
+					}); err != nil {
+						slog.Warn("failed to send event to sender", "sender_id", event.SenderID, "err", err)
+					}
+				} else {
+					slog.Debug("sender offline", "sender_id", event.SenderID)
+				}
+			}
 		}
 	}
 }

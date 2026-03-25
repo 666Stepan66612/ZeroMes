@@ -23,4 +23,8 @@ type MessageRepository interface {
 
 type KafkaProducer interface {
 	PublishMessageSent(ctx context.Context, msg *Message) error
+	PublishMessageAltered(ctx context.Context, msg *Message, newContent string) error
+    PublishMessageDeleted(ctx context.Context, msg *Message) error
+    PublishMessageRead(ctx context.Context, chatID, readerID, senderID, lastMessageID string) error
+    Close() error
 }
