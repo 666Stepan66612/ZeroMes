@@ -3,6 +3,7 @@ package service
 import (
 	"api-gateway/internal/cores/domain"
 	"context"
+	"log/slog"
 
 	messagepb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
 	"google.golang.org/grpc"
@@ -10,7 +11,7 @@ import (
 )
 
 type MessageClientService struct {
-	conn *grpc.ClientConn
+	conn   *grpc.ClientConn
 	client messagepb.MessageServiceClient
 }
 
@@ -20,7 +21,7 @@ func NewMessageClient(addr string) (*MessageClientService, error) {
 		return nil, err
 	}
 	return &MessageClientService{
-		conn: conn,
+		conn:   conn,
 		client: messagepb.NewMessageServiceClient(conn),
 	}, nil
 }
@@ -30,30 +31,33 @@ func (c *MessageClientService) Close() error {
 }
 
 func (c *MessageClientService) SendMessage(ctx context.Context, chatID, senderID, recipientID, encryptedContent, messageType string) (*domain.Message, error) {
+	slog.Info("calling message-service SendMessage", "chat_id", chatID, "sender_id", senderID, "recipient_id", recipientID)
 	resp, err := c.client.SendMessage(ctx, &messagepb.SendMessageRequest{
-		ChatId: chatID,
-		SenderId: senderID,
-		RecipientId: recipientID,
+		ChatId:           chatID,
+		SenderId:         senderID,
+		RecipientId:      recipientID,
 		EncryptedContent: encryptedContent,
-		MessageType: messageType,
+		MessageType:      messageType,
 	})
 	if err != nil {
+		slog.Error("message-service SendMessage failed", "err", err)
 		return nil, err
 	}
+	slog.Info("message-service SendMessage success", "message_id", resp.Message.Id)
 	return &domain.Message{
-		ID: resp.Message.Id,
-		ChatID: resp.Message.ChatId,
-		SenderID: resp.Message.SenderId,
-		Content: resp.Message.EncryptedContent,
+		ID:        resp.Message.Id,
+		ChatID:    resp.Message.ChatId,
+		SenderID:  resp.Message.SenderId,
+		Content:   resp.Message.EncryptedContent,
 		CreatedAt: resp.Message.CreatedAt.AsTime().String(),
 	}, nil
 }
 
-func (c *MessageClientService) GetMessages(ctx context.Context, chatID, userID, lastMessageID string, limit int32) (*domain.GetMessagesResponse, error){
+func (c *MessageClientService) GetMessages(ctx context.Context, chatID, userID, lastMessageID string, limit int32) (*domain.GetMessagesResponse, error) {
 	resp, err := c.client.GetMessages(ctx, &messagepb.GetMessagesRequest{
-		ChatId: chatID,
-		UserId: userID,
-		Limit: limit,
+		ChatId:        chatID,
+		UserId:        userID,
+		Limit:         limit,
 		LastMessageId: lastMessageID,
 	})
 	if err != nil {
@@ -63,25 +67,26 @@ func (c *MessageClientService) GetMessages(ctx context.Context, chatID, userID, 
 	messages := make([]*domain.Message, len(resp.Messages))
 	for i, m := range resp.Messages {
 		messages[i] = &domain.Message{
-			ID: m.Id,
-			ChatID: m.ChatId,
-			SenderID: m.SenderId,
-			Content: m.EncryptedContent,
+			ID:        m.Id,
+			ChatID:    m.ChatId,
+			SenderID:  m.SenderId,
+			Content:   m.EncryptedContent,
 			CreatedAt: m.CreatedAt.AsTime().String(),
+			Status:    int32(m.Status),
 		}
 	}
 
 	return &domain.GetMessagesResponse{
-		Messages: messages,
+		Messages:      messages,
 		NextMessageId: resp.NextMessageId,
-		HasMore: resp.HasMore,
+		HasMore:       resp.HasMore,
 	}, nil
 }
 
 func (c *MessageClientService) MarkAsRead(ctx context.Context, chatID, userID, lastMessageID string) error {
 	_, err := c.client.MarkAsRead(ctx, &messagepb.MarkAsReadRequest{
-		ChatId: chatID,
-		UserId: userID,
+		ChatId:        chatID,
+		UserId:        userID,
 		LastMessageId: lastMessageID,
 	})
 	return err
@@ -90,15 +95,15 @@ func (c *MessageClientService) MarkAsRead(ctx context.Context, chatID, userID, l
 func (c *MessageClientService) DeleteMessage(ctx context.Context, messageID, userID string) error {
 	_, err := c.client.DeleteMessage(ctx, &messagepb.DeleteMessageRequest{
 		MessageId: messageID,
-		UserId: userID,
+		UserId:    userID,
 	})
 	return err
 }
 
 func (c *MessageClientService) AlterMessage(ctx context.Context, messageID, userID, newContent string) error {
 	_, err := c.client.AlterMessage(ctx, &messagepb.AlterMessageRequest{
-		MessageId: messageID,
-		UserId: userID,
+		MessageId:  messageID,
+		UserId:     userID,
 		NewContent: newContent,
 	})
 	return err
@@ -115,8 +120,8 @@ func (c *MessageClientService) GetChats(ctx context.Context, userID string) (*do
 	chats := make([]*domain.Chat, len(resp.Chats))
 	for i, ch := range resp.Chats {
 		chats[i] = &domain.Chat{
-			ID: ch.Id,
-			CompanionID: ch.CompanionId,
+			ID:            ch.Id,
+			CompanionID:   ch.CompanionId,
 			LastMessageAt: ch.LastMessageAt.AsTime().String(),
 		}
 	}

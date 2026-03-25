@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"api-gateway/internal/cores/domain"
+
 	realtimepb "github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -12,17 +13,17 @@ import (
 )
 
 type RealtimeClientService struct {
-	conn *grpc.ClientConn
+	conn   *grpc.ClientConn
 	client realtimepb.ConnectionServiceClient
 }
 
-func NewRealtimeClient(addr string) (*RealtimeClientService, error){
+func NewRealtimeClient(addr string) (*RealtimeClientService, error) {
 	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
 	return &RealtimeClientService{
-		conn: conn,
+		conn:   conn,
 		client: realtimepb.NewConnectionServiceClient(conn),
 	}, nil
 }
@@ -31,7 +32,7 @@ func (c *RealtimeClientService) Close() error {
 	return c.conn.Close()
 }
 
-func (c *RealtimeClientService) Connect(ctx context.Context, userID string, send chan<- []byte) error{
+func (c *RealtimeClientService) Connect(ctx context.Context, userID string, send chan<- []byte) error {
 	token, _ := ctx.Value(domain.AccessTokenKey).(string)
 	md := metadata.Pairs("authorization", "Bearer "+token)
 	ctx = metadata.NewOutgoingContext(ctx, md)
@@ -53,7 +54,7 @@ func (c *RealtimeClientService) Connect(ctx context.Context, userID string, send
 		for {
 			msg, err := stream.Recv()
 			if err != nil {
-				return 
+				return
 			}
 
 			var msgType string
@@ -63,23 +64,47 @@ func (c *RealtimeClientService) Connect(ctx context.Context, userID string, send
 			case *realtimepb.ConnectionResponse_Status:
 				msgType = "status"
 				payload = map[string]interface{}{
-					"user_id": p.Status.UserId,
+					"user_id":   p.Status.UserId,
 					"connected": p.Status.Connected,
 				}
 			case *realtimepb.ConnectionResponse_Message:
-				msgType = "new_message"
-				payload = map[string]interface{}{
-					"message_id": p.Message.MessageId,
-					"sender_id": p.Message.SenderId,
-					"content": p.Message.Content,
-					"timestamp": p.Message.Timestamp,
+				// Try to parse content as JSON event
+				var eventData map[string]interface{}
+				if err := json.Unmarshal([]byte(p.Message.Content), &eventData); err == nil {
+					// If content is valid JSON with type field, use it directly
+					if eventType, ok := eventData["type"].(string); ok {
+						msgType = eventType
+						if eventPayload, ok := eventData["payload"].(map[string]interface{}); ok {
+							payload = eventPayload
+						} else {
+							payload = eventData
+						}
+					} else {
+						// Fallback to new_message
+						msgType = "new_message"
+						payload = map[string]interface{}{
+							"message_id": p.Message.MessageId,
+							"sender_id":  p.Message.SenderId,
+							"content":    p.Message.Content,
+							"timestamp":  p.Message.Timestamp,
+						}
+					}
+				} else {
+					// Not JSON, treat as regular message
+					msgType = "new_message"
+					payload = map[string]interface{}{
+						"message_id": p.Message.MessageId,
+						"sender_id":  p.Message.SenderId,
+						"content":    p.Message.Content,
+						"timestamp":  p.Message.Timestamp,
+					}
 				}
 			default:
 				continue
 			}
 
 			data, err := json.Marshal(map[string]interface{}{
-				"type": msgType,
+				"type":    msgType,
 				"payload": payload,
 			})
 			if err != nil {
@@ -88,7 +113,7 @@ func (c *RealtimeClientService) Connect(ctx context.Context, userID string, send
 			select {
 			case send <- data:
 			case <-ctx.Done():
-				return 
+				return
 			}
 		}
 	}()

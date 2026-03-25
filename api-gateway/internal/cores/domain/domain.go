@@ -18,6 +18,7 @@ type Message struct {
     SenderID  string `json:"sender_id"`
     Content   string `json:"content"`
     CreatedAt string `json:"created_at"`
+    Status    int32  `json:"status"`
 }
 
 type GetMessagesResponse struct {

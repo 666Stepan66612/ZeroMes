@@ -8,4 +8,5 @@ var (
     ErrInvalidInput   = errors.New("invalid input")
     ErrInternalServer = errors.New("internal server error")
     NilRequest        = errors.New("request is nil")
+    ErrForbidden      = errors.New("Forbidden")
 )

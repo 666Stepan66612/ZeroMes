@@ -2,12 +2,14 @@ package kafka
 
 import (
 	"context"
+	"encoding/json"
 
-    "github.com/segmentio/kafka-go"
-    pb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
-    "message-service/internal/messaging/service"
-    "google.golang.org/protobuf/proto"
-    "google.golang.org/protobuf/types/known/timestamppb"
+	"message-service/internal/messaging/service"
+
+	pb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
+	"github.com/segmentio/kafka-go"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Producer struct {
@@ -53,6 +55,58 @@ func (p *Producer) PublishMessageSent(ctx context.Context, msg *service.Message)
 			{Key: "scheme-version", Value: []byte("1.0")},
 		},
 	})	
+}
+
+func (p *Producer) PublishMessageAltered(ctx context.Context, msg *service.Message, newContent string) error {
+    data, err := json.Marshal(map[string]interface{}{
+        "type":         "message_altered",
+        "message_id":   msg.ID,
+        "chat_id":      msg.ChatID,
+        "sender_id":    msg.SenderID,
+        "recipient_id": msg.RecipientID,
+        "new_content":  newContent,
+    })
+    if err != nil {
+        return err
+    }
+    return p.writer.WriteMessages(ctx, kafka.Message{
+        Key:   []byte(msg.ChatID),
+        Value: data,
+    })
+}
+
+func (p *Producer) PublishMessageDeleted(ctx context.Context, msg *service.Message) error {
+    data, err := json.Marshal(map[string]interface{}{
+        "type":         "message_deleted",
+        "message_id":   msg.ID,
+        "chat_id":      msg.ChatID,
+        "sender_id":    msg.SenderID,
+        "recipient_id": msg.RecipientID,
+    })
+    if err != nil {
+        return err
+    }
+    return p.writer.WriteMessages(ctx, kafka.Message{
+        Key:   []byte(msg.ChatID),
+        Value: data,
+    })
+}
+
+func (p *Producer) PublishMessageRead(ctx context.Context, chatID, readerID, senderID, lastMessageID string) error {
+    data, err := json.Marshal(map[string]interface{}{
+        "type":            "message_read",
+        "chat_id":         chatID,
+        "last_message_id": lastMessageID,
+        "sender_id":       readerID,
+        "recipient_id":    senderID,
+    })
+    if err != nil {
+        return err
+    }
+    return p.writer.WriteMessages(ctx, kafka.Message{
+        Key:   []byte(chatID),
+        Value: data,
+    })
 }
 
 func (p *Producer) Close() error {
