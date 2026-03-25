@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"sort"
+	"strings"
 	"time"
 
 	apperrors "message-service/internal/cores/errors"
@@ -65,9 +66,13 @@ func (s *messageService) SendMessage(ctx context.Context, chatID, senderID, reci
 	return &newMessage, nil
 }
 
-func (s *messageService) GetMessages(ctx context.Context, chatID string, limit int, lastMessageID string) ([]*Message, error) {
+func (s *messageService) GetMessages(ctx context.Context, chatID, userID string, limit int, lastMessageID string) ([]*Message, error) {
 	if chatID == "" {
 		return nil, apperrors.ErrInvalidInput
+	}
+
+	if !strings.Contains(chatID, userID) {
+		return nil, apperrors.ErrForbidden
 	}
 
 	if limit <= 0 || limit > 50 {

@@ -189,7 +189,7 @@ func setTokenCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 		Name: "refresh_token",
 		Value: refreshToken,
 		HttpOnly: true,
-		Secure: true,
+		Secure: false,
 		SameSite: http.SameSiteStrictMode,
 		Path: "/auth", // only for refresh endpoint
 		MaxAge: int(7 * 24 * time.Hour.Seconds()),

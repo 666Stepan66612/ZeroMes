@@ -60,6 +60,7 @@ func (h *GRPCHandler) GetMessages(ctx context.Context, req *pb.GetMessagesReques
 	messages, err := h.messageService.GetMessages(
 		ctx,
 		req.ChatId,
+        req.UserId,
 		int(req.Limit),
 		req.LastMessageId,
 	)
