@@ -19,6 +19,8 @@ type ChatsList struct {
     CompanionID string
     CreatedAt time.Time
     LastMessageAt time.Time
+    EncryptedKey string
+    KeyIV string
 }
 
 type MessageStatus int8

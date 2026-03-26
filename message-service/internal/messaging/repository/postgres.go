@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"sort"
 
 	apperrors "message-service/internal/cores/errors"
 	"message-service/internal/messaging/service"
@@ -170,7 +171,7 @@ func (r *postgresRepository) UpdateStatusBatch(ctx context.Context, chatID, user
 
 func (r *postgresRepository) GetChats(ctx context.Context, userID string) ([]*service.ChatsList, error) {
 	query :=  `
-		SELECT user_id, companion_id, created_at, last_message_at
+		SELECT user_id, companion_id, created_at, last_message_at, encrypted_key, key_iv
 		FROM chats
 		WHERE user_id = $1
 		ORDER BY last_message_at DESC
@@ -194,10 +195,17 @@ func (r *postgresRepository) GetChats(ctx context.Context, userID string) ([]*se
     		&cht.CompanionID,
     		&cht.CreatedAt,
 			&cht.LastMessageAt,
+			&cht.EncryptedKey,
+			&cht.KeyIV,
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		ids := []string{cht.UserID, cht.CompanionID}
+		sort.Strings(ids)
+		cht.ChatID = ids[0] + ":" + ids[1]
+
 		chatList = append(chatList, cht)
 	}
 
