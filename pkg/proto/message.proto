@@ -100,6 +100,8 @@ message Chat {
     string companion_id = 3;
     google.protobuf.Timestamp created_at = 4;
     google.protobuf.Timestamp last_message_at = 5;
+    string encrypted_key = 6;
+    string key_iv = 7; 
 }
 
 // generate
