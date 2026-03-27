@@ -13,6 +13,7 @@ service MessageService {
     rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
     rpc AlterMessage(AlterMessageRequest) returns (AlterMessageResponse);
     rpc GetChats(GetChatsRequest) returns (GetChatsResponse);
+    rpc SaveChatKeys(SaveChatKeysRequest) returns (SaveChatKeysResponse);
 }
 
 message SendMessageRequest {
@@ -102,6 +103,17 @@ message Chat {
     google.protobuf.Timestamp last_message_at = 5;
     string encrypted_key = 6;
     string key_iv = 7; 
+}
+
+message SaveChatKeysRequest {
+    string user_id = 1;
+    string companion_id = 2;
+    string encrypted_key = 3;
+    string key_iv = 4;
+}
+
+message SaveChatKeysResponse {
+    bool success = 1;
 }
 
 // generate
