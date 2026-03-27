@@ -36,6 +36,8 @@ type Chat struct {
     ID            string `json:"id"`
     CompanionID   string `json:"companion_id"`
     LastMessageAt string `json:"last_message_at"`
+    EncryptedKey  string `json:"encrypted_key"`
+    KeyIV         string `json:"key_iv"`  
 }
 
 type GetChatsResponse struct {

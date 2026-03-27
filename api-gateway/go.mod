@@ -3,7 +3,7 @@ module api-gateway
 go 1.25.5
 
 require (
-	github.com/666Stepan66612/ZeroMes/pkg v0.0.0-20260310210602-1df5a20f2066
+	github.com/666Stepan66612/ZeroMes/pkg v0.0.0-20260327124837-49f19fa7a10e
 	github.com/gin-gonic/gin v1.12.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
