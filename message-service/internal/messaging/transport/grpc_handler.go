@@ -148,6 +148,8 @@ func (h *GRPCHandler) GetChats(ctx context.Context, req *pb.GetChatsRequest) (*p
 			CompanionId:   cht.CompanionID,
 			CreatedAt:     timestamppb.New(cht.CreatedAt),
 			LastMessageAt: timestamppb.New(cht.LastMessageAt),
+			EncryptedKey:  cht.EncryptedKey,
+			KeyIv:         cht.KeyIV, 
 		})
 	}
 

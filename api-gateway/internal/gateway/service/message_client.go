@@ -123,6 +123,8 @@ func (c *MessageClientService) GetChats(ctx context.Context, userID string) (*do
 			ID:            ch.Id,
 			CompanionID:   ch.CompanionId,
 			LastMessageAt: ch.LastMessageAt.AsTime().String(),
+			EncryptedKey:  ch.EncryptedKey,
+        	KeyIV:         ch.KeyIv,   
 		}
 	}
 
