@@ -130,3 +130,13 @@ func (c *MessageClientService) GetChats(ctx context.Context, userID string) (*do
 
 	return &domain.GetChatsResponse{Chats: chats}, nil
 }
+
+func (c *MessageClientService) SaveChatKeys(ctx context.Context, userID, companionID, encryptedKey, keyIV string) error {
+    _, err := c.client.SaveChatKeys(ctx, &messagepb.SaveChatKeysRequest{
+        UserId:       userID,
+        CompanionId:  companionID,
+        EncryptedKey: encryptedKey,
+        KeyIv:        keyIV,
+    })
+    return err
+}

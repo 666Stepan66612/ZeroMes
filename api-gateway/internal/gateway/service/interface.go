@@ -17,6 +17,7 @@ type MessageClient interface {
 	DeleteMessage(ctx context.Context, messageID, userID string) error
 	AlterMessage(ctx context.Context, messageID, userID, newContent string) error
 	GetChats(ctx context.Context, userID string) (*domain.GetChatsResponse, error)
+	SaveChatKeys(ctx context.Context, userID, companionID, encryptedKey, keyIV string) error
 }
 
 type RealtimeClient interface {
