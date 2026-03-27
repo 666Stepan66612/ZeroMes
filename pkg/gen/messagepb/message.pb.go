@@ -818,6 +818,8 @@ type Chat struct {
 	CompanionId   string                 `protobuf:"bytes,3,opt,name=companion_id,json=companionId,proto3" json:"companion_id,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	LastMessageAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=last_message_at,json=lastMessageAt,proto3" json:"last_message_at,omitempty"`
+	EncryptedKey  string                 `protobuf:"bytes,6,opt,name=encrypted_key,json=encryptedKey,proto3" json:"encrypted_key,omitempty"`
+	KeyIv         string                 `protobuf:"bytes,7,opt,name=key_iv,json=keyIv,proto3" json:"key_iv,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -887,6 +889,20 @@ func (x *Chat) GetLastMessageAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Chat) GetEncryptedKey() string {
+	if x != nil {
+		return x.EncryptedKey
+	}
+	return ""
+}
+
+func (x *Chat) GetKeyIv() string {
+	if x != nil {
+		return x.KeyIv
+	}
+	return ""
+}
+
 var File_proto_message_proto protoreflect.FileDescriptor
 
 const file_proto_message_proto_rawDesc = "" +
@@ -942,14 +958,16 @@ const file_proto_message_proto_rawDesc = "" +
 	"\x0fGetChatsRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"7\n" +
 	"\x10GetChatsResponse\x12#\n" +
-	"\x05chats\x18\x01 \x03(\v2\r.message.ChatR\x05chats\"\xd1\x01\n" +
+	"\x05chats\x18\x01 \x03(\v2\r.message.ChatR\x05chats\"\x8d\x02\n" +
 	"\x04Chat\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
 	"\fcompanion_id\x18\x03 \x01(\tR\vcompanionId\x129\n" +
 	"\n" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12B\n" +
-	"\x0flast_message_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\rlastMessageAt*2\n" +
+	"\x0flast_message_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\rlastMessageAt\x12#\n" +
+	"\rencrypted_key\x18\x06 \x01(\tR\fencryptedKey\x12\x15\n" +
+	"\x06key_iv\x18\a \x01(\tR\x05keyIv*2\n" +
 	"\rMessageStatus\x12\b\n" +
 	"\x04SENT\x10\x00\x12\r\n" +
 	"\tDELIVERED\x10\x01\x12\b\n" +
