@@ -169,3 +169,7 @@ func (s *messageService) GetChats(ctx context.Context, userID string) ([]*ChatsL
 
 	return chats, nil
 }
+
+func (s *messageService) SaveChatKeys(ctx context.Context, userID, companionID, encryptedKey, keyIV string) error {
+	return s.messageRepo.SaveChatKeys(ctx, userID, companionID, encryptedKey, keyIV)
+}

@@ -213,3 +213,13 @@ func (r *postgresRepository) GetChats(ctx context.Context, userID string) ([]*se
 
 	return chatList, rows.Err()
 }
+
+func (r *postgresRepository) SaveChatKeys(ctx context.Context, userID, companionID, encryptedKey, keyIV string) error {
+	query := `
+		UPDATE chats
+		SET encrypted_key = $1, key_iv = $2
+		WHERE user_id = $3 AND companion_id = $4
+	`
+	_, err := r.pool.Exec(ctx, query, userID, companionID, encryptedKey, keyIV)
+	return err
+}

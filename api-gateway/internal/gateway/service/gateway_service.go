@@ -96,6 +96,17 @@ func (s *gatewayService) HandleWebSocket(ctx context.Context, userID string, sen
 					sendResponse(send, "chats", result)
 					continue
 				}
+			
+			case "save_chat_keys":
+    			err := s.messageClient.SaveChatKeys(ctx, userID, req.CompanionID, req.EncryptedKey, req.KeyIV)
+				if err != nil {
+					slog.Warn("save_chat_keys failed", "user_id", userID, "err", err)
+					sendResponse(send, "error", map[string]string{"error": "failed to fetch chats"})
+					continue
+				} else {
+					sendResponse(send, "keys_saved", nil)
+					continue
+				}
 
 			default:
 				slog.Warn("unknown websocket command", "user_id", userID, "type", req.Type)

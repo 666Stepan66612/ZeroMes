@@ -60,7 +60,7 @@ func (h *GRPCHandler) GetMessages(ctx context.Context, req *pb.GetMessagesReques
 	messages, err := h.messageService.GetMessages(
 		ctx,
 		req.ChatId,
-        req.UserId,
+		req.UserId,
 		int(req.Limit),
 		req.LastMessageId,
 	)
@@ -149,13 +149,28 @@ func (h *GRPCHandler) GetChats(ctx context.Context, req *pb.GetChatsRequest) (*p
 			CreatedAt:     timestamppb.New(cht.CreatedAt),
 			LastMessageAt: timestamppb.New(cht.LastMessageAt),
 			EncryptedKey:  cht.EncryptedKey,
-			KeyIv:         cht.KeyIV, 
+			KeyIv:         cht.KeyIV,
 		})
 	}
 
 	return &pb.GetChatsResponse{
 		Chats: pbChats,
 	}, nil
+}
+
+func (h *GRPCHandler) SaveChatKeys(ctx context.Context, req *pb.SaveChatKeysRequest) (*pb.SaveChatKeysResponse, error) {
+	err := h.messageService.SaveChatKeys(
+		ctx,
+		req.UserId,
+		req.CompanionId,
+		req.EncryptedKey,
+		req.KeyIv,
+	)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+
+	return &pb.SaveChatKeysResponse{Success: true}, nil
 }
 
 func toGRPCError(err error) error {
