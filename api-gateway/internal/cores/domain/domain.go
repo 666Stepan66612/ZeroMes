@@ -10,6 +10,9 @@ type WSRequest struct {
     LastMessageID string `json:"last_message_id"`
     Limit         int32  `json:"limit"`
     NewContent    string `json:"new_content"`
+    CompanionID   string `json:"companion_id"`
+    EncryptedKey  string `json:"encrypted_key"`
+    KeyIV         string `json:"key_iv"` 
 }
 
 type Message struct {
@@ -30,9 +33,6 @@ type GetMessagesResponse struct {
 type WSResponse struct {
     Type    string      `json:"type"`
     Payload interface{} `json:"payload,omitempty"`
-    CompanionID  string `json:"companion_id"`
-    EncryptedKey string `json:"encrypted_key"`
-    KeyIV        string `json:"key_iv"`
 }
 
 type Chat struct {
