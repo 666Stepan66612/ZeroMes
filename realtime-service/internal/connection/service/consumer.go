@@ -25,6 +25,9 @@ func NewKafkaConsumer(brokers []string, topic, groupID string, manager Connectio
 			Brokers: brokers,
 			Topic:   topic,
 			GroupID: groupID,
+			StartOffset: kafka.FirstOffset,
+            MinBytes:    1,
+            MaxBytes:    10e6,     
 		}),
 		manager: manager,
 	}

@@ -101,6 +101,16 @@ websocat -H="Cookie: access_token=$TOKEN" ws://localhost:8083/ws
 ```json
 {"type":"status","payload":{"connected":true,"user_id":"..."}}
 ```
+## Шаг 7.5: [ТЕРМИНАЛ 1] alice1 сохраняет ключ чата
+
+Alice генерирует симметричный ключ для чата с bob1 и сохраняет его:
+
+```bash
+{"type":"save_chat_keys","companion_id":"BOB1_ID","encrypted_key":"base64_encrypted_aes_key_for_alice","key_iv":"base64_iv"}
+
+Ожидаемый ответ:
+
+{"type":"keys_saved","payload":{"success":true}}
 
 ---
 
@@ -123,6 +133,11 @@ websocat -H="Cookie: access_token=$TOKEN" ws://localhost:8083/ws
 ```json
 {"type":"new_message","payload":{"message_id":"MSG_ID_1","sender_id":"ALICE1_ID","content":"Hello bob1!",...}}
 ```
+
+Шаг 8.5: [ТЕРМИНАЛ 2] bob1 получает и сохраняет ключ
+После получения первого сообщения от alice1, bob1 извлекает ключ из метаданных и сохраняет:
+
+{"type":"save_chat_keys","companion_id":"ALICE1_ID","encrypted_key":"base64_encrypted_aes_key_for_bob","key_iv":"base64_iv"}
 
 ---
 
@@ -261,6 +276,27 @@ websocat -H="Cookie: access_token=$TOKEN" ws://localhost:8083/ws
 ```
 
 Увидишь все сообщения включая последнее от alice1.
+
+
+Шаг 17.5: [ЛЮБОЙ ТЕРМИНАЛ] Получить ключи чатов
+{"type":"get_chats"}
+
+
+{
+  "type":"chats",
+  "payload":{
+    "chats":[
+      {
+        "id":"CHAT_ID",
+        "companion_id":"COMPANION_ID",
+        "last_message_at":"...",
+        "encrypted_key":"base64_encrypted_key",
+        "key_iv":"base64_iv"
+      }
+    ]
+  }
+}
+
 
 ---
 

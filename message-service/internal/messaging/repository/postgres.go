@@ -220,6 +220,6 @@ func (r *postgresRepository) SaveChatKeys(ctx context.Context, userID, companion
 		SET encrypted_key = $1, key_iv = $2
 		WHERE user_id = $3 AND companion_id = $4
 	`
-	_, err := r.pool.Exec(ctx, query, userID, companionID, encryptedKey, keyIV)
+	_, err := r.pool.Exec(ctx, query, encryptedKey, keyIV, userID, companionID)
 	return err
 }
