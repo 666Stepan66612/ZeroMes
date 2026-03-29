@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v3.21.12
-// source: proto/message.proto
+// source: pkg/proto/message.proto
 
 package messagepb
 
@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MessageService_SendMessage_FullMethodName   = "/message.MessageService/SendMessage"
-	MessageService_GetMessages_FullMethodName   = "/message.MessageService/GetMessages"
-	MessageService_MarkAsRead_FullMethodName    = "/message.MessageService/MarkAsRead"
-	MessageService_DeleteMessage_FullMethodName = "/message.MessageService/DeleteMessage"
-	MessageService_AlterMessage_FullMethodName  = "/message.MessageService/AlterMessage"
-	MessageService_GetChats_FullMethodName      = "/message.MessageService/GetChats"
-	MessageService_SaveChatKeys_FullMethodName  = "/message.MessageService/SaveChatKeys"
+	MessageService_SendMessage_FullMethodName    = "/message.MessageService/SendMessage"
+	MessageService_GetMessages_FullMethodName    = "/message.MessageService/GetMessages"
+	MessageService_MarkAsRead_FullMethodName     = "/message.MessageService/MarkAsRead"
+	MessageService_DeleteMessage_FullMethodName  = "/message.MessageService/DeleteMessage"
+	MessageService_AlterMessage_FullMethodName   = "/message.MessageService/AlterMessage"
+	MessageService_GetChats_FullMethodName       = "/message.MessageService/GetChats"
+	MessageService_SaveChatKeys_FullMethodName   = "/message.MessageService/SaveChatKeys"
+	MessageService_UpdateChatKeys_FullMethodName = "/message.MessageService/UpdateChatKeys"
 )
 
 // MessageServiceClient is the client API for MessageService service.
@@ -39,6 +40,7 @@ type MessageServiceClient interface {
 	AlterMessage(ctx context.Context, in *AlterMessageRequest, opts ...grpc.CallOption) (*AlterMessageResponse, error)
 	GetChats(ctx context.Context, in *GetChatsRequest, opts ...grpc.CallOption) (*GetChatsResponse, error)
 	SaveChatKeys(ctx context.Context, in *SaveChatKeysRequest, opts ...grpc.CallOption) (*SaveChatKeysResponse, error)
+	UpdateChatKeys(ctx context.Context, in *UpdateChatKeysRequest, opts ...grpc.CallOption) (*UpdateChatKeysResponse, error)
 }
 
 type messageServiceClient struct {
@@ -119,6 +121,16 @@ func (c *messageServiceClient) SaveChatKeys(ctx context.Context, in *SaveChatKey
 	return out, nil
 }
 
+func (c *messageServiceClient) UpdateChatKeys(ctx context.Context, in *UpdateChatKeysRequest, opts ...grpc.CallOption) (*UpdateChatKeysResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateChatKeysResponse)
+	err := c.cc.Invoke(ctx, MessageService_UpdateChatKeys_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MessageServiceServer is the server API for MessageService service.
 // All implementations must embed UnimplementedMessageServiceServer
 // for forward compatibility.
@@ -130,6 +142,7 @@ type MessageServiceServer interface {
 	AlterMessage(context.Context, *AlterMessageRequest) (*AlterMessageResponse, error)
 	GetChats(context.Context, *GetChatsRequest) (*GetChatsResponse, error)
 	SaveChatKeys(context.Context, *SaveChatKeysRequest) (*SaveChatKeysResponse, error)
+	UpdateChatKeys(context.Context, *UpdateChatKeysRequest) (*UpdateChatKeysResponse, error)
 	mustEmbedUnimplementedMessageServiceServer()
 }
 
@@ -160,6 +173,9 @@ func (UnimplementedMessageServiceServer) GetChats(context.Context, *GetChatsRequ
 }
 func (UnimplementedMessageServiceServer) SaveChatKeys(context.Context, *SaveChatKeysRequest) (*SaveChatKeysResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SaveChatKeys not implemented")
+}
+func (UnimplementedMessageServiceServer) UpdateChatKeys(context.Context, *UpdateChatKeysRequest) (*UpdateChatKeysResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateChatKeys not implemented")
 }
 func (UnimplementedMessageServiceServer) mustEmbedUnimplementedMessageServiceServer() {}
 func (UnimplementedMessageServiceServer) testEmbeddedByValue()                        {}
@@ -308,6 +324,24 @@ func _MessageService_SaveChatKeys_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MessageService_UpdateChatKeys_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateChatKeysRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).UpdateChatKeys(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_UpdateChatKeys_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).UpdateChatKeys(ctx, req.(*UpdateChatKeysRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MessageService_ServiceDesc is the grpc.ServiceDesc for MessageService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -343,7 +377,11 @@ var MessageService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "SaveChatKeys",
 			Handler:    _MessageService_SaveChatKeys_Handler,
 		},
+		{
+			MethodName: "UpdateChatKeys",
+			Handler:    _MessageService_UpdateChatKeys_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/message.proto",
+	Metadata: "pkg/proto/message.proto",
 }

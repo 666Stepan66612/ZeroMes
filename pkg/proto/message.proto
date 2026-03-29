@@ -14,6 +14,7 @@ service MessageService {
     rpc AlterMessage(AlterMessageRequest) returns (AlterMessageResponse);
     rpc GetChats(GetChatsRequest) returns (GetChatsResponse);
     rpc SaveChatKeys(SaveChatKeysRequest) returns (SaveChatKeysResponse);
+    rpc UpdateChatKeys(UpdateChatKeysRequest) returns (UpdateChatKeysResponse);
 }
 
 message SendMessageRequest {
@@ -114,6 +115,23 @@ message SaveChatKeysRequest {
 
 message SaveChatKeysResponse {
     bool success = 1;
+}
+
+message UpdateChatKeysRequest {
+    string user_id = 1;
+    repeated ChatKeyUpdate keys = 2;
+}
+
+message ChatKeyUpdate {
+    string companion_id = 1;
+    string encrypted_key = 2;
+    string key_iv = 3;
+}
+
+message UpdateChatKeysResponse {
+    bool success = 1;
+    int32 updated_count = 2;
+    string error = 3;
 }
 
 // generate
