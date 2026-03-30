@@ -173,3 +173,7 @@ func (s *messageService) GetChats(ctx context.Context, userID string) ([]*ChatsL
 func (s *messageService) SaveChatKeys(ctx context.Context, userID, companionID, encryptedKey, keyIV string) error {
 	return s.messageRepo.SaveChatKeys(ctx, userID, companionID, encryptedKey, keyIV)
 }
+
+func (s *messageService) UpdateChatKeys(ctx context.Context, userID string, keys []ChatKeyUpdate) (int, error) {
+	return s.messageRepo.UpdateChatKeys(ctx, userID, keys)
+}

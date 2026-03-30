@@ -30,3 +30,9 @@ const (
     MessageStatusDelivered
     MessageStatusRead
 )
+
+type ChatKeyUpdate struct {
+    CompanionID  string `json:"companion_id"`
+    EncryptedKey string `json:"encrypted_key"`
+    KeyIV        string `json:"key_iv"`
+}

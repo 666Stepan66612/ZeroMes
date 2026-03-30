@@ -223,3 +223,15 @@ func (r *postgresRepository) SaveChatKeys(ctx context.Context, userID, companion
 	_, err := r.pool.Exec(ctx, query, encryptedKey, keyIV, userID, companionID)
 	return err
 }
+
+func (r *postgresRepository) UpdateChatKeys(ctx context.Context, userID string, keys []service.ChatKeyUpdate) (int, error) {
+	count := 0
+    for _, key := range keys {
+        err := r.SaveChatKeys(ctx, userID, key.CompanionID, key.EncryptedKey, key.KeyIV)
+        if err != nil {
+            return count, err
+        }
+        count++
+    }
+    return count, nil
+}
