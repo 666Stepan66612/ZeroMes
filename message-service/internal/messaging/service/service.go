@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"errors"
 
 	apperrors "message-service/internal/cores/errors"
 
@@ -175,5 +176,19 @@ func (s *messageService) SaveChatKeys(ctx context.Context, userID, companionID, 
 }
 
 func (s *messageService) UpdateChatKeys(ctx context.Context, userID string, keys []ChatKeyUpdate) (int, error) {
-	return s.messageRepo.UpdateChatKeys(ctx, userID, keys)
+	if userID == "" {
+        return 0, errors.New("user_id is required")
+    }
+    if len(keys) == 0 {
+        return 0, errors.New("keys array is empty")
+    }
+
+	count, err := s.messageRepo.UpdateChatKeys(ctx, userID, keys)
+	if err != nil {
+		slog.Error("failed to update chat keys", "user_id", userID, "error", err)
+        return 0, err
+	}
+
+	slog.Info("chat keys updated", "user_id", userID, "count", count)
+    return count, nil
 }
