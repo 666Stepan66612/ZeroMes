@@ -175,6 +175,35 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	var req ChangePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, apperrors.ErrInvalidPayload.Error())
+		return
+	}
+
+	 if strings.TrimSpace(req.Login) == "" {
+        respondError(w, http.StatusBadRequest, "login is required")
+        return
+    }
+    if req.OldAuthHash == "" {
+        respondError(w, http.StatusBadRequest, "old_auth_hash is required")
+        return
+    }
+    if req.NewAuthHash == "" {
+        respondError(w, http.StatusBadRequest, "new_auth_hash is required")
+        return
+    }
+
+    err := h.authService.ChangePassword(r.Context(), req.Login, req.OldAuthHash, req.NewAuthHash)
+    if err != nil {
+        respondError(w, http.StatusBadRequest, err.Error())
+        return
+    }
+
+    respondJSON(w, http.StatusOK, map[string]bool{"success": true})
+}
+
 func setTokenCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 	http.SetCookie(w, &http.Cookie{
 		Name: "access_token",

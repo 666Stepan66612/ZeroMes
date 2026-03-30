@@ -73,6 +73,7 @@ func main() {
 	mux.HandleFunc("POST /auth/refresh", handler.RefreshToken)
 	mux.HandleFunc("POST /auth/logout", handler.Logout)
 	mux.HandleFunc("GET /auth/search", handler.Search)
+	mux.HandleFunc("POST /auth/change-password", handler.ChangePassword)
 
 	server := &http.Server{
 		Addr: ":" + port,

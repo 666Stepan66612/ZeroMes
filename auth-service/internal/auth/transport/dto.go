@@ -35,3 +35,9 @@ type ErrorResponse struct {
 type SearchUserResponse struct {
 	Users []UserDTO `json:"users"`
 }
+
+type ChangePasswordRequest struct {
+    Login       string `json:"login"`
+    OldAuthHash string `json:"old_auth_hash"`
+    NewAuthHash string `json:"new_auth_hash"`
+}
