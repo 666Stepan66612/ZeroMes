@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -105,4 +106,28 @@ func (r *postgresUserRepository) SearchUsers(ctx context.Context, login string) 
 	}
 
 	return users, rows.Err()
+}
+
+func (r *postgresUserRepository) UpdateAuthHash(ctx context.Context, userID, newAuthHash string) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	query := `
+		UPDATE users
+		SET auth_hash = $1
+		WHERE id = $2
+	`
+	_, err = tx.Exec(ctx, query, newAuthHash, userID)
+	if err != nil {
+    	return fmt.Errorf("failed to update auth hash: %w", err)
+	}
+	
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }

@@ -112,11 +112,16 @@ func (s *authService) ChangePassword(ctx context.Context, login, oldAuthHash, ne
         return errors.ErrUserNotFound
     }
 
-    if user.AuthHash != oldAuthHash {
+    if !user.ValidateAuthHash(oldAuthHash) {
         return errors.ErrInvalidOldPassword
     }
 
-    err = s.userRepo.UpdateAuthHash(ctx, user.ID, newAuthHash)
+    hashedNewAuthHash, err := HashAuthHash(newAuthHash, user.ServerSalt)
+    if err != nil {
+        return fmt.Errorf("failed to hash new password: %w", err)
+    }
+
+    err = s.userRepo.UpdateAuthHash(ctx, user.ID, hashedNewAuthHash)
     if err != nil {
         return fmt.Errorf("failed to update password: %w", err)
     }
