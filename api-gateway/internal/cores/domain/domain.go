@@ -47,5 +47,24 @@ type GetChatsResponse struct {
     Chats []*Chat `json:"chats"`
 }
 
+type ChatKeyUpdate struct {
+    CompanionID  string `json:"companion_id"`
+    EncryptedKey string `json:"encrypted_key"`
+    KeyIV        string `json:"key_iv"`
+}
+
+type ChangePasswordRequest struct {
+    Login       string          `json:"login"`
+    OldAuthHash string          `json:"old_auth_hash"`
+    NewAuthHash string          `json:"new_auth_hash"`
+    ChatKeys    []ChatKeyUpdate `json:"chat_keys"`
+}
+
+type ChangePasswordResponse struct {
+    Success      bool   `json:"success"`
+    UpdatedChats int    `json:"updated_chats"`
+    Message      string `json:"message"`
+}
+
 type contextKey string
 const AccessTokenKey contextKey = "access_token"

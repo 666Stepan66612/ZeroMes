@@ -26,3 +26,4 @@ func (p *AuthProxy) Login(c *gin.Context) { p.proxy.ServeHTTP(c.Writer, c.Reques
 func (p *AuthProxy) Refresh(c *gin.Context) { p.proxy.ServeHTTP(c.Writer, c.Request)}
 func (p *AuthProxy) Logout(c *gin.Context) { p.proxy.ServeHTTP(c.Writer, c.Request)}
 func (p *AuthProxy) Search(c *gin.Context) { p.proxy.ServeHTTP(c.Writer, c.Request)}
+func (p *AuthProxy) ChangePassword(c *gin.Context) { p.proxy.ServeHTTP(c.Writer, c.Request)}
