@@ -40,6 +40,11 @@ func main() {
 		Password: os.Getenv("REDIS_PASSWORD"),
 	})
 
+	authClient := service.NewAuthClient(jwtSecret, authServiceURL)
+
+	sagaOrchestrator := service.NewSagaOrchestrator(authClient, messageClient)
+	sagaHandler := transport.NewSagaHandler(sagaOrchestrator)
+
 	gatewaySvc := service.NewGatewayService(messageClient, realtimeClient)
 
 	wsHandler := transport.NewWebSocketHandler(gatewaySvc)
@@ -63,7 +68,7 @@ func main() {
 		auth.POST("/refresh", authLimit, authProxy.Refresh)
 		auth.POST("/logout", authLimit, authProxy.Logout)
 		auth.GET("/search", middleware.JWTMiddleware(jwtSecret, redisClient), authProxy.Search)
-		auth.POST("/change-password", authLimit, authProxy.ChangePassword)
+		auth.POST("/change-password", authLimit, sagaHandler.ChangePassword)
 	}
 
 	r.GET("/ws", middleware.JWTMiddleware(jwtSecret, redisClient), wsHandler.Handle)
