@@ -181,27 +181,17 @@ func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, apperrors.ErrInvalidPayload.Error())
 		return
 	}
-
-	 if strings.TrimSpace(req.Login) == "" {
-        respondError(w, http.StatusBadRequest, "login is required")
-        return
-    }
-    if req.OldAuthHash == "" {
-        respondError(w, http.StatusBadRequest, "old_auth_hash is required")
-        return
-    }
-    if req.NewAuthHash == "" {
-        respondError(w, http.StatusBadRequest, "new_auth_hash is required")
-        return
-    }
-
-    err := h.authService.ChangePassword(r.Context(), req.Login, req.OldAuthHash, req.NewAuthHash)
+	
+	userID, err := h.authService.ChangePassword(r.Context(), req.Login, req.OldAuthHash, req.NewAuthHash)
     if err != nil {
         respondError(w, http.StatusBadRequest, err.Error())
         return
     }
 
-    respondJSON(w, http.StatusOK, map[string]bool{"success": true})
+    respondJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"user_id": userID,
+	})
 }
 
 func setTokenCookies(w http.ResponseWriter, accessToken, refreshToken string) {

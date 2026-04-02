@@ -12,4 +12,5 @@ var (
     ErrInvalidPayload     = errors.New("invalid requerst payload")
     ErrNoResult           = errors.New("no results")
     ErrInvalidOldPassword = errors.New("invalid old password")
+    ErrInvalidInput       = errors.New("invalid input")
 )
