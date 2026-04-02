@@ -3,8 +3,8 @@ package service
 import (
 	"api-gateway/internal/cores/domain"
 	"context"
-	"log/slog"
 	"fmt"
+	"log/slog"
 
 	messagepb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
 	"google.golang.org/grpc"
@@ -125,7 +125,7 @@ func (c *MessageClientService) GetChats(ctx context.Context, userID string) (*do
 			CompanionID:   ch.CompanionId,
 			LastMessageAt: ch.LastMessageAt.AsTime().String(),
 			EncryptedKey:  ch.EncryptedKey,
-        	KeyIV:         ch.KeyIv,   
+			KeyIV:         ch.KeyIv,
 		}
 	}
 
@@ -133,18 +133,18 @@ func (c *MessageClientService) GetChats(ctx context.Context, userID string) (*do
 }
 
 func (c *MessageClientService) SaveChatKeys(ctx context.Context, userID, companionID, encryptedKey, keyIV string) error {
-    _, err := c.client.SaveChatKeys(ctx, &messagepb.SaveChatKeysRequest{
-        UserId:       userID,
-        CompanionId:  companionID,
-        EncryptedKey: encryptedKey,
-        KeyIv:        keyIV,
-    })
-    return err
+	_, err := c.client.SaveChatKeys(ctx, &messagepb.SaveChatKeysRequest{
+		UserId:       userID,
+		CompanionId:  companionID,
+		EncryptedKey: encryptedKey,
+		KeyIv:        keyIV,
+	})
+	return err
 }
 
 func (c *MessageClientService) UpdateChatKeys(ctx context.Context, userID string, keys []domain.ChatKeyUpdate) (int, error) {
 	slog.Info("calling message-service UpdateChatKeys", "user_id", userID, "keys_count", len(keys))
-	
+
 	// Конвертируем domain.ChatKeyUpdate в protobuf ChatKeyUpdate
 	pbKeys := make([]*messagepb.ChatKeyUpdate, len(keys))
 	for i, k := range keys {
