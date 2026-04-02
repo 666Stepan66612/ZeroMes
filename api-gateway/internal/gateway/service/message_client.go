@@ -3,6 +3,7 @@ package service
 import (
 	"api-gateway/internal/cores/domain"
 	"context"
+	"fmt"
 	"log/slog"
 
 	messagepb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
@@ -124,7 +125,7 @@ func (c *MessageClientService) GetChats(ctx context.Context, userID string) (*do
 			CompanionID:   ch.CompanionId,
 			LastMessageAt: ch.LastMessageAt.AsTime().String(),
 			EncryptedKey:  ch.EncryptedKey,
-        	KeyIV:         ch.KeyIv,   
+			KeyIV:         ch.KeyIv,
 		}
 	}
 
@@ -132,11 +133,42 @@ func (c *MessageClientService) GetChats(ctx context.Context, userID string) (*do
 }
 
 func (c *MessageClientService) SaveChatKeys(ctx context.Context, userID, companionID, encryptedKey, keyIV string) error {
-    _, err := c.client.SaveChatKeys(ctx, &messagepb.SaveChatKeysRequest{
-        UserId:       userID,
-        CompanionId:  companionID,
-        EncryptedKey: encryptedKey,
-        KeyIv:        keyIV,
-    })
-    return err
+	_, err := c.client.SaveChatKeys(ctx, &messagepb.SaveChatKeysRequest{
+		UserId:       userID,
+		CompanionId:  companionID,
+		EncryptedKey: encryptedKey,
+		KeyIv:        keyIV,
+	})
+	return err
+}
+
+func (c *MessageClientService) UpdateChatKeys(ctx context.Context, userID string, keys []domain.ChatKeyUpdate) (int, error) {
+	slog.Info("calling message-service UpdateChatKeys", "user_id", userID, "keys_count", len(keys))
+
+	// Конвертируем domain.ChatKeyUpdate в protobuf ChatKeyUpdate
+	pbKeys := make([]*messagepb.ChatKeyUpdate, len(keys))
+	for i, k := range keys {
+		pbKeys[i] = &messagepb.ChatKeyUpdate{
+			CompanionId:  k.CompanionID,
+			EncryptedKey: k.EncryptedKey,
+			KeyIv:        k.KeyIV,
+		}
+	}
+
+	resp, err := c.client.UpdateChatKeys(ctx, &messagepb.UpdateChatKeysRequest{
+		UserId: userID,
+		Keys:   pbKeys,
+	})
+	if err != nil {
+		slog.Error("message-service UpdateChatKeys failed", "err", err)
+		return 0, err
+	}
+
+	if !resp.Success {
+		slog.Error("message-service UpdateChatKeys returned failure", "error", resp.Error)
+		return 0, fmt.Errorf("update failed: %s", resp.Error)
+	}
+
+	slog.Info("message-service UpdateChatKeys success", "updated_count", resp.UpdatedCount)
+	return int(resp.UpdatedCount), nil
 }

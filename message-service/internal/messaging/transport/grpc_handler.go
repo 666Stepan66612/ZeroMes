@@ -173,6 +173,30 @@ func (h *GRPCHandler) SaveChatKeys(ctx context.Context, req *pb.SaveChatKeysRequ
 	return &pb.SaveChatKeysResponse{Success: true}, nil
 }
 
+func (h *GRPCHandler) UpdateChatKeys(ctx context.Context, req *pb.UpdateChatKeysRequest) (*pb.UpdateChatKeysResponse, error) {
+	keys := make([]service.ChatKeyUpdate, len(req.Keys))
+	for i, k := range req.Keys {
+		keys[i] = service.ChatKeyUpdate{
+			CompanionID: k.CompanionId,
+			EncryptedKey: k.EncryptedKey,
+			KeyIV: k.KeyIv,
+		}
+	}
+
+	count, err := h.messageService.UpdateChatKeys(ctx, req.UserId, keys)
+	if err != nil {
+		return &pb.UpdateChatKeysResponse{
+			Success: false,
+			UpdatedCount: 0,
+		}, status.Errorf(codes.Internal, "failed to update chat keys: %v", err)
+	}
+
+	return &pb.UpdateChatKeysResponse{
+		Success: true,
+		UpdatedCount: int32(count),
+	}, nil
+}
+
 func toGRPCError(err error) error {
 	switch {
 	case errors.Is(err, apperrors.ErrNotFound):

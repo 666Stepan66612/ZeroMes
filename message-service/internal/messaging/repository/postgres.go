@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	apperrors "message-service/internal/cores/errors"
@@ -222,4 +223,32 @@ func (r *postgresRepository) SaveChatKeys(ctx context.Context, userID, companion
 	`
 	_, err := r.pool.Exec(ctx, query, encryptedKey, keyIV, userID, companionID)
 	return err
+}
+
+func (r *postgresRepository) UpdateChatKeys(ctx context.Context, userID string, keys []service.ChatKeyUpdate) (int, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to begin transaction:  %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	count := 0
+	query := `
+		UPDATE chats
+		SET encrypted_key = $1, key_iv = $2
+		WHERE user_id = $3 AND companion_id = $4
+	`
+    for _, key := range keys {
+        result, err := tx.Exec(ctx, query, key.EncryptedKey, key.KeyIV, userID, key.CompanionID)
+        if err != nil {
+            return 0, fmt.Errorf("failed to update chat key for companion %s: %w", key.CompanionID, err)
+        }
+        count += int(result.RowsAffected())
+    }
+
+	if err := tx.Commit(ctx); err != nil {
+		return 0, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+    return count, nil
 }

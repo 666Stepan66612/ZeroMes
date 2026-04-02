@@ -3,7 +3,10 @@ package service
 import (
 	"auth-service/internal/cores/errors"
 	"context"
+	"fmt"
 	"time"
+    "log/slog"
+    "strings"
 
 	"github.com/google/uuid"
 )
@@ -102,4 +105,45 @@ func (s *authService) Search(ctx context.Context, login string) ([]*UserPublic, 
         return []*UserPublic{}, nil
     }
     return users, nil
+}
+
+func (s *authService) ChangePassword(ctx context.Context, login, oldAuthHash, newAuthHash string) (string, error) {
+    if strings.TrimSpace(login) == "" {
+        return "", errors.ErrInvalidInput
+    }
+    if oldAuthHash == "" {
+        return "", errors.ErrInvalidInput
+    }
+    if newAuthHash == "" {
+        return "", errors.ErrInvalidInput
+    }
+
+    user, err := s.userRepo.GetByLogin(ctx, login)
+    if err != nil {
+        return "", errors.ErrUserNotFound
+    }
+
+    if !user.ValidateAuthHash(oldAuthHash) {
+        return "", errors.ErrInvalidOldPassword
+    }
+
+    hashedNewAuthHash, err := HashAuthHash(newAuthHash, user.ServerSalt)
+    if err != nil {
+        return "", fmt.Errorf("failed to hash new password: %w", err)
+    }
+
+    err = s.userRepo.UpdateAuthHash(ctx, user.ID, hashedNewAuthHash)
+    if err != nil {
+        return "", fmt.Errorf("failed to update password: %w", err)
+    }
+
+    if err = s.tokenSvc.InvalidateAccessToken(user.ID); err != nil {
+        slog.Warn("failed to invalidate access token", "user_id", user.ID, "error", err)
+    }
+
+    if err = s.tokenSvc.InvalidateRefreshToken(user.ID); err != nil {
+        slog.Warn("failed to invalidate refresh token", "user_id", user.ID, "error", err)
+    }
+
+    return  user.ID, nil
 }

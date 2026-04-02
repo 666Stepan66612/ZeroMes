@@ -30,3 +30,9 @@ const (
     MessageStatusDelivered
     MessageStatusRead
 )
+
+type ChatKeyUpdate struct {
+    CompanionID  string
+    EncryptedKey string
+    KeyIV        string
+}

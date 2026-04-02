@@ -254,18 +254,17 @@ services:
       - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
     depends_on:
       auth-service:
-        condition: service_healthy
+        condition: service_started
       message-service:
-        condition: service_healthy
+        condition: service_started
       realtime-service:
-        condition: service_healthy
+        condition: service_started
     networks:
       - auth-network
       - messenger-network
       - realtime-network
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8083'"]
-      interval: 15s
+      test: ["CMD-SHELL", "nc -z localhost 8083 || exit 1"]
       timeout: 5s
       retries: 3
       start_period: 15s

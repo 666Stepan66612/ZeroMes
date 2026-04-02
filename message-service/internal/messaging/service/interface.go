@@ -10,6 +10,7 @@ type MessageService interface {
 	DeleteMessage(ctx context.Context, messageID, userID string) error
 	GetChats(ctx context.Context, userID string) ([]*ChatsList, error)
 	SaveChatKeys(ctx context.Context, userID, companionID, encryptedKey, keyIV string) error
+	UpdateChatKeys(ctx context.Context, userID string, keys []ChatKeyUpdate) (int, error)
 }
 
 type MessageRepository interface {
@@ -21,6 +22,7 @@ type MessageRepository interface {
 	UpdateStatusBatch(ctx context.Context, chatID, userID, lastMessageID string, status MessageStatus) error
 	GetChats(ctx context.Context, userID string) ([]*ChatsList, error)
 	SaveChatKeys(ctx context.Context, userID, companionID, encryptedKey, keyIV string) error
+	UpdateChatKeys(ctx context.Context, userID string, keys []ChatKeyUpdate) (int, error)
 }
 
 type KafkaProducer interface {
