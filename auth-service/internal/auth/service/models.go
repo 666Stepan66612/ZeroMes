@@ -4,7 +4,6 @@ import (
 	"time"
 	"encoding/hex"
 	"crypto/rand"
-	"crypto/sha256"
 
 
 	"github.com/google/uuid"
@@ -37,8 +36,8 @@ func GenerateServerSalt() (string, error) {
 }
 
 func HashAuthHash(clientAuthHash, serverSalt string) (string, error) {
-    combined := sha256.Sum256([]byte(clientAuthHash + serverSalt))
-    hashed, err := bcrypt.GenerateFromPassword(combined[:], bcrypt.DefaultCost)
+    combined := clientAuthHash + serverSalt
+    hashed, err := bcrypt.GenerateFromPassword([]byte(combined), bcrypt.DefaultCost)
     if err != nil {
         return "", err
     }
@@ -55,8 +54,8 @@ func (u *User) ToPublic() *UserPublic {
 }
 
 func (u *User) ValidateAuthHash(clientAuthHash string) bool {
-    combined := sha256.Sum256([]byte(clientAuthHash + u.ServerSalt))
-    return bcrypt.CompareHashAndPassword([]byte(u.AuthHash), combined[:]) == nil
+    combined := clientAuthHash + u.ServerSalt
+    return bcrypt.CompareHashAndPassword([]byte(u.AuthHash), []byte(combined)) == nil
 }
 
 func NewUserID() string {
