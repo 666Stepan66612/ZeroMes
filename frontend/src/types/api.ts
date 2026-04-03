@@ -22,11 +22,18 @@ export interface LoginRequest {
   auth_hash: string
 }
 
+export interface ChatKeyUpdate {
+  companion_id: string
+  encrypted_key: string
+  key_iv: string
+}
+
 export interface ChangePasswordRequest {
   login: string
   old_auth_hash: string
   new_auth_hash: string
   new_public_key: string
+  chat_keys?: ChatKeyUpdate[]
 }
 
 // Authentication responses

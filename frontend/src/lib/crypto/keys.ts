@@ -53,11 +53,11 @@ export function savePrivateKey(
     // Save to localStorage (on disk, but deleted when browser cache is cleared)
     localStorage.setItem('private_key', base64Key)
     localStorage.setItem('remember_me', 'true')
-    console.log('🔓 Key saved to localStorage')
+    // console.log('💾 Key saved to localStorage')
   } else {
     // Save to RAM only (deleted when tab is closed)
     ;(window as any).encryptionKey = privateKey
-    console.log('🔒 Key in memory only (more secure)')
+    // console.log('🔒 Key in memory only (more secure)')
   }
 }
 
