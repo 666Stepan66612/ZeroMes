@@ -107,7 +107,7 @@ func (s *authService) Search(ctx context.Context, login string) ([]*UserPublic, 
     return users, nil
 }
 
-func (s *authService) ChangePassword(ctx context.Context, login, oldAuthHash, newAuthHash string) (string, error) {
+func (s *authService) ChangePassword(ctx context.Context, login, oldAuthHash, newAuthHash, newPublicKey string) (string, error) {
     if strings.TrimSpace(login) == "" {
         return "", errors.ErrInvalidInput
     }
@@ -132,7 +132,7 @@ func (s *authService) ChangePassword(ctx context.Context, login, oldAuthHash, ne
         return "", fmt.Errorf("failed to hash new password: %w", err)
     }
 
-    err = s.userRepo.UpdateAuthHash(ctx, user.ID, hashedNewAuthHash)
+    err = s.userRepo.UpdateAuthHashAndPublicKey(ctx, user.ID, hashedNewAuthHash, newPublicKey)
     if err != nil {
         return "", fmt.Errorf("failed to update password: %w", err)
     }

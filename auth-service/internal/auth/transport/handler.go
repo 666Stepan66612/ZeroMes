@@ -184,7 +184,7 @@ func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := h.authService.ChangePassword(r.Context(), req.Login, req.OldAuthHash, req.NewAuthHash)
+	userID, err := h.authService.ChangePassword(r.Context(), req.Login, req.OldAuthHash, req.NewAuthHash, req.NewPublicKey)
 	if err != nil {
 		respondError(w, http.StatusBadRequest, err.Error())
 		return

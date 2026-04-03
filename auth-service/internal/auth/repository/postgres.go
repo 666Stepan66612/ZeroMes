@@ -108,7 +108,7 @@ func (r *postgresUserRepository) SearchUsers(ctx context.Context, login string) 
 	return users, rows.Err()
 }
 
-func (r *postgresUserRepository) UpdateAuthHash(ctx context.Context, userID, newAuthHash string) error {
+func (r *postgresUserRepository) UpdateAuthHashAndPublicKey(ctx context.Context, userID, newAuthHash, newPublicKey string) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -117,10 +117,10 @@ func (r *postgresUserRepository) UpdateAuthHash(ctx context.Context, userID, new
 
 	query := `
 		UPDATE users
-		SET auth_hash = $1
+		SET auth_hash = $1, public_key = $2
 		WHERE id = $2
 	`
-	_, err = tx.Exec(ctx, query, newAuthHash, userID)
+	_, err = tx.Exec(ctx, query, newAuthHash, newPublicKey, userID)
 	if err != nil {
     	return fmt.Errorf("failed to update auth hash: %w", err)
 	}
