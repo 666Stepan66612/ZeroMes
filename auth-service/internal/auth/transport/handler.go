@@ -28,16 +28,16 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(strings.TrimSpace(req.Login)) < 3 || len(req.Login) > 32 {
-    	respondError(w, http.StatusBadRequest, "login must be 3–32 characters")
-    	return
+		respondError(w, http.StatusBadRequest, "login must be 3–32 characters")
+		return
 	}
 	if req.AuthHash == "" {
-    	respondError(w, http.StatusBadRequest, "auth_hash is required")
-    	return
+		respondError(w, http.StatusBadRequest, "auth_hash is required")
+		return
 	}
 	if req.PublicKey == "" {
-    	respondError(w, http.StatusBadRequest, "public_key is required")
-    	return
+		respondError(w, http.StatusBadRequest, "public_key is required")
+		return
 	}
 
 	user, tokens, err := h.authService.Register(
@@ -51,13 +51,15 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusConflict, err.Error())
 			return
 		}
+		// Log the actual error for debugging
+		println("Register error:", err.Error())
 		respondError(w, http.StatusInternalServerError, apperrors.ErrInternalServer.Error())
 		return
 	}
 
 	setTokenCookies(w, tokens.AccessToken, tokens.RefreshToken)
 	respondJSON(w, http.StatusCreated, RegisterResponse{
-		User:         toUserDTO(user),
+		User: toUserDTO(user),
 	})
 }
 
@@ -86,7 +88,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, apperrors.ErrInvalidPayload.Error())
 		return
 	}
- 
+
 	if strings.TrimSpace(req.Login) == "" {
 		respondError(w, http.StatusBadRequest, "login is required")
 		return
@@ -109,7 +111,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	setTokenCookies(w, tokens.AccessToken, tokens.RefreshToken)
 	respondJSON(w, http.StatusOK, LoginResponse{
-		User:         toUserDTO(user),
+		User: toUserDTO(user),
 	})
 }
 
@@ -136,7 +138,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusUnauthorized, apperrors.ErrInvalidToken.Error())
 		return
 	}
-	
+
 	accessToken, err := r.Cookie("access_token")
 	if err != nil {
 		respondError(w, http.StatusUnauthorized, apperrors.ErrInvalidToken.Error())
@@ -154,10 +156,10 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	login := r.URL.Query().Get("login")
-    if len(login) < 3 {
-        respondError(w, http.StatusBadRequest, "login must be at least 3 characters")
-        return
-    }
+	if len(login) < 3 {
+		respondError(w, http.StatusBadRequest, "login must be at least 3 characters")
+		return
+	}
 
 	users, err := h.authService.Search(r.Context(), login)
 	if err != nil {
@@ -181,14 +183,14 @@ func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, apperrors.ErrInvalidPayload.Error())
 		return
 	}
-	
-	userID, err := h.authService.ChangePassword(r.Context(), req.Login, req.OldAuthHash, req.NewAuthHash)
-    if err != nil {
-        respondError(w, http.StatusBadRequest, err.Error())
-        return
-    }
 
-    respondJSON(w, http.StatusOK, map[string]interface{}{
+	userID, err := h.authService.ChangePassword(r.Context(), req.Login, req.OldAuthHash, req.NewAuthHash)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"success": true,
 		"user_id": userID,
 	})
@@ -196,38 +198,38 @@ func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 func setTokenCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 	http.SetCookie(w, &http.Cookie{
-		Name: "access_token",
-		Value: accessToken,
+		Name:     "access_token",
+		Value:    accessToken,
 		HttpOnly: true,
-		Secure: true,
+		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
-		Path: "/",
-		MaxAge: int(15 * time.Minute.Seconds()), // == access token
+		Path:     "/",
+		MaxAge:   int(15 * time.Minute.Seconds()), // == access token
 	})
 	http.SetCookie(w, &http.Cookie{
-		Name: "refresh_token",
-		Value: refreshToken,
+		Name:     "refresh_token",
+		Value:    refreshToken,
 		HttpOnly: true,
-		Secure: false,
+		Secure:   false,
 		SameSite: http.SameSiteStrictMode,
-		Path: "/auth", // only for refresh endpoint
-		MaxAge: int(7 * 24 * time.Hour.Seconds()),
+		Path:     "/auth", // only for refresh endpoint
+		MaxAge:   int(7 * 24 * time.Hour.Seconds()),
 	})
 }
 
 func clearTokenCookies(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		Name: "access_token",
+		Name:     "access_token",
 		HttpOnly: true,
-		Secure: true,
-		Path: "/",
-		MaxAge: -1,
+		Secure:   true,
+		Path:     "/",
+		MaxAge:   -1,
 	})
 	http.SetCookie(w, &http.Cookie{
-		Name: "refresh_token",
+		Name:     "refresh_token",
 		HttpOnly: true,
-		Secure: true,
-		Path: "/auth",
-		MaxAge: -1,
+		Secure:   true,
+		Path:     "/auth",
+		MaxAge:   -1,
 	})
 }

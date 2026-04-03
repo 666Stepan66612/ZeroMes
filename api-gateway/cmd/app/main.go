@@ -36,7 +36,7 @@ func main() {
 	defer realtimeClient.Close()
 
 	redisClient := redis.NewClient(&redis.Options{
-    	Addr: os.Getenv("REDIS_ADDR"),
+		Addr:     os.Getenv("REDIS_ADDR"),
 		Password: os.Getenv("REDIS_PASSWORD"),
 	})
 
@@ -54,11 +54,12 @@ func main() {
 	}
 
 	r := gin.Default()
+	r.Use(middleware.CORS())
 	r.Use(func(c *gin.Context) {
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 1<<20)
 		c.Next()
 	})
-	
+
 	authLimit := middleware.RateLimiter(redisClient, 120, time.Minute)
 
 	auth := r.Group("/auth")
