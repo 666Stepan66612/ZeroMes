@@ -250,8 +250,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       PORT: ${API_GATEWAY_PORT}
-    ports:
-      - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
+      ENV: ${ENV:-production}
     depends_on:
       auth-service:
         condition: service_started
@@ -272,6 +271,34 @@ services:
       resources:
         limits:
           memory: 128m
+          
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./frontend/dist:/var/www/frontend:ro  # path to frontend
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - auth-network
+      - messenger-network
+      - realtime-network
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+
 
 networks:
   auth-network:
@@ -284,4 +311,6 @@ networks:
 volumes:
   postgres_data:
   postgres_messages_data:
-  kafka_data: 
+  kafka_data:
+  caddy_data:
+  caddy_config:

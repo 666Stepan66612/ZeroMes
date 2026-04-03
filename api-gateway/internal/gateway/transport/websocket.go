@@ -3,6 +3,8 @@ package transport
 import (
 	"context"
 	"net/http"
+	"os"
+	"strings"
 
 	"api-gateway/internal/cores/domain"
 	"api-gateway/internal/gateway/service"
@@ -24,13 +26,14 @@ func NewWebSocketHandler(gatewayService service.GatewayService) *WebSocketHandle
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
+		if os.Getenv("ENV") == "development" {
+			origin := r.Header.Get("Origin")
+			return strings.HasPrefix(origin, "http://localhost:") || 
+			       strings.HasPrefix(origin, "http://127.0.0.1:")
+		}
+		
 		return true
-		/*
-		TODO
-		orgin := r.Header.Get("Origin")
-		return origin == "https:frontend""
-		(delete return true)
-		*/
+
 	},
 }
 

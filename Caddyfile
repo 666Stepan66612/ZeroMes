@@ -1,0 +1,102 @@
+{
+    # global settings
+    admin off  # off admin API (Security)
+}
+
+# for development (localhost)
+:80 {
+    # log
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+    
+    # WebSocket
+    @websocket {
+        path /ws
+    }
+    handle @websocket {
+        reverse_proxy api-gateway:8083 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+    
+    # API
+    handle /api/* {
+        reverse_proxy api-gateway:8083 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+    
+    # Frontend
+    handle {
+        root * /var/www/frontend
+        try_files {path} /index.html
+        file_server
+    }
+}
+
+# For production (uncomment and configure the domain)
+# messenger.example.com {
+#     # auto HTTPS от Let's Encrypt
+#     
+#     log {
+#         output file /data/logs/access.log
+#         format json
+#         level INFO
+#     }
+#     
+#     # Security headers
+#     header {
+#         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+#         X-Content-Type-Options "nosniff"
+#         X-Frame-Options "DENY"
+#         X-XSS-Protection "1; mode=block"
+#         Referrer-Policy "strict-origin-when-cross-origin"
+#         Content-Security-Policy "default-src 'self'; connect-src 'self' wss://messenger.example.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'"
+#         Permissions-Policy "geolocation=(), microphone=(), camera=()"
+#     }
+#     
+#     # WebSocket
+#     @websocket {
+#         path /ws
+#     }
+#     handle @websocket {
+#         reverse_proxy api-gateway:8083 {
+#             header_up Host {host}
+#             header_up X-Real-IP {remote_host}
+#             header_up X-Forwarded-For {remote_host}
+#             header_up X-Forwarded-Proto {scheme}
+#         }
+#     }
+#     
+#     # API
+#     handle /api/* {
+#         reverse_proxy api-gateway:8083 {
+#             header_up Host {host}
+#             header_up X-Real-IP {remote_host}
+#             header_up X-Forwarded-For {remote_host}
+#             header_up X-Forwarded-Proto {scheme}
+#         }
+#     }
+#     
+#     # Frontend
+#     handle {
+#         root * /var/www/frontend
+#         try_files {path} /index.html
+#         file_server
+#         
+#         # cache static
+#         @static {
+#             path *.js *.css *.png *.jpg *.jpeg *.gif *.svg *.ico *.woff *.woff2 *.ttf *.eot
+#         }
+#         header @static Cache-Control "public, max-age=31536000, immutable"
+#     }
+# }
