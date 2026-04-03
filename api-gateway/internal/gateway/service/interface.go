@@ -8,7 +8,7 @@ import (
 
 type AuthClient interface {
 	ValidateToken(token string) (userID string, err error)
-	ChangePassword(ctx context.Context, login, oldHash, newHash string) (string, error)
+	ChangePassword(ctx context.Context, login, oldHash, newHash, newPublicKey string) (string, error)
 }
 
 type MessageClient interface {

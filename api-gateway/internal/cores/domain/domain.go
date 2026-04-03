@@ -57,6 +57,7 @@ type ChangePasswordRequest struct {
     Login       string          `json:"login"`
     OldAuthHash string          `json:"old_auth_hash"`
     NewAuthHash string          `json:"new_auth_hash"`
+    NewPublicKey string         `json:"new_public_key"`
     ChatKeys    []ChatKeyUpdate `json:"chat_keys"`
 }
 

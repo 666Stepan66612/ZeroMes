@@ -22,7 +22,7 @@ func NewSagaOrchestrator(authClient AuthClient, messageClient MessageClient) *Sa
 func (s *SagaOrchestrator) ChangePassword(ctx context.Context, req *domain.ChangePasswordRequest) (*domain.ChangePasswordResponse, error) {
 	slog.Info("saga: starting change password", "login", req.Login)
 
-	userID, err := s.authClient.ChangePassword(ctx, req.Login, req.OldAuthHash, req.NewAuthHash)
+	userID, err := s.authClient.ChangePassword(ctx, req.Login, req.OldAuthHash, req.NewAuthHash, req.NewPublicKey)
 	if err != nil {
 		slog.Error("saga: auth-service failed", "error", err)
 		return nil, fmt.Errorf("failed to change password in auth service: %w", err)

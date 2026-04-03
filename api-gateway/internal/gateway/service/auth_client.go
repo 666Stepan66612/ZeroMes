@@ -32,11 +32,12 @@ func (c *AuthClientService) ValidateToken(token string) (string, error) {
 	return pkgjwt.ValidateAccessToken(token, c.secret)
 }
 
-func (c *AuthClientService) ChangePassword(ctx context.Context, login, oldHash, newHash string) (string, error) {
+func (c *AuthClientService) ChangePassword(ctx context.Context, login, oldHash, newHash, newPublicKey string) (string, error) {
 	reqBody := map[string]string{
 		"login":         login,
         "old_auth_hash": oldHash,
         "new_auth_hash": newHash,
+        "new_public_key": newPublicKey,
 	}
 
 	jsonData, err := json.Marshal(reqBody)
