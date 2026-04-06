@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getChats, saveChatKeys, getUserPublicKey, checkOnlineStatus } from '@/lib/api';
+import { getChats, saveChatKeys, getUserPublicKey, checkOnlineStatus, getMessages } from '@/lib/api';
 import { getWebSocketClient } from '@/lib/api/websocket';
 import { restorePrivateKey, fromHex } from '@/lib/crypto';
 import { deriveChatKey, encryptChatKeyWithPrivateKey, decryptMessage } from '@/lib/crypto/encryption';
@@ -11,16 +11,23 @@ import './ChatsPage.css';
 export function ChatsPage() {
   const navigate = useNavigate();
   const [chats, setChats] = useState<Chat[]>([]);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [loading, setLoading] = useState(true);
   const [wsConnected, setWsConnected] = useState(false);
   const [chatUpdateTrigger, setChatUpdateTrigger] = useState(0);
   const chatsRef = useRef<Chat[]>([]);
+  const selectedChatIdRef = useRef<string | null>(null);
+  const processedMessagesRef = useRef<Set<string>>(new Set());
 
-  // Keep ref in sync with state
+  // Keep refs in sync with state
   useEffect(() => {
     chatsRef.current = chats;
   }, [chats]);
+
+  useEffect(() => {
+    selectedChatIdRef.current = selectedChatId;
+  }, [selectedChatId]);
 
   useEffect(() => {
     // Check if user is logged in
@@ -49,6 +56,20 @@ export function ChatsPage() {
           if (!msg || !msg.chat_id) {
             console.warn('[ChatsPage] Invalid message payload:', msg);
             return;
+          }
+          
+          // Skip if we already processed this message
+          const messageKey = `${msg.id}_${msg.chat_id}`;
+          if (processedMessagesRef.current.has(messageKey)) {
+            console.log('[ChatsPage] Skipping duplicate message:', messageKey);
+            return;
+          }
+          processedMessagesRef.current.add(messageKey);
+          
+          // Clean up old entries (keep only last 100)
+          if (processedMessagesRef.current.size > 100) {
+            const entries = Array.from(processedMessagesRef.current);
+            processedMessagesRef.current = new Set(entries.slice(-100));
           }
           
           // Check if we have this chat (use ref to get current value)
@@ -117,13 +138,23 @@ export function ChatsPage() {
               // Use current time if created_at is invalid
               const messageTime = msg.created_at || new Date().toISOString();
               
-              // Update chats state with new last message preview
+              // Update chats state with new last message preview and increment unread count
               setChats(prevChats => {
-                const updated = prevChats.map(chat =>
-                  chat.id === msg.chat_id
-                    ? { ...chat, last_message_preview: preview, last_message_at: messageTime }
-                    : chat
-                ).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+                const updated = prevChats.map(chat => {
+                  if (chat.id === msg.chat_id) {
+                    // Increment unread count only if this chat is not currently selected (use ref for current value)
+                    const isCurrentChat = selectedChatIdRef.current === chat.id;
+                    const newUnreadCount = isCurrentChat ? 0 : (chat.unread_count || 0) + 1;
+                    console.log('[ChatsPage] Updating unread count for chat', chat.id, 'from', chat.unread_count, 'to', newUnreadCount, 'isCurrentChat:', isCurrentChat, 'selectedChatIdRef:', selectedChatIdRef.current);
+                    return {
+                      ...chat,
+                      last_message_preview: preview,
+                      last_message_at: messageTime,
+                      unread_count: newUnreadCount
+                    };
+                  }
+                  return chat;
+                }).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
                 
                 console.log('[ChatsPage] Updated chats:', updated);
                 return updated;
@@ -241,8 +272,6 @@ export function ChatsPage() {
   }, [chats.length]); // Only depend on length to avoid infinite loop
 
   // Memoize selectedChat to keep reference stable when only last_message_preview changes
-  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  
   const selectedChat = useMemo(() => {
     if (!selectedChatId) return null;
     return chats.find(c => c.id === selectedChatId) || null;
@@ -345,6 +374,21 @@ export function ChatsPage() {
               updatedChat.is_online = false;
             }
             
+            // Calculate unread count
+            try {
+              const userId = localStorage.getItem('user_id');
+              if (userId) {
+                const messagesResponse = await getMessages({ chat_id: chat.id, limit: 100 });
+                const unreadCount = messagesResponse.messages.filter(
+                  msg => msg.status !== 'read' && msg.sender_id !== userId
+                ).length;
+                updatedChat.unread_count = unreadCount;
+              }
+            } catch (error) {
+              console.error('[ChatsPage] Failed to calculate unread count:', error);
+              updatedChat.unread_count = 0;
+            }
+            
             return updatedChat;
           })
         );
@@ -361,6 +405,13 @@ export function ChatsPage() {
 
   const handleSelectChat = (chat: Chat) => {
     setSelectedChatId(chat.id);
+    
+    // Reset unread count for this chat
+    setChats(prevChats =>
+      prevChats.map(c =>
+        c.id === chat.id ? { ...c, unread_count: 0 } : c
+      )
+    );
   };
 
   const handleNewChat = async (user: User) => {

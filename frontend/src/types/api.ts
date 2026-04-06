@@ -94,6 +94,7 @@ export interface Chat {
   last_message?: string // Encrypted content of last message
   last_message_preview?: string // Decrypted preview for display
   is_online?: boolean // Online status of companion
+  unread_count?: number // Number of unread messages
 }
 
 export interface SaveChatKeysRequest {

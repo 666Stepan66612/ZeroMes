@@ -43,6 +43,9 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
               <span className="chat-last-message">
                 {chat.last_message_preview || 'No messages yet'}
               </span>
+              {chat.unread_count !== undefined && chat.unread_count > 0 && (
+                <span className="unread-badge">{chat.unread_count}</span>
+              )}
             </div>
           </div>
         </div>
