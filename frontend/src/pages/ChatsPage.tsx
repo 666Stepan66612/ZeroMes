@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getChats, logout, saveChatKeys, getUserPublicKey, checkOnlineStatus } from '@/lib/api';
+import { getChats, saveChatKeys, getUserPublicKey, checkOnlineStatus } from '@/lib/api';
 import { getWebSocketClient } from '@/lib/api/websocket';
-import { restorePrivateKey, clearKeys, fromHex } from '@/lib/crypto';
+import { restorePrivateKey, fromHex } from '@/lib/crypto';
 import { deriveChatKey, encryptChatKeyWithPrivateKey, decryptMessage } from '@/lib/crypto/encryption';
 import { ChatList, ChatWindow, SearchModal } from '@/components';
 import type { Chat, User } from '@/types/api';
@@ -15,6 +15,12 @@ export function ChatsPage() {
   const [loading, setLoading] = useState(true);
   const [wsConnected, setWsConnected] = useState(false);
   const [chatUpdateTrigger, setChatUpdateTrigger] = useState(0);
+  const chatsRef = useRef<Chat[]>([]);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    chatsRef.current = chats;
+  }, [chats]);
 
   useEffect(() => {
     // Check if user is logged in
@@ -45,8 +51,8 @@ export function ChatsPage() {
             return;
           }
           
-          // Check if we have this chat
-          const existingChat = chats.find(c => c.id === msg.chat_id);
+          // Check if we have this chat (use ref to get current value)
+          const existingChat = chatsRef.current.find(c => c.id === msg.chat_id);
           
           if (!existingChat) {
             // New chat - need to generate keys
@@ -106,12 +112,16 @@ export function ChatsPage() {
               const preview = decrypted.length > 50 ? decrypted.substring(0, 50) + '...' : decrypted;
               
               console.log('[ChatsPage] Updating chat with preview:', preview);
+              console.log('[ChatsPage] msg.created_at:', msg.created_at, 'type:', typeof msg.created_at);
+              
+              // Use current time if created_at is invalid
+              const messageTime = msg.created_at || new Date().toISOString();
               
               // Update chats state with new last message preview
               setChats(prevChats => {
                 const updated = prevChats.map(chat =>
                   chat.id === msg.chat_id
-                    ? { ...chat, last_message_preview: preview, last_message_at: msg.created_at }
+                    ? { ...chat, last_message_preview: preview, last_message_at: messageTime }
                     : chat
                 ).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
                 
@@ -137,8 +147,8 @@ export function ChatsPage() {
             return;
           }
           
-          // Update last message preview for the chat we just sent to
-          const existingChat = chats.find(c => c.id === msg.chat_id);
+          // Update last message preview for the chat we just sent to (use ref)
+          const existingChat = chatsRef.current.find(c => c.id === msg.chat_id);
           
           if (existingChat) {
             try {
@@ -156,11 +166,16 @@ export function ChatsPage() {
               
               const preview = decrypted.length > 50 ? decrypted.substring(0, 50) + '...' : decrypted;
               
+              console.log('[ChatsPage] message_sent msg.created_at:', msg.created_at, 'type:', typeof msg.created_at);
+              
+              // Use current time if created_at is invalid
+              const messageTime = msg.created_at || new Date().toISOString();
+              
               // Update chats state with new last message preview
               setChats(prevChats => {
                 const updated = prevChats.map(chat =>
                   chat.id === msg.chat_id
-                    ? { ...chat, last_message_preview: preview, last_message_at: msg.created_at }
+                    ? { ...chat, last_message_preview: preview, last_message_at: messageTime }
                     : chat
                 ).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
                 
@@ -200,11 +215,11 @@ export function ChatsPage() {
   // Periodically check online status for all chats
   useEffect(() => {
     const checkAllOnlineStatuses = async () => {
-      if (chats.length === 0) return;
+      if (chatsRef.current.length === 0) return;
       
       try {
         const updatedChats = await Promise.all(
-          chats.map(async (chat) => {
+          chatsRef.current.map(async (chat) => {
             try {
               const isOnline = await checkOnlineStatus(chat.companion_id);
               return { ...chat, is_online: isOnline };
@@ -341,19 +356,6 @@ export function ChatsPage() {
       console.error('Failed to load chats:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      clearKeys();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Force logout anyway
-      clearKeys();
-      navigate('/login');
     }
   };
 

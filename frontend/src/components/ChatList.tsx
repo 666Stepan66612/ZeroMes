@@ -31,10 +31,12 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
             <div className="chat-header">
               <span className="chat-name">{chat.companion_login || chat.companion_id}</span>
               <span className="chat-time">
-                {new Date(chat.last_message_at).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
+                {chat.last_message_at && !isNaN(new Date(chat.last_message_at).getTime())
+                  ? new Date(chat.last_message_at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : ''}
               </span>
             </div>
             <div className="chat-preview">
