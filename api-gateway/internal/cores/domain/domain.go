@@ -1,4 +1,4 @@
-package domain
+d .package domain
 
 type WSRequest struct {
 	Type          string `json:"type"`
@@ -13,6 +13,7 @@ type WSRequest struct {
 	CompanionID   string `json:"companion_id"`
 	EncryptedKey  string `json:"encrypted_key"`
 	KeyIV         string `json:"key_iv"`
+	UserID        string `json:"user_id"` // For check_online_status
 }
 
 type Message struct {
