@@ -262,14 +262,30 @@
   font-size: 11px;
   color: var(--text-secondary);
   padding: 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .message.sent .message-time {
   text-align: right;
+  justify-content: flex-end;
 }
 
 .message.received .message-time {
   text-align: left;
+  justify-content: flex-start;
+}
+
+.message-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  margin-left: 2px;
+}
+
+.message.sent .message-status {
+  color: var(--text-secondary);
 }
 
 /* Chat Input */

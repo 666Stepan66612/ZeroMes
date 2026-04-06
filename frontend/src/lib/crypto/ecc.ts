@@ -1,76 +1,76 @@
 /**
- * Эллиптическая криптография на кривой secp256k1
- * Используется для ECDH (Elliptic Curve Diffie-Hellman)
+ * Elliptic curve cryptography on secp256k1 curve
+ * Used for ECDH (Elliptic Curve Diffie-Hellman)
  */
 
 import * as secp256k1 from '@noble/secp256k1'
 import { sha256 } from '@noble/hashes/sha2.js'
 
 /**
- * Генерация приватного ключа из пароля
- * Использует множественные итерации SHA256 для усиления
+ * Generate private key from password
+ * Uses multiple SHA256 iterations for strengthening
  * 
- * @param password - Пароль пользователя
- * @param iterations - Количество итераций хеширования (по умолчанию 10000)
- * @returns Приватный ключ (32 байта)
+ * @param password - User password
+ * @param iterations - Number of hashing iterations (default 10000)
+ * @returns Private key (32 bytes)
  */
 export function derivePrivateKey(password: string, iterations = 10000): Uint8Array {
   let hash: Uint8Array = new TextEncoder().encode(password)
   
-  // Множественные итерации SHA256 для защиты от brute-force
+  // Multiple SHA256 iterations for brute-force protection
   for (let i = 0; i < iterations; i++) {
     hash = new Uint8Array(sha256(hash))
   }
   
-  return hash  // 32 байта
+  return hash  // 32 bytes
 }
 
 /**
- * Генерация публичного ключа из приватного
- * Использует умножение на базовую точку G кривой secp256k1
+ * Generate public key from private key
+ * Uses multiplication by base point G of secp256k1 curve
  * 
- * @param privateKey - Приватный ключ (32 байта)
- * @param compressed - Использовать сжатый формат (33 байта вместо 65)
- * @returns Публичный ключ
+ * @param privateKey - Private key (32 bytes)
+ * @param compressed - Use compressed format (33 bytes instead of 65)
+ * @returns Public key
  */
 export function derivePublicKey(privateKey: Uint8Array, compressed = false): Uint8Array {
   return secp256k1.getPublicKey(privateKey, compressed)
 }
 
 /**
- * ECDH: Вычисление общего секрета между двумя сторонами
- * Алиса: sharedSecret = alicePrivateKey * bobPublicKey
- * Боб: sharedSecret = bobPrivateKey * alicePublicKey
- * Результат одинаковый благодаря свойствам эллиптических кривых
+ * ECDH: Compute shared secret between two parties
+ * Alice: sharedSecret = alicePrivateKey * bobPublicKey
+ * Bob: sharedSecret = bobPrivateKey * alicePublicKey
+ * Result is the same due to elliptic curve properties
  * 
- * @param privateKey - Мой приватный ключ
- * @param publicKey - Публичный ключ собеседника
- * @returns Общий секрет (32 байта) для использования в AES
+ * @param privateKey - My private key
+ * @param publicKey - Companion's public key
+ * @returns Shared secret (32 bytes) for use in AES
  */
 export function computeSharedSecret(
   privateKey: Uint8Array,
   publicKey: Uint8Array
 ): Uint8Array {
-  // Получить общую точку на кривой
+  // Get shared point on curve
   const sharedPoint = secp256k1.getSharedSecret(privateKey, publicKey)
   
-  // Взять x координату (пропустить первый байт - префикс)
-  // sharedPoint формат: [prefix, x(32 bytes), y(32 bytes)]
+  // Take x coordinate (skip first byte - prefix)
+  // sharedPoint format: [prefix, x(32 bytes), y(32 bytes)]
   const x = sharedPoint.slice(1, 33)
   
-  // Хешировать x координату для получения ключа шифрования
-  return new Uint8Array(sha256(x))  // 32 байта для AES-256
+  // Hash x coordinate to get encryption key
+  return new Uint8Array(sha256(x))  // 32 bytes for AES-256
 }
 
 /**
- * Проверка валидности публичного ключа
+ * Validate public key
  * 
- * @param publicKey - Публичный ключ для проверки
- * @returns true если ключ валиден
+ * @param publicKey - Public key to validate
+ * @returns true if key is valid
  */
 export function isValidPublicKey(publicKey: Uint8Array): boolean {
   try {
-    // Конвертируем в hex для проверки
+    // Convert to hex for validation
     const hex = toHex(publicKey)
     secp256k1.Point.fromHex(hex)
     return true
@@ -80,7 +80,7 @@ export function isValidPublicKey(publicKey: Uint8Array): boolean {
 }
 
 /**
- * Конвертация Uint8Array в hex string
+ * Convert Uint8Array to hex string
  */
 export function toHex(bytes: Uint8Array): string {
   return Array.from(bytes)
@@ -89,7 +89,7 @@ export function toHex(bytes: Uint8Array): string {
 }
 
 /**
- * Конвертация hex string в Uint8Array
+ * Convert hex string to Uint8Array
  */
 export function fromHex(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2)
@@ -100,14 +100,14 @@ export function fromHex(hex: string): Uint8Array {
 }
 
 /**
- * Конвертация Uint8Array в base64
+ * Convert Uint8Array to base64
  */
 export function toBase64(bytes: Uint8Array): string {
   return btoa(String.fromCharCode(...bytes))
 }
 
 /**
- * Конвертация base64 в Uint8Array
+ * Convert base64 to Uint8Array
  */
 export function fromBase64(base64: string): Uint8Array {
   const binary = atob(base64)

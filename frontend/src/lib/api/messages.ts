@@ -88,18 +88,40 @@ export async function getMessages(
 }
 
 /**
- * Mark messages as read
- * 
+ * Mark messages as read via WebSocket
+ *
  * @param chatId - Chat ID
  * @param lastMessageId - Last read message ID
  */
 export async function markAsRead(
   chatId: string,
   lastMessageId: string
-): Promise<{ success: boolean }> {
-  return api.post<{ success: boolean }>('/messages/read', {
-    chat_id: chatId,
-    last_message_id: lastMessageId,
+): Promise<void> {
+  const ws = (await import('./websocket')).getWebSocketClient()
+  
+  // Wait for connection
+  await ws.waitForConnection()
+  
+  return new Promise((resolve, reject) => {
+    ws.send({
+      type: 'mark_as_read',
+      chat_id: chatId,
+      last_message_id: lastMessageId,
+    })
+    
+    // Listen for response
+    const timeout = setTimeout(() => reject(new Error('Timeout')), 5000)
+    const unsubscribe = ws.onMessage((msg: any) => {
+      if (msg.type === 'marked_as_read') {
+        clearTimeout(timeout)
+        unsubscribe()
+        resolve()
+      } else if (msg.type === 'error') {
+        clearTimeout(timeout)
+        unsubscribe()
+        reject(new Error(msg.payload?.error || 'Failed to mark as read'))
+      }
+    })
   })
 }
 

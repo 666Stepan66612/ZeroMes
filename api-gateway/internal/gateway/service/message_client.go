@@ -148,7 +148,7 @@ func (c *MessageClientService) SaveChatKeys(ctx context.Context, userID, compani
 func (c *MessageClientService) UpdateChatKeys(ctx context.Context, userID string, keys []domain.ChatKeyUpdate) (int, error) {
 	slog.Info("calling message-service UpdateChatKeys", "user_id", userID, "keys_count", len(keys))
 
-	// Конвертируем domain.ChatKeyUpdate в protobuf ChatKeyUpdate
+	// Convert domain.ChatKeyUpdate to protobuf ChatKeyUpdate
 	pbKeys := make([]*messagepb.ChatKeyUpdate, len(keys))
 	for i, k := range keys {
 		pbKeys[i] = &messagepb.ChatKeyUpdate{

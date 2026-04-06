@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { FormEvent, MouseEvent } from 'react';
 import type { Chat, Message } from '@/types/api';
-import { getMessages, sendMessage as sendMessageAPI, deleteMessage, editMessage } from '@/lib/api/messages';
+import { getMessages, sendMessage as sendMessageAPI, deleteMessage, editMessage, markAsRead } from '@/lib/api/messages';
 import { encryptMessage, decryptChatKeyWithPrivateKey } from '@/lib/crypto/encryption';
 import { restorePrivateKey } from '@/lib/crypto/keys';
 import { getWebSocketClient } from '@/lib/api/websocket';
@@ -16,6 +16,7 @@ interface ChatWindowProps {
 
 interface DecryptedMessage extends Message {
   decryptedContent?: string;
+  localStatus?: 'pending' | 'sent' | 'delivered' | 'read';
 }
 
 interface ContextMenuState {
@@ -26,11 +27,10 @@ interface ContextMenuState {
   messageContent: string;
 }
 
-export function ChatWindow({ chat, onChatUpdate }: ChatWindowProps) {
+export function ChatWindow({ chat }: ChatWindowProps) {
   const [messages, setMessages] = useState<DecryptedMessage[]>([]);
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sending, setSending] = useState(false);
   const [chatKey, setChatKey] = useState<Uint8Array | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -60,6 +60,7 @@ export function ChatWindow({ chat, onChatUpdate }: ChatWindowProps) {
   useEffect(() => {
     if (chat.id && chatKey) {
       loadMessages();
+      markMessagesAsRead();
     }
   }, [chat.id, chatKey]);
 
@@ -73,62 +74,11 @@ export function ChatWindow({ chat, onChatUpdate }: ChatWindowProps) {
       console.log('[ChatWindow] WebSocket message received:', message.type, message);
       
       // Handle sent messages (our own messages)
+      // Note: We handle this in handleSendMessage directly, so we can skip this event
+      // to avoid duplicate messages. The WebSocket event is already consumed by sendMessageAPI.
       if (message.type === 'message_sent') {
-        const msg = message.payload;
-        
-        // Only process messages for this chat
-        if (msg.chat_id !== chat.id) return;
-        
-        console.log('[ChatWindow] Message sent confirmation:', msg);
-        
-        try {
-          // Decrypt the message
-          const encryptedMsg: EncryptedMessage = JSON.parse(msg.encrypted_content);
-          
-          // Import key for decryption
-          const key = await crypto.subtle.importKey(
-            'raw',
-            chatKey as BufferSource,
-            { name: 'AES-GCM' },
-            false,
-            ['decrypt']
-          );
-          
-          // Decode base64
-          const ciphertextBytes = Uint8Array.from(atob(encryptedMsg.ciphertext), c => c.charCodeAt(0));
-          const nonceBytes = Uint8Array.from(atob(encryptedMsg.nonce), c => c.charCodeAt(0));
-          
-          // Decrypt
-          const plaintext = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv: nonceBytes },
-            key,
-            ciphertextBytes
-          );
-          
-          const decryptedText = new TextDecoder().decode(plaintext);
-          
-          // Create new message object
-          const newMessage: DecryptedMessage = {
-            id: msg.id,
-            chat_id: msg.chat_id,
-            sender_id: msg.sender_id,
-            recipient_id: msg.recipient_id,
-            encrypted_content: msg.encrypted_content,
-            message_type: 'text',
-            created_at: msg.created_at,
-            status: 'delivered',
-            decryptedContent: decryptedText,
-          };
-          
-          // Add to messages if not already present
-          setMessages(prev => {
-            const exists = prev.some(m => m.id === newMessage.id);
-            if (exists) return prev;
-            return [...prev, newMessage];
-          });
-        } catch (error) {
-          console.error('[ChatWindow] Failed to decrypt sent message:', error);
-        }
+        // Skip - already handled in handleSendMessage
+        return;
       }
       
       // Handle new messages from others
@@ -238,12 +188,34 @@ export function ChatWindow({ chat, onChatUpdate }: ChatWindowProps) {
           }
         }
       }
+      
+      // Handle message read status updates
+      if (message.type === 'message_read') {
+        const { chat_id, last_message_id } = message.payload || {};
+        if (chat_id === chat.id && last_message_id) {
+          console.log('[ChatWindow] Messages marked as read up to:', last_message_id);
+          // Update all messages up to last_message_id to 'read' status
+          setMessages(prev => {
+            const lastReadIndex = prev.findIndex(msg => msg.id === last_message_id);
+            if (lastReadIndex === -1) return prev;
+            
+            return prev.map((m, index) => {
+              // Mark all our messages (sender is NOT companion) up to and including last_message_id as read
+              const isOurMessage = m.sender_id !== chat.companion_id;
+              if (index <= lastReadIndex && isOurMessage) {
+                return { ...m, status: 'read' as const, localStatus: 'read' as const };
+              }
+              return m;
+            });
+          });
+        }
+      }
     });
 
     return () => {
       unsubscribe();
     };
-  }, [chat.id, chatKey]);
+  }, [chat.id, chatKey, chat.companion_id]);
 
   useEffect(() => {
     scrollToBottom();
@@ -306,47 +278,89 @@ export function ChatWindow({ chat, onChatUpdate }: ChatWindowProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const markMessagesAsRead = async () => {
+    if (!chat.id || messages.length === 0) return;
+
+    // Find the last message from companion
+    const lastCompanionMessage = [...messages]
+      .reverse()
+      .find(m => m.sender_id === chat.companion_id);
+
+    if (lastCompanionMessage && lastCompanionMessage.status !== 'read') {
+      try {
+        await markAsRead(chat.id, lastCompanionMessage.id);
+        console.log('[ChatWindow] Marked messages as read up to:', lastCompanionMessage.id);
+      } catch (error) {
+        console.error('[ChatWindow] Failed to mark messages as read:', error);
+      }
+    }
+  };
+
+  // Mark messages as read when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0) {
+      markMessagesAsRead();
+    }
+  }, [messages.length]);
+
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!messageText.trim() || sending || !chatKey) return;
+    if (!messageText.trim() || !chatKey) return;
+
+    const startTime = performance.now();
+    const tempId = `temp-${Date.now()}`;
+    const tempMessage: DecryptedMessage = {
+      id: tempId,
+      chat_id: chat.id,
+      sender_id: '', // Will be filled by server
+      recipient_id: chat.companion_id,
+      encrypted_content: '',
+      message_type: 'text',
+      created_at: new Date().toISOString(),
+      status: 'sent',
+      localStatus: 'pending',
+      decryptedContent: messageText,
+    };
+
+    // Add pending message immediately
+    setMessages(prev => [...prev, tempMessage]);
+    const textToSend = messageText;
+    setMessageText('');
 
     try {
-      setSending(true);
-
       // Encrypt message before sending
-      const encrypted = await encryptMessage(messageText, chatKey);
+      const encryptStart = performance.now();
+      const encrypted = await encryptMessage(textToSend, chatKey);
       const encryptedContent = JSON.stringify(encrypted);
+      const encryptTime = performance.now() - encryptStart;
+      console.log(`[Performance] Encryption took: ${encryptTime.toFixed(2)}ms`);
 
-      console.log('[ChatWindow] Sending message:', {
-        chat_id: chat.id,
-        recipient_id: chat.companion_id,
-        encrypted_content: encryptedContent,
-        message_type: 'text',
-      });
-
+      const sendStart = performance.now();
       const sentMessage = await sendMessageAPI({
         chat_id: chat.id,
         recipient_id: chat.companion_id,
         encrypted_content: encryptedContent,
         message_type: 'text',
       });
+      const sendTime = performance.now() - sendStart;
+      console.log(`[Performance] WebSocket send took: ${sendTime.toFixed(2)}ms`);
+      console.log(`[Performance] Total time: ${(performance.now() - startTime).toFixed(2)}ms`);
 
-      console.log('[ChatWindow] Message sent, response:', sentMessage);
-
-      // Add the sent message to the list immediately
-      const newMessage: DecryptedMessage = {
-        ...sentMessage,
-        decryptedContent: messageText, // We already have the decrypted text
-      };
-
-      setMessages(prev => [...prev, newMessage]);
-      setMessageText('');
-      onChatUpdate();
+      // Replace temp message with real one
+      setMessages(prev => prev.map(m =>
+        m.id === tempId
+          ? { ...sentMessage, decryptedContent: textToSend, localStatus: 'sent' }
+          : m
+      ));
+      
+      // Don't call onChatUpdate() to avoid re-rendering the chat list
+      // The chat list will be updated via WebSocket 'chats' event
     } catch (error) {
       console.error('Failed to send message:', error);
-    } finally {
-      setSending(false);
+      // Remove temp message on error
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      setMessageText(textToSend); // Restore message text
     }
   };
 
@@ -405,8 +419,6 @@ export function ChatWindow({ chat, onChatUpdate }: ChatWindowProps) {
     if (!messageText.trim() || !editingMessage || !chatKey) return;
 
     try {
-      setSending(true);
-
       // Encrypt the new content
       const encrypted = await encryptMessage(messageText, chatKey);
       const encryptedContent = JSON.stringify(encrypted);
@@ -425,8 +437,6 @@ export function ChatWindow({ chat, onChatUpdate }: ChatWindowProps) {
     } catch (error) {
       console.error('Failed to edit message:', error);
       alert('Failed to edit message');
-    } finally {
-      setSending(false);
     }
   };
 
@@ -456,23 +466,36 @@ export function ChatWindow({ chat, onChatUpdate }: ChatWindowProps) {
             <p className="help-text">Send a message to start the conversation</p>
           </div>
         ) : (
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={`message ${message.sender_id === chat.companion_id ? 'received' : 'sent'}`}
-              onContextMenu={(e) => handleContextMenu(e, message)}
-            >
-              <div className="message-content">
-                {message.decryptedContent || message.encrypted_content}
+          messages.map((message) => {
+            const isSent = message.sender_id !== chat.companion_id;
+            const displayStatus = message.localStatus || message.status;
+            
+            return (
+              <div
+                key={message.id}
+                className={`message ${isSent ? 'sent' : 'received'}`}
+                onContextMenu={(e) => handleContextMenu(e, message)}
+              >
+                <div className="message-content">
+                  {message.decryptedContent || message.encrypted_content}
+                </div>
+                <div className="message-time">
+                  {new Date(message.created_at).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                  {isSent && (
+                    <span className="message-status">
+                      {displayStatus === 'pending' && ' ⏰'}
+                      {displayStatus === 'sent' && ' ✓'}
+                      {displayStatus === 'delivered' && ' ✓'}
+                      {displayStatus === 'read' && ' ✓✓'}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="message-time">
-                {new Date(message.created_at).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
         <div ref={messagesEndRef} />
       </div>
@@ -491,14 +514,14 @@ export function ChatWindow({ chat, onChatUpdate }: ChatWindowProps) {
           value={messageText}
           onChange={(e) => setMessageText(e.target.value)}
           placeholder={editingMessage ? "Edit your message..." : "Type a message..."}
-          disabled={sending || !chatKey}
+          disabled={!chatKey}
         />
         <button
           type="submit"
           className="btn-send"
-          disabled={!messageText.trim() || sending || !chatKey}
+          disabled={!messageText.trim() || !chatKey}
         >
-          {sending ? '⏳' : editingMessage ? '✓' : '📤'}
+          {editingMessage ? '✓' : '📤'}
         </button>
       </form>
 
