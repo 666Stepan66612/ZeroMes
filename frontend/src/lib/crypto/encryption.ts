@@ -145,6 +145,77 @@ export function generateRandomKey(): Uint8Array {
  * @param password - User password for encryption
  * @returns Encrypted key
  */
+/**
+ * Encrypt chat key with private key (for storage)
+ * Uses private key directly as AES key
+ */
+export async function encryptChatKeyWithPrivateKey(
+  chatKey: Uint8Array,
+  privateKey: Uint8Array
+): Promise<EncryptedMessage> {
+  // Use private key as AES key (32 bytes)
+  const aesKey = await crypto.subtle.importKey(
+    'raw',
+    privateKey as BufferSource,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt']
+  )
+  
+  const nonce = crypto.getRandomValues(new Uint8Array(12))
+  
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: nonce },
+    aesKey,
+    chatKey as BufferSource
+  )
+  
+  // Combine nonce + encrypted
+  const combined = new Uint8Array(nonce.length + encrypted.byteLength)
+  combined.set(nonce, 0)
+  combined.set(new Uint8Array(encrypted), nonce.length)
+  
+  return {
+    ciphertext: arrayBufferToBase64(combined.buffer),
+    nonce: '' // Not used, nonce is included in ciphertext
+  }
+}
+
+/**
+ * Decrypt chat key using private key
+ *
+ * @param encryptedKey - Encrypted chat key (base64)
+ * @param privateKey - User's private key (32 bytes)
+ * @returns Decrypted chat key
+ */
+export async function decryptChatKeyWithPrivateKey(
+  encryptedKey: string,
+  privateKey: Uint8Array
+): Promise<Uint8Array> {
+  const combined = base64ToArrayBuffer(encryptedKey)
+  
+  // Extract nonce and encrypted data
+  const nonce = combined.slice(0, 12)
+  const encrypted = combined.slice(12)
+  
+  // Use private key as AES key
+  const aesKey = await crypto.subtle.importKey(
+    'raw',
+    privateKey as BufferSource,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['decrypt']
+  )
+  
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: nonce },
+    aesKey,
+    encrypted
+  )
+  
+  return new Uint8Array(decrypted)
+}
+
 export async function encryptChatKey(
   chatKey: Uint8Array,
   password: string

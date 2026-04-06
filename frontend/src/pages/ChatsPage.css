@@ -214,20 +214,36 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .message.sent {
   align-self: flex-end;
+  align-items: flex-end;
 }
 
 .message.received {
   align-self: flex-start;
+  align-items: flex-start;
 }
 
 .message-content {
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: 18px;
   word-wrap: break-word;
+  line-height: 1.4;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .message.sent .message-content {
@@ -237,7 +253,8 @@
 }
 
 .message.received .message-content {
-  background: var(--bg-secondary);
+  background: #e9ecef;
+  color: #212529;
   border-bottom-left-radius: 4px;
 }
 
@@ -249,6 +266,10 @@
 
 .message.sent .message-time {
   text-align: right;
+}
+
+.message.received .message-time {
+  text-align: left;
 }
 
 /* Chat Input */
@@ -445,4 +466,36 @@
   .message {
     max-width: 80%;
   }
+}
+
+/* Edit Mode Banner */
+.edit-mode-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #fff3cd;
+  border-bottom: 1px solid #ffc107;
+  font-size: 14px;
+  color: #856404;
+}
+
+.btn-cancel-edit {
+  background: none;
+  border: none;
+  color: #856404;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 4px;
+  transition: background-color 0.15s;
+}
+
+.btn-cancel-edit:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Message Context Menu Cursor */
+.message {
+  cursor: context-menu;
 }

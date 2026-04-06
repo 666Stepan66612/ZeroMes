@@ -86,6 +86,7 @@ export interface Chat {
   id: string
   user_id: string
   companion_id: string
+  companion_login?: string // For display purposes
   created_at: string
   last_message_at: string
   encrypted_key: string

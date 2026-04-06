@@ -23,9 +23,11 @@ export function SearchModal({ onClose, onSelectUser }: SearchModalProps) {
       setLoading(true);
       setSearched(true);
       const results = await searchUsers(query);
-      setUsers(results);
+      // Ensure results is an array
+      setUsers(Array.isArray(results) ? results : []);
     } catch (error) {
       console.error('Search error:', error);
+      setUsers([]);
     } finally {
       setLoading(false);
     }

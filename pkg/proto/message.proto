@@ -103,7 +103,8 @@ message Chat {
     google.protobuf.Timestamp created_at = 4;
     google.protobuf.Timestamp last_message_at = 5;
     string encrypted_key = 6;
-    string key_iv = 7; 
+    string key_iv = 7;
+    string companion_login = 8;
 }
 
 message SaveChatKeysRequest {

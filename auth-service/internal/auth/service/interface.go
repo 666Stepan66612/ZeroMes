@@ -8,6 +8,7 @@ type AuthService interface {
 	RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error)
 	Logout(ctx context.Context, refreshToken, accessToken string) error
 	Search(ctx context.Context, login string) ([]*UserPublic, error)
+	GetByID(ctx context.Context, id string) (*User, error)
 	ChangePassword(ctx context.Context, login, oldAuthHash, newAuthHash, newPublicKey string) (string, error)
 }
 

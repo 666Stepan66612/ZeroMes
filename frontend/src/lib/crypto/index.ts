@@ -33,6 +33,7 @@ export {
   deriveChatKey,
   generateRandomKey,
   encryptChatKey,
+  encryptChatKeyWithPrivateKey,
   decryptChatKey
 } from './encryption'
 

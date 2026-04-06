@@ -156,15 +156,42 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	login := r.URL.Query().Get("login")
-	if len(login) < 3 {
+	userID := r.URL.Query().Get("id")
+
+	// Support search by either login or ID
+	if login == "" && userID == "" {
+		respondError(w, http.StatusBadRequest, "login or id parameter is required")
+		return
+	}
+
+	if login != "" && len(login) < 3 {
 		respondError(w, http.StatusBadRequest, "login must be at least 3 characters")
 		return
 	}
 
-	users, err := h.authService.Search(r.Context(), login)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, err.Error())
-		return
+	var users []*service.UserPublic
+	var err error
+
+	if userID != "" {
+		// Search by ID - get single user
+		user, err := h.authService.GetByID(r.Context(), userID)
+		if err != nil {
+			respondJSON(w, http.StatusOK, SearchUserResponse{Users: []UserDTO{}})
+			return
+		}
+		users = []*service.UserPublic{{
+			ID:        user.ID,
+			Login:     user.Login,
+			PublicKey: user.PublicKey,
+			CreatedAt: user.CreatedAt,
+		}}
+	} else {
+		// Search by login
+		users, err = h.authService.Search(r.Context(), login)
+		if err != nil {
+			respondError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 
 	dtos := make([]UserDTO, len(users))

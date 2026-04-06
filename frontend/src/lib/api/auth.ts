@@ -56,9 +56,10 @@ export async function logout(): Promise<void> {
  * @returns Array of matching users
  */
 export async function searchUsers(query: string): Promise<User[]> {
-  return api.get<User[]>('/auth/search', {
+  const response = await api.get<{ users: User[] }>('/auth/search', {
     params: { login: query },
   })
+  return response.users
 }
 
 /**
@@ -82,10 +83,16 @@ export async function changePassword(
  * @returns User's public key
  */
 export async function getUserPublicKey(userId: string): Promise<string> {
-  const users = await searchUsers(userId)
-  const user = users.find(u => u.id === userId)
-  if (!user) {
+  // Search by ID using the new id parameter
+  const response = await api.get<{ users: User[] }>('/auth/search', {
+    params: { id: userId },
+  })
+  
+  const users = response.users
+  if (!users || users.length === 0) {
+    console.error(`[getUserPublicKey] User ${userId} not found`)
     throw new Error(`User ${userId} not found`)
   }
-  return user.public_key
+  
+  return users[0].public_key
 }

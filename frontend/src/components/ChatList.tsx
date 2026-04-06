@@ -25,11 +25,11 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
           onClick={() => onSelectChat(chat)}
         >
           <div className="chat-avatar">
-            {chat.companion_id.substring(0, 2).toUpperCase()}
+            {(chat.companion_login || chat.companion_id).substring(0, 2).toUpperCase()}
           </div>
           <div className="chat-info">
             <div className="chat-header">
-              <span className="chat-name">{chat.companion_id}</span>
+              <span className="chat-name">{chat.companion_login || chat.companion_id}</span>
               <span className="chat-time">
                 {new Date(chat.last_message_at).toLocaleTimeString([], {
                   hour: '2-digit',

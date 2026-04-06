@@ -3,8 +3,6 @@
  * Handles connection, reconnection, and message delivery
  */
 
-import type { Message } from '@/types/api';
-
 export type WebSocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
 export interface IncomingMessage {
@@ -85,7 +83,7 @@ export class WebSocketClient {
    * WebSocket is only for receiving
    */
   send(data: unknown): void {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (this.status === 'connected' && this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
     } else {
       throw new Error('WebSocket is not connected');
@@ -126,6 +124,38 @@ export class WebSocketClient {
   }
 
   /**
+   * Wait for WebSocket to be connected
+   */
+  async waitForConnection(timeout = 5000): Promise<void> {
+    if (this.status === 'connected' && this.ws?.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.statusHandlers.delete(handler);
+        reject(new Error('Connection timeout'));
+      }, timeout);
+
+      const handler: StatusHandler = (status) => {
+        if (status === 'connected') {
+          clearTimeout(timer);
+          this.statusHandlers.delete(handler);
+          // Add small delay to ensure WebSocket is fully ready
+          setTimeout(() => resolve(), 50);
+        } else if (status === 'error') {
+          clearTimeout(timer);
+          this.statusHandlers.delete(handler);
+          reject(new Error('Connection failed'));
+        }
+      };
+      
+      // Add handler without calling it immediately
+      this.statusHandlers.add(handler);
+    });
+  }
+
+  /**
    * Check if connected
    */
   isConnected(): boolean {
@@ -142,21 +172,22 @@ export class WebSocketClient {
 
   private handleMessage(event: MessageEvent): void {
     try {
-      const data = JSON.parse(event.data) as WebSocketMessage;
+      const data = JSON.parse(event.data);
       
-      if (data.type === 'message' && data.data) {
-        // Notify all message handlers
-        this.messageHandlers.forEach(handler => {
-          try {
-            handler(data.data!);
-          } catch (error) {
-            console.error('[WebSocket] Error in message handler:', error);
-          }
-        });
-      } else if (data.type === 'pong') {
-        // Pong received, connection is alive
+      // Special handling for pong
+      if (data.type === 'pong') {
         console.log('[WebSocket] Pong received');
+        return;
       }
+      
+      // Notify all message handlers with the full message
+      this.messageHandlers.forEach(handler => {
+        try {
+          handler(data);
+        } catch (error) {
+          console.error('[WebSocket] Error in message handler:', error);
+        }
+      });
     } catch (error) {
       console.error('[WebSocket] Failed to parse message:', error);
       this.notifyError(new Error('Failed to parse WebSocket message'));

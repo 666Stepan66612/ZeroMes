@@ -2,29 +2,31 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 	"time"
 
 	domain "realtime-service/internal/cores/domain"
 	apperrors "realtime-service/internal/cores/errors"
+
 	pb "github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepb"
 )
 
 type Hub struct {
-	streams map[string]pb.ConnectionService_ConnectionStreamServer
+	streams     map[string]pb.ConnectionService_ConnectionStreamServer
 	repo        PresenceRepository
 	instanceID  string
 	mu          sync.RWMutex
 	cancelFuncs map[string]context.CancelFunc
-	cancelMu   sync.Mutex
+	cancelMu    sync.Mutex
 }
 
 func NewHub(repo PresenceRepository, instanceID string) *Hub {
 	return &Hub{
-		streams: make(map[string]pb.ConnectionService_ConnectionStreamServer),
+		streams:     make(map[string]pb.ConnectionService_ConnectionStreamServer),
 		cancelFuncs: make(map[string]context.CancelFunc),
-		repo: repo,
-		instanceID: instanceID,
+		repo:        repo,
+		instanceID:  instanceID,
 	}
 }
 
@@ -59,7 +61,7 @@ func (h *Hub) UnregisterConnection(ctx context.Context, userID string) error {
 	h.mu.Lock()
 	delete(h.streams, userID)
 	h.mu.Unlock()
-	
+
 	return h.repo.SetOffline(ctx, userID)
 }
 
@@ -143,13 +145,27 @@ func (h *Hub) DeliverMessage(ctx context.Context, msg *domain.Message) error {
 		return nil
 	}
 
+	// Create JSON payload with all message data
+	payload := map[string]interface{}{
+		"type": "new_message",
+		"payload": map[string]interface{}{
+			"message_id":        msg.MessageID,
+			"chat_id":           msg.ChatID,
+			"sender_id":         msg.SenderID,
+			"encrypted_content": msg.Content,
+			"timestamp":         msg.Timestamp,
+		},
+	}
+
+	jsonData, _ := json.Marshal(payload)
+
 	return stream.Send(&pb.ConnectionResponse{
 		Payload: &pb.ConnectionResponse_Message{
 			Message: &pb.IncomingMessage{
 				MessageId: msg.MessageID,
-				SenderId: msg.SenderID,
-				Content: msg.Content,
-				Timestamp: msg.Timestamp,
+				SenderId:  msg.SenderID,
+				Content:   string(jsonData),
+				Timestamp: 0, // Not used, timestamp is in JSON payload
 			},
 		},
 	})
