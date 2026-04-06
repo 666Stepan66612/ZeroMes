@@ -98,6 +98,9 @@ func (s *gatewayService) HandleWebSocket(ctx context.Context, userID string, sen
 					continue
 				}
 				slog.Info("get_chats success", "user_id", userID, "chats_count", len(result.Chats))
+				if len(result.Chats) > 0 {
+					slog.Info("first chat debug", "chat_id", result.Chats[0].ID, "last_message", result.Chats[0].LastMessage)
+				}
 				sendResponse(send, "chats", result)
 
 			case "save_chat_keys":

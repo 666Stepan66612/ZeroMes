@@ -22,6 +22,7 @@ type ChatsList struct {
 	LastMessageAt  time.Time
 	EncryptedKey   string
 	KeyIV          string
+	LastMessage    string // Encrypted content of last message
 }
 
 type MessageStatus int8

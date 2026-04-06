@@ -172,12 +172,25 @@ func (r *postgresRepository) UpdateStatusBatch(ctx context.Context, chatID, user
 
 func (r *postgresRepository) GetChats(ctx context.Context, userID string) ([]*service.ChatsList, error) {
 	query := `
-		SELECT user_id, companion_id, created_at, last_message_at,
-		       COALESCE(encrypted_key, '') as encrypted_key,
-		       COALESCE(key_iv, '') as key_iv
-		FROM chats
-		WHERE user_id = $1
-		ORDER BY last_message_at DESC
+		SELECT c.user_id, c.companion_id, c.created_at, c.last_message_at,
+		       COALESCE(c.encrypted_key, '') as encrypted_key,
+		       COALESCE(c.key_iv, '') as key_iv,
+		       COALESCE(m.encrypted_content, '') as last_message
+		FROM chats c
+		LEFT JOIN LATERAL (
+			SELECT encrypted_content
+			FROM messages
+			WHERE chat_id = (
+				CASE
+					WHEN c.user_id < c.companion_id THEN c.user_id || ':' || c.companion_id
+					ELSE c.companion_id || ':' || c.user_id
+				END
+			)
+			ORDER BY created_at DESC
+			LIMIT 1
+		) m ON true
+		WHERE c.user_id = $1
+		ORDER BY c.last_message_at DESC
 	`
 
 	rows, err := r.pool.Query(ctx, query, userID)
@@ -200,6 +213,7 @@ func (r *postgresRepository) GetChats(ctx context.Context, userID string) ([]*se
 			&cht.LastMessageAt,
 			&cht.EncryptedKey,
 			&cht.KeyIV,
+			&cht.LastMessage,
 		)
 		if err != nil {
 			return nil, err

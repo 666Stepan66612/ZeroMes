@@ -105,6 +105,7 @@ message Chat {
     string encrypted_key = 6;
     string key_iv = 7;
     string companion_login = 8;
+    string last_message = 9;
 }
 
 message SaveChatKeysRequest {

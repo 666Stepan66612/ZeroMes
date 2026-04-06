@@ -41,6 +41,7 @@ type Chat struct {
 	LastMessageAt string `json:"last_message_at"`
 	EncryptedKey  string `json:"encrypted_key"`
 	KeyIV         string `json:"key_iv"`
+	LastMessage   string `json:"last_message,omitempty"`
 }
 
 type GetChatsResponse struct {
