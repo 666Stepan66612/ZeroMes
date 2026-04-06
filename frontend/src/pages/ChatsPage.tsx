@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getChats, logout, saveChatKeys, getUserPublicKey } from '@/lib/api';
 import { getWebSocketClient } from '@/lib/api/websocket';
 import { restorePrivateKey, clearKeys, fromHex } from '@/lib/crypto';
-import { deriveChatKey, encryptChatKeyWithPrivateKey } from '@/lib/crypto/encryption';
+import { deriveChatKey, encryptChatKeyWithPrivateKey, decryptMessage } from '@/lib/crypto/encryption';
 import { ChatList, ChatWindow, SearchModal } from '@/components';
 import type { Chat, User } from '@/types/api';
 import './ChatsPage.css';
@@ -11,7 +11,6 @@ import './ChatsPage.css';
 export function ChatsPage() {
   const navigate = useNavigate();
   const [chats, setChats] = useState<Chat[]>([]);
-  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [loading, setLoading] = useState(true);
   const [wsConnected, setWsConnected] = useState(false);
@@ -36,8 +35,8 @@ export function ChatsPage() {
       const unsubscribeMessage = ws.onMessage(async (message: any) => {
         console.log('New message:', message);
         
-        // Handle new message notification
-        if (message.type === 'new_message') {
+        // Handle new message notification or message sent confirmation
+        if (message.type === 'new_message' || message.type === 'message_sent') {
           const msg = message.payload;
           console.log('[ChatsPage] new_message payload:', msg);
           
@@ -83,10 +82,47 @@ export function ChatsPage() {
               console.error('[ChatsPage] Failed to generate keys for new chat:', error);
             }
           } else {
-            // Existing chat - trigger reload if this chat is currently open
+            // Existing chat - update last message preview
             console.log('[ChatsPage] Message for existing chat:', msg.chat_id);
+            console.log('[ChatsPage] Existing chat object:', existingChat);
+            console.log('[ChatsPage] Message encrypted_content:', msg.encrypted_content);
+            
+            try {
+              // Decrypt the message content
+              const companionPublicKey = await getUserPublicKey(existingChat.companion_id);
+              const companionPubKeyBytes = fromHex(companionPublicKey);
+              const chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
+              
+              const encryptedData = JSON.parse(msg.encrypted_content);
+              const decrypted = await decryptMessage(
+                encryptedData.ciphertext,
+                encryptedData.nonce,
+                chatKey
+              );
+              
+              console.log('[ChatsPage] Decrypted message:', decrypted);
+              
+              const preview = decrypted.length > 50 ? decrypted.substring(0, 50) + '...' : decrypted;
+              
+              console.log('[ChatsPage] Updating chat with preview:', preview);
+              
+              // Update chats state with new last message preview
+              setChats(prevChats => {
+                const updated = prevChats.map(chat =>
+                  chat.id === msg.chat_id
+                    ? { ...chat, last_message_preview: preview, last_message_at: msg.created_at }
+                    : chat
+                ).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+                
+                console.log('[ChatsPage] Updated chats:', updated);
+                return updated;
+              });
+            } catch (error) {
+              console.error('[ChatsPage] Failed to decrypt new message:', error);
+            }
+            
+            // Trigger chat update if this chat is currently open
             if (selectedChat && selectedChat.id === msg.chat_id) {
-              // Trigger chat update to reload messages
               setChatUpdateTrigger(prev => prev + 1);
             }
           }
@@ -117,13 +153,23 @@ export function ChatsPage() {
     };
   }, [navigate]);
 
+  // Memoize selectedChat to keep reference stable when only last_message_preview changes
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  
+  const selectedChat = useMemo(() => {
+    if (!selectedChatId) return null;
+    return chats.find(c => c.id === selectedChatId) || null;
+  }, [selectedChatId, chats]);
+
   const loadChats = async () => {
     try {
       setLoading(true);
       const chatsData = await getChats();
+      console.log('[ChatsPage] Loaded chats:', chatsData);
+      console.log('[ChatsPage] First chat full object:', JSON.stringify(chatsData[0], null, 2));
       
       // Check for chats without encrypted_key and generate them
-      // Also fetch companion logins
+      // Also fetch companion logins and decrypt last message
       const privateKey = restorePrivateKey();
       if (privateKey) {
         const updatedChats = await Promise.all(
@@ -156,6 +202,32 @@ export function ChatsPage() {
                 updatedChat.encrypted_key = ciphertext;
               } catch (error) {
                 console.error('[ChatsPage] Failed to generate key for chat:', error);
+              }
+            }
+            
+            // Decrypt last message if available
+            console.log('[ChatsPage] Processing last_message for chat:', chat.companion_id, 'last_message:', chat.last_message);
+            if (chat.last_message && chat.encrypted_key) {
+              try {
+                const companionPublicKey = await getUserPublicKey(chat.companion_id);
+                const companionPubKeyBytes = fromHex(companionPublicKey);
+                const chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
+                
+                // Parse encrypted message (format: {"ciphertext":"...","nonce":"..."})
+                console.log('[ChatsPage] Parsing last_message:', chat.last_message);
+                const encryptedData = JSON.parse(chat.last_message);
+                const decrypted = await decryptMessage(
+                  encryptedData.ciphertext,
+                  encryptedData.nonce,
+                  chatKey
+                );
+                console.log('[ChatsPage] Decrypted last message:', decrypted);
+                updatedChat.last_message_preview = decrypted.length > 50
+                  ? decrypted.substring(0, 50) + '...'
+                  : decrypted;
+              } catch (error) {
+                console.error('[ChatsPage] Failed to decrypt last message:', error);
+                updatedChat.last_message_preview = 'Message...';
               }
             }
             
@@ -205,7 +277,7 @@ export function ChatsPage() {
   };
 
   const handleSelectChat = (chat: Chat) => {
-    setSelectedChat(chat);
+    setSelectedChatId(chat.id);
   };
 
   const handleNewChat = async (user: User) => {
@@ -213,7 +285,7 @@ export function ChatsPage() {
       // Check if chat already exists
       const existingChat = chats.find(c => c.companion_id === user.id);
       if (existingChat) {
-        setSelectedChat(existingChat);
+        setSelectedChatId(existingChat.id);
         setShowSearch(false);
         return;
       }
@@ -254,7 +326,7 @@ export function ChatsPage() {
 
       // Add to chats list and select
       setChats([newChat, ...chats]);
-      setSelectedChat(newChat);
+      setSelectedChatId(newChat.id);
       setShowSearch(false);
     } catch (error) {
       console.error('Failed to create chat:', error);
@@ -271,23 +343,22 @@ export function ChatsPage() {
             <button
               className="btn-icon"
               onClick={() => setShowSearch(true)}
-              title="New chat"
+              title="Search"
             >
-              ✏️
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
             </button>
             <button
               className="btn-icon"
               onClick={() => navigate('/change-password')}
               title="Settings"
             >
-              ⚙️
-            </button>
-            <button
-              className="btn-icon"
-              onClick={handleLogout}
-              title="Logout"
-            >
-              🚪
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
             </button>
           </div>
         </div>

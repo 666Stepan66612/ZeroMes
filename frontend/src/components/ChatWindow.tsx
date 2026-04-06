@@ -231,6 +231,12 @@ export function ChatWindow({ chat }: ChatWindowProps) {
         limit: 50,
       });
       
+      console.log('[ChatWindow] Loaded messages:', response.messages.map(m => ({
+        id: m.id.substring(0, 8),
+        status: m.status,
+        sender_id: m.sender_id.substring(0, 8)
+      })));
+      
       // Decrypt all messages
       const decryptedMessages = await Promise.all(
         response.messages.map(async (msg) => {
@@ -468,7 +474,19 @@ export function ChatWindow({ chat }: ChatWindowProps) {
         ) : (
           messages.map((message) => {
             const isSent = message.sender_id !== chat.companion_id;
-            const displayStatus = message.localStatus || message.status;
+            const displayStatus: string | number | undefined = message.localStatus || message.status;
+            
+            // Debug logging for status
+            if (isSent && message.id) {
+              console.log(`[ChatWindow] Message ${message.id.substring(0, 8)} status:`, {
+                localStatus: message.localStatus,
+                status: message.status,
+                displayStatus,
+                displayStatusType: typeof displayStatus,
+                isDelivered: displayStatus === 'delivered',
+                isRead: displayStatus === 'read'
+              });
+            }
             
             return (
               <div
@@ -487,9 +505,12 @@ export function ChatWindow({ chat }: ChatWindowProps) {
                   {isSent && (
                     <span className="message-status">
                       {displayStatus === 'pending' && ' ⏰'}
-                      {displayStatus === 'sent' && ' ✓'}
-                      {displayStatus === 'delivered' && ' ✓'}
-                      {displayStatus === 'read' && ' ✓✓'}
+                      {/* @ts-ignore - backend sends numbers, frontend uses strings */}
+                      {(displayStatus === 'sent' || displayStatus == 0) && ' ✓'}
+                      {/* @ts-ignore */}
+                      {(displayStatus === 'delivered' || displayStatus == 1) && ' ✓'}
+                      {/* @ts-ignore */}
+                      {(displayStatus === 'read' || displayStatus == 2) && ' ✓✓'}
                     </span>
                   )}
                 </div>

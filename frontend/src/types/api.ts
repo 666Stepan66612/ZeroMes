@@ -91,6 +91,8 @@ export interface Chat {
   last_message_at: string
   encrypted_key: string
   key_iv: string
+  last_message?: string // Encrypted content of last message
+  last_message_preview?: string // Decrypted preview for display
 }
 
 export interface SaveChatKeysRequest {

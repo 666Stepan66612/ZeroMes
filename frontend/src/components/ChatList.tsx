@@ -38,7 +38,9 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
               </span>
             </div>
             <div className="chat-preview">
-              <span className="chat-last-message">Last message...</span>
+              <span className="chat-last-message">
+                {chat.last_message_preview || 'No messages yet'}
+              </span>
             </div>
           </div>
         </div>

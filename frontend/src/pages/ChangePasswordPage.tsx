@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { changePassword } from '@/lib/api';
+import { changePassword, logout } from '@/lib/api';
 import { generateKeyPair, restorePrivateKey, savePrivateKey, clearKeys } from '@/lib/crypto';
 import { getChats } from '@/lib/api/messages';
 import { decryptChatKey, encryptChatKey } from '@/lib/crypto/encryption';
 import type { ChatKeyUpdate } from '@/types/api';
+import './ChangePasswordPage.css';
 
 export function ChangePasswordPage() {
   const navigate = useNavigate();
@@ -120,11 +121,37 @@ export function ChangePasswordPage() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      clearKeys();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      clearKeys();
+      navigate('/login');
+    }
+  };
+
   return (
     <div className="change-password-page">
       <div className="change-password-container">
-        <h1>Change Password</h1>
-        <p className="subtitle">Update your password and re-encrypt your chats</p>
+        <div className="settings-header">
+          <h1>Settings</h1>
+          <button
+            onClick={() => navigate('/chats')}
+            className="btn-back"
+            title="Back to chats"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className="settings-section">
+          <h2>Change Password</h2>
+          <p className="subtitle">Update your password and re-encrypt your chats</p>
 
         {step === 'processing' && (
           <div className="processing-info">
@@ -210,6 +237,24 @@ export function ChangePasswordPage() {
             <li>Re-encrypt all your chat keys</li>
             <li>Log you out from all devices</li>
           </ul>
+        </div>
+        </div>
+
+        <div className="settings-section danger-zone">
+          <h2>Danger Zone</h2>
+          <p className="subtitle">Logout from your account</p>
+          <button
+            onClick={handleLogout}
+            className="btn-logout"
+            type="button"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            Logout
+          </button>
         </div>
       </div>
     </div>
