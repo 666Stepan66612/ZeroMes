@@ -50,10 +50,13 @@ export function RegisterPage() {
 
       // Save private key (localStorage or RAM based on rememberMe)
       savePrivateKey(keyPair.privateKey, rememberMe);
+      
+      // Save login to localStorage
+      localStorage.setItem('user_login', login.trim());
 
       // Redirect to login
-      navigate('/login', { 
-        state: { message: 'Registration successful! Please login.' } 
+      navigate('/login', {
+        state: { message: 'Registration successful! Please login.' }
       });
     } catch (err) {
       console.error('Registration error:', err);

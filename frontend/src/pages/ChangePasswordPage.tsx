@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { changePassword, logout } from '@/lib/api';
@@ -16,6 +16,14 @@ export function ChangePasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'input' | 'processing'>('input');
+  const [userLogin, setUserLogin] = useState<string>('');
+
+  useEffect(() => {
+    const login = localStorage.getItem('user_login');
+    if (login) {
+      setUserLogin(login);
+    }
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -149,6 +157,18 @@ export function ChangePasswordPage() {
           </button>
         </div>
 
+        <div className="settings-section profile-section">
+          <div className="profile-info">
+            <div className="profile-avatar">
+              {userLogin ? userLogin.substring(0, 2).toUpperCase() : 'U'}
+            </div>
+            <div className="profile-details">
+              <h2>{userLogin || 'User'}</h2>
+              <p className="profile-subtitle">Your account</p>
+            </div>
+          </div>
+        </div>
+
         <div className="settings-section">
           <h2>Change Password</h2>
           <p className="subtitle">Update your password and re-encrypt your chats</p>
@@ -227,16 +247,6 @@ export function ChangePasswordPage() {
               Cancel and go back
             </a>
           </p>
-        </div>
-
-        <div className="security-notice">
-          <p>⚠️ Important Security Information</p>
-          <p>Changing your password will:</p>
-          <ul>
-            <li>Generate new encryption keys</li>
-            <li>Re-encrypt all your chat keys</li>
-            <li>Log you out from all devices</li>
-          </ul>
         </div>
         </div>
 

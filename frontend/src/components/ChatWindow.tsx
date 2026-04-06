@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { checkOnlineStatus } from '@/lib/api/messages';
 import type { FormEvent, MouseEvent } from 'react';
 import type { Chat, Message } from '@/types/api';
 import { getMessages, sendMessage as sendMessageAPI, deleteMessage, editMessage, markAsRead } from '@/lib/api/messages';
@@ -32,6 +33,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(false);
   const [chatKey, setChatKey] = useState<Uint8Array | null>(null);
+  const [isOnline, setIsOnline] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [editingMessage, setEditingMessage] = useState<{ id: string; content: string } | null>(null);
@@ -309,6 +311,24 @@ export function ChatWindow({ chat }: ChatWindowProps) {
     }
   }, [messages.length]);
 
+  // Check online status when chat opens
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const status = await checkOnlineStatus(chat.companion_id);
+        setIsOnline(status);
+      } catch (error) {
+        console.error('Failed to check online status:', error);
+      }
+    };
+
+    checkStatus();
+    // Check every 2 seconds to match chat list
+    const interval = setInterval(checkStatus, 2000);
+
+    return () => clearInterval(interval);
+  }, [chat.companion_id]);
+
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -459,7 +479,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
         </div>
         <div className="chat-header-info">
           <h3>{chat.companion_login || chat.companion_id}</h3>
-          <span className="chat-status">Online</span>
+          <span className="chat-status">{isOnline ? 'Online' : 'Offline'}</span>
         </div>
       </div>
 

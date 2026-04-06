@@ -24,6 +24,8 @@ type MessageClient interface {
 
 type RealtimeClient interface {
 	Connect(ctx context.Context, userID string, send chan<- []byte) error
+	CheckOnlineStatus(ctx context.Context, userID string) (bool, error)
+	Close() error
 }
 
 type GatewayService interface {

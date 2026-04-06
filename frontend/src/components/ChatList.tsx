@@ -24,7 +24,7 @@ export function ChatList({ chats, selectedChat, onSelectChat }: ChatListProps) {
           className={`chat-item ${selectedChat?.id === chat.id ? 'active' : ''}`}
           onClick={() => onSelectChat(chat)}
         >
-          <div className="chat-avatar">
+          <div className={`chat-avatar ${chat.is_online ? 'online' : 'offline'}`}>
             {(chat.companion_login || chat.companion_id).substring(0, 2).toUpperCase()}
           </div>
           <div className="chat-info">

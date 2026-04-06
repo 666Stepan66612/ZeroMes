@@ -47,6 +47,9 @@ export function LoginPage() {
 
       // Save private key (localStorage or RAM based on rememberMe)
       savePrivateKey(keyPair.privateKey, rememberMe);
+      
+      // Save login to localStorage
+      localStorage.setItem('user_login', loginValue.trim());
 
       // Redirect to chats
       navigate('/chats');

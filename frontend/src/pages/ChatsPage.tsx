@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getChats, logout, saveChatKeys, getUserPublicKey } from '@/lib/api';
+import { getChats, logout, saveChatKeys, getUserPublicKey, checkOnlineStatus } from '@/lib/api';
 import { getWebSocketClient } from '@/lib/api/websocket';
 import { restorePrivateKey, clearKeys, fromHex } from '@/lib/crypto';
 import { deriveChatKey, encryptChatKeyWithPrivateKey, decryptMessage } from '@/lib/crypto/encryption';
@@ -35,8 +35,8 @@ export function ChatsPage() {
       const unsubscribeMessage = ws.onMessage(async (message: any) => {
         console.log('New message:', message);
         
-        // Handle new message notification or message sent confirmation
-        if (message.type === 'new_message' || message.type === 'message_sent') {
+        // Handle new message notification (incoming messages from others)
+        if (message.type === 'new_message') {
           const msg = message.payload;
           console.log('[ChatsPage] new_message payload:', msg);
           
@@ -53,10 +53,11 @@ export function ChatsPage() {
             console.log('[ChatsPage] New chat detected, generating keys for:', msg.chat_id);
             
             try {
-              // The companion is the sender of the message
+              // For new_message event, the sender is the companion (we are the recipient)
               const companionId = msg.sender_id;
               
               console.log('[ChatsPage] Companion ID (sender):', companionId);
+              console.log('[ChatsPage] Chat ID:', msg.chat_id);
               
               // Get companion's public key
               const companionPublicKey = await getUserPublicKey(companionId);
@@ -68,9 +69,9 @@ export function ChatsPage() {
               // Encrypt chat key with private key for storage
               const { ciphertext } = await encryptChatKeyWithPrivateKey(chatKey, privateKey);
               
-              // Save to server
+              // Save to server (user_id will be taken from JWT token on backend)
               await saveChatKeys({
-                user_id: companionId,
+                user_id: '', // Not used, backend gets it from JWT
                 companion_id: companionId,
                 encrypted_key: ciphertext,
                 key_iv: '',
@@ -127,6 +128,49 @@ export function ChatsPage() {
             }
           }
         }
+        
+        // Handle message_sent confirmation (update last message for sender)
+        if (message.type === 'message_sent') {
+          const msg = message.payload;
+          
+          if (!msg || !msg.chat_id) {
+            return;
+          }
+          
+          // Update last message preview for the chat we just sent to
+          const existingChat = chats.find(c => c.id === msg.chat_id);
+          
+          if (existingChat) {
+            try {
+              // Decrypt the message content
+              const companionPublicKey = await getUserPublicKey(existingChat.companion_id);
+              const companionPubKeyBytes = fromHex(companionPublicKey);
+              const chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
+              
+              const encryptedData = JSON.parse(msg.encrypted_content);
+              const decrypted = await decryptMessage(
+                encryptedData.ciphertext,
+                encryptedData.nonce,
+                chatKey
+              );
+              
+              const preview = decrypted.length > 50 ? decrypted.substring(0, 50) + '...' : decrypted;
+              
+              // Update chats state with new last message preview
+              setChats(prevChats => {
+                const updated = prevChats.map(chat =>
+                  chat.id === msg.chat_id
+                    ? { ...chat, last_message_preview: preview, last_message_at: msg.created_at }
+                    : chat
+                ).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+                
+                return updated;
+              });
+            } catch (error) {
+              console.error('[ChatsPage] Failed to decrypt sent message:', error);
+            }
+          }
+        }
       });
 
       ws.connect();
@@ -152,6 +196,34 @@ export function ChatsPage() {
       cleanup?.();
     };
   }, [navigate]);
+
+  // Periodically check online status for all chats
+  useEffect(() => {
+    const checkAllOnlineStatuses = async () => {
+      if (chats.length === 0) return;
+      
+      try {
+        const updatedChats = await Promise.all(
+          chats.map(async (chat) => {
+            try {
+              const isOnline = await checkOnlineStatus(chat.companion_id);
+              return { ...chat, is_online: isOnline };
+            } catch (error) {
+              return chat; // Keep existing status on error
+            }
+          })
+        );
+        setChats(updatedChats);
+      } catch (error) {
+        console.error('[ChatsPage] Failed to check online statuses:', error);
+      }
+    };
+
+    // Check immediately and then every 2 seconds
+    const interval = setInterval(checkAllOnlineStatuses, 2000);
+
+    return () => clearInterval(interval);
+  }, [chats.length]); // Only depend on length to avoid infinite loop
 
   // Memoize selectedChat to keep reference stable when only last_message_preview changes
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -249,6 +321,15 @@ export function ChatsPage() {
               console.error('[ChatsPage] Failed to fetch companion login:', error);
             }
             
+            // Check online status
+            try {
+              const isOnline = await checkOnlineStatus(chat.companion_id);
+              updatedChat.is_online = isOnline;
+            } catch (error) {
+              console.error('[ChatsPage] Failed to check online status:', error);
+              updatedChat.is_online = false;
+            }
+            
             return updatedChat;
           })
         );
@@ -312,9 +393,10 @@ export function ChatsPage() {
         key_iv: '', // Not used with current encryption scheme
       });
 
-      // Create new chat object
+      // Create new chat object with temporary ID
+      const tempChatId = `temp-${user.id}`;
       const newChat: Chat = {
-        id: '', // Will be assigned by server when first message is sent
+        id: tempChatId, // Temporary ID until first message is sent
         user_id: '', // Current user
         companion_id: user.id,
         companion_login: user.login,
@@ -326,7 +408,7 @@ export function ChatsPage() {
 
       // Add to chats list and select
       setChats([newChat, ...chats]);
-      setSelectedChatId(newChat.id);
+      setSelectedChatId(tempChatId);
       setShowSearch(false);
     } catch (error) {
       console.error('Failed to create chat:', error);

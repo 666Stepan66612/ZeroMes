@@ -127,7 +127,7 @@
   position: relative;
 }
 
-.chat-avatar::after {
+.chat-avatar.online::after {
   content: '';
   position: absolute;
   bottom: 2px;
@@ -135,6 +135,18 @@
   width: 14px;
   height: 14px;
   background: #4caf50;
+  border: 3px solid white;
+  border-radius: 50%;
+}
+
+.chat-avatar.offline::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  background: #9e9e9e;
   border: 3px solid white;
   border-radius: 50%;
 }

@@ -112,6 +112,18 @@ func (s *gatewayService) HandleWebSocket(ctx context.Context, userID string, sen
 				}
 				sendResponse(send, "chat_keys_saved", nil)
 
+			case "check_online_status":
+				isOnline, err := s.realtimeClient.CheckOnlineStatus(ctx, req.UserID)
+				if err != nil {
+					slog.Warn("check_online_status failed", "user_id", userID, "target_user", req.UserID, "err", err)
+					sendResponse(send, "error", map[string]string{"error": "failed to check online status"})
+					continue
+				}
+				sendResponse(send, "online_status", map[string]interface{}{
+					"user_id":   req.UserID,
+					"is_online": isOnline,
+				})
+
 			default:
 				slog.Warn("unknown websocket command", "user_id", userID, "type", req.Type)
 				sendResponse(send, "error", map[string]string{"error": "unknown type"})

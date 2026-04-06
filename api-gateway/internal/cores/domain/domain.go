@@ -1,4 +1,4 @@
-d .package domain
+package domain
 
 type WSRequest struct {
 	Type          string `json:"type"`

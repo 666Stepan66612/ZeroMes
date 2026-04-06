@@ -282,3 +282,36 @@ export async function updateChatKeys(
     keys,
   })
 }
+
+/**
+ * Check if user is online via WebSocket
+ *
+ * @param userID - User ID to check
+ * @returns Boolean indicating if user is online
+ */
+export async function checkOnlineStatus(userID: string): Promise<boolean> {
+  const ws = (await import('./websocket')).getWebSocketClient()
+  
+  // Wait for connection
+  await ws.waitForConnection()
+  
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      unsubscribe()
+      reject(new Error('Timeout checking online status'))
+    }, 5000)
+
+    const unsubscribe = ws.onMessage((msg: any) => {
+      if (msg.type === 'online_status' && msg.payload?.user_id === userID) {
+        clearTimeout(timeout)
+        unsubscribe()
+        resolve(msg.payload.is_online)
+      }
+    })
+
+    ws.send({
+      type: 'check_online_status',
+      user_id: userID,
+    })
+  })
+}
