@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"log/slog"
 	"sort"
 	"strings"
 	"time"
-	"errors"
-	"encoding/json"
 
 	apperrors "message-service/internal/cores/errors"
 
@@ -24,6 +24,7 @@ func NewMessageService(messageRepo MessageRepository, kafkaProducer KafkaProduce
 	return &messageService{
 		messageRepo:   messageRepo,
 		kafkaProducer: kafkaProducer,
+		outboxRepo:    outboxRepo,
 	}
 }
 
@@ -62,20 +63,20 @@ func (s *messageService) SendMessage(ctx context.Context, chatID, senderID, reci
 			"msg_id", newMessage.ID,
 			"error", err)
 		payload, _ := json.Marshal(newMessage)
-    	outboxEvent := &OutboxEvent{
-        ID:          uuid.New().String(),
-        EventType:   "message_sent",
-        AggregateID: newMessage.ID,
-        Payload:     payload,
-        CreatedAt:   time.Now(),
-        Status:      "pending",
-        RetryCount:  0,
-    }
-    if err := s.outboxRepo.SaveToOutbox(ctx, outboxEvent); err != nil {
-        slog.Error("Failed to save to outbox", "error", err)
-    } else {
-        slog.Info("Saved to outbox for retry", "message_id", newMessage.ID)
-    }
+		outboxEvent := &OutboxEvent{
+			ID:          uuid.New().String(),
+			EventType:   "message_sent",
+			AggregateID: newMessage.ID,
+			Payload:     payload,
+			CreatedAt:   time.Now(),
+			Status:      "pending",
+			RetryCount:  0,
+		}
+		if err := s.outboxRepo.SaveToOutbox(ctx, outboxEvent); err != nil {
+			slog.Error("Failed to save to outbox", "error", err)
+		} else {
+			slog.Info("Saved to outbox for retry", "message_id", newMessage.ID)
+		}
 	} else {
 		slog.Info("published to Kafka successfully", "message_id", newMessage.ID)
 	}
@@ -124,16 +125,16 @@ func (s *messageService) DeleteMessage(ctx context.Context, messageID, userID st
 	if err := s.kafkaProducer.PublishMessageDeleted(ctx, msg); err != nil {
 		slog.Warn("failed to publish message_deleted", "msg_id", messageID, "err", err)
 		payload, _ := json.Marshal(msg)
-        outboxEvent := &OutboxEvent{
-            ID:          uuid.New().String(),
-            EventType:   "message_deleted",
-            AggregateID: messageID,
-            Payload:     payload,
-            CreatedAt:   time.Now(),
-            Status:      "pending",
-            RetryCount:  0,
-        }
-        s.outboxRepo.SaveToOutbox(ctx, outboxEvent)
+		outboxEvent := &OutboxEvent{
+			ID:          uuid.New().String(),
+			EventType:   "message_deleted",
+			AggregateID: messageID,
+			Payload:     payload,
+			CreatedAt:   time.Now(),
+			Status:      "pending",
+			RetryCount:  0,
+		}
+		s.outboxRepo.SaveToOutbox(ctx, outboxEvent)
 	}
 
 	return nil
@@ -156,21 +157,21 @@ func (s *messageService) MarkAsRead(ctx context.Context, chatID, userID, lastMes
 	if err := s.kafkaProducer.PublishMessageRead(ctx, chatID, userID, msg.SenderID, lastMessageID); err != nil {
 		slog.Warn("failed to publish message_read", "chat_id", chatID, "err", err)
 		payload, _ := json.Marshal(map[string]interface{}{
-            "chat_id":         chatID,
-            "user_id":         userID,
-            "sender_id":       msg.SenderID,
-            "last_message_id": lastMessageID,
-        })
-        outboxEvent := &OutboxEvent{
-            ID:          uuid.New().String(),
-            EventType:   "message_read",
-            AggregateID: lastMessageID,
-            Payload:     payload,
-            CreatedAt:   time.Now(),
-            Status:      "pending",
-            RetryCount:  0,
-        }
-        s.outboxRepo.SaveToOutbox(ctx, outboxEvent)
+			"chat_id":         chatID,
+			"user_id":         userID,
+			"sender_id":       msg.SenderID,
+			"last_message_id": lastMessageID,
+		})
+		outboxEvent := &OutboxEvent{
+			ID:          uuid.New().String(),
+			EventType:   "message_read",
+			AggregateID: lastMessageID,
+			Payload:     payload,
+			CreatedAt:   time.Now(),
+			Status:      "pending",
+			RetryCount:  0,
+		}
+		s.outboxRepo.SaveToOutbox(ctx, outboxEvent)
 	}
 
 	return nil
@@ -197,19 +198,19 @@ func (s *messageService) AlterMessage(ctx context.Context, messageID, userID, ne
 	if err := s.kafkaProducer.PublishMessageAltered(ctx, msg, newContent); err != nil {
 		slog.Warn("failed to publish message_altered", "msg_id", messageID, "err", err)
 		payload, _ := json.Marshal(map[string]interface{}{
-            "message":     msg,
-            "new_content": newContent,
-        })
-        outboxEvent := &OutboxEvent{
-            ID:          uuid.New().String(),
-            EventType:   "message_altered",
-            AggregateID: messageID,
-            Payload:     payload,
-            CreatedAt:   time.Now(),
-            Status:      "pending",
-            RetryCount:  0,
-        }
-        s.outboxRepo.SaveToOutbox(ctx, outboxEvent)
+			"message":     msg,
+			"new_content": newContent,
+		})
+		outboxEvent := &OutboxEvent{
+			ID:          uuid.New().String(),
+			EventType:   "message_altered",
+			AggregateID: messageID,
+			Payload:     payload,
+			CreatedAt:   time.Now(),
+			Status:      "pending",
+			RetryCount:  0,
+		}
+		s.outboxRepo.SaveToOutbox(ctx, outboxEvent)
 	}
 
 	return nil
@@ -234,18 +235,18 @@ func (s *messageService) SaveChatKeys(ctx context.Context, userID, companionID, 
 
 func (s *messageService) UpdateChatKeys(ctx context.Context, userID string, keys []ChatKeyUpdate) (int, error) {
 	if userID == "" {
-        return 0, errors.New("user_id is required")
-    }
-    if len(keys) == 0 {
-        return 0, errors.New("keys array is empty")
-    }
+		return 0, errors.New("user_id is required")
+	}
+	if len(keys) == 0 {
+		return 0, errors.New("keys array is empty")
+	}
 
 	count, err := s.messageRepo.UpdateChatKeys(ctx, userID, keys)
 	if err != nil {
 		slog.Error("failed to update chat keys", "user_id", userID, "error", err)
-        return 0, err
+		return 0, err
 	}
 
 	slog.Info("chat keys updated", "user_id", userID, "count", count)
-    return count, nil
+	return count, nil
 }

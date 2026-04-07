@@ -9,7 +9,7 @@ import { sha256 } from '@noble/hashes/sha2.js'
 /**
  * Generate private key from password
  * Uses multiple SHA256 iterations for strengthening
- * 
+ *
  * @param password - User password
  * @param iterations - Number of hashing iterations (default 1000000)
  * @returns Private key (32 bytes)

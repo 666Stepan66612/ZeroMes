@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login } from '@/lib/api';
-import { generateKeyPair, savePrivateKey } from '@/lib/crypto';
+import { generateKeyPair, savePrivateKey, clearKeys } from '@/lib/crypto';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -38,6 +38,19 @@ export function LoginPage() {
     try {
       console.log('[LoginPage] Starting login, rememberMe:', rememberMe);
       
+      // Clear ALL old user data first (important for switching users)
+      await clearKeys();
+      localStorage.clear(); // Clear all localStorage including user_login, tokens, etc.
+      sessionStorage.clear(); // Clear all sessionStorage
+      
+      // Clear all cookies (JWT tokens are stored in cookies)
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+      console.log('[LoginPage] Old user data and cookies cleared');
+      
       // Generate key pair from password
       const keyPair = await generateKeyPair(password);
       console.log('[LoginPage] Key pair generated');
@@ -54,7 +67,7 @@ export function LoginPage() {
       await savePrivateKey(keyPair.privateKey, rememberMe);
       console.log('[LoginPage] Private key saved');
       
-      // Save login to localStorage
+      // Save NEW user login to localStorage
       localStorage.setItem('user_login', loginValue.trim());
 
       // Small delay to ensure storage is written

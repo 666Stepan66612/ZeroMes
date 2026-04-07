@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 
+	"auth-service/internal/auth/service"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"auth-service/internal/auth/service"
 )
 
 type postgresUserRepository struct {
@@ -25,7 +26,7 @@ func (r *postgresUserRepository) Create(ctx context.Context, user *service.User)
 	`
 
 	_, err := r.pool.Exec(ctx, query, user.ID, user.Login, user.AuthHash, user.ServerSalt, user.PublicKey, user.CreatedAt, user.UpdatedAt)
-	
+
 	return err
 }
 
@@ -52,7 +53,7 @@ func (r *postgresUserRepository) GetByID(ctx context.Context, id string) (*servi
 	return user, nil
 }
 
-func (r *postgresUserRepository) GetByLogin(ctx context.Context, login string) (*service.User, error){
+func (r *postgresUserRepository) GetByLogin(ctx context.Context, login string) (*service.User, error) {
 	query := `
 		SELECT id, login, auth_hash, server_salt, public_key, created_at, updated_at
 		FROM users
@@ -118,13 +119,13 @@ func (r *postgresUserRepository) UpdateAuthHashAndPublicKey(ctx context.Context,
 	query := `
 		UPDATE users
 		SET auth_hash = $1, public_key = $2
-		WHERE id = $2
+		WHERE id = $3
 	`
 	_, err = tx.Exec(ctx, query, newAuthHash, newPublicKey, userID)
 	if err != nil {
-    	return fmt.Errorf("failed to update auth hash: %w", err)
+		return fmt.Errorf("failed to update auth hash: %w", err)
 	}
-	
+
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}

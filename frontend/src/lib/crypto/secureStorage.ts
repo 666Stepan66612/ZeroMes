@@ -1,11 +1,15 @@
 /**
  * Secure storage for sensitive data (private keys)
  * Uses IndexedDB with encryption for better XSS protection
+ * Private key is kept in closure, NOT in window object
  */
 
 const DB_NAME = 'SecureMessengerDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'keys';
+
+// Private key cache in closure (not accessible via window)
+let cachedPrivateKey: Uint8Array | null = null;
 
 /**
  * Initialize IndexedDB
@@ -107,8 +111,8 @@ export async function savePrivateKeySecure(
 ): Promise<void> {
   console.log('[SecureStorage] Saving key, persistent:', persistent);
   
-  // Always keep in RAM for fast access
-  (window as any).encryptionKey = privateKey;
+  // Cache in memory (closure, not window)
+  cachedPrivateKey = privateKey;
   
   if (persistent) {
     // Persistent storage: IndexedDB with encryption
@@ -167,11 +171,10 @@ export async function savePrivateKeySecure(
 export async function restorePrivateKeySecure(): Promise<Uint8Array | null> {
   console.log('[SecureStorage] Restoring key...');
   
-  // Check RAM first (fastest)
-  const ramKey = (window as any).encryptionKey;
-  if (ramKey instanceof Uint8Array) {
-    console.log('[SecureStorage] ✅ Found key in RAM');
-    return ramKey;
+  // Check cache first (fastest)
+  if (cachedPrivateKey instanceof Uint8Array) {
+    console.log('[SecureStorage] ✅ Found key in cache');
+    return cachedPrivateKey;
   }
   
   const storageType = localStorage.getItem('key_storage_type');
@@ -196,8 +199,8 @@ export async function restorePrivateKeySecure(): Promise<Uint8Array | null> {
       if (data && data.encrypted && data.iv) {
         console.log('[SecureStorage] Found encrypted key in IndexedDB, decrypting...');
         const privateKey = await decryptData(data.encrypted, data.iv);
-        // Cache in RAM
-        (window as any).encryptionKey = privateKey;
+        // Cache in closure
+        cachedPrivateKey = privateKey;
         console.log('[SecureStorage] ✅ Successfully restored from IndexedDB');
         return privateKey;
       } else {
@@ -217,7 +220,7 @@ export async function restorePrivateKeySecure(): Promise<Uint8Array | null> {
         for (let i = 0; i < binary.length; i++) {
           bytes[i] = binary.charCodeAt(i);
         }
-        (window as any).encryptionKey = bytes;
+        cachedPrivateKey = bytes;
         console.log('[SecureStorage] ✅ Restored from localStorage fallback');
         return bytes;
       } catch (error) {
@@ -236,7 +239,7 @@ export async function restorePrivateKeySecure(): Promise<Uint8Array | null> {
         for (let i = 0; i < binary.length; i++) {
           bytes[i] = binary.charCodeAt(i);
         }
-        (window as any).encryptionKey = bytes;
+        cachedPrivateKey = bytes;
         console.log('[SecureStorage] ✅ Restored from localStorage (session mode)');
         return bytes;
       } catch (error) {
@@ -257,7 +260,7 @@ export async function restorePrivateKeySecure(): Promise<Uint8Array | null> {
  */
 export function hasStoredKeySecure(): boolean {
   return !!(
-    (window as any).encryptionKey ||
+    cachedPrivateKey ||
     localStorage.getItem('key_storage_type')
   );
 }
@@ -266,13 +269,10 @@ export function hasStoredKeySecure(): boolean {
  * Clear all stored keys
  */
 export async function clearKeysSecure(): Promise<void> {
-  // Clear RAM
-  if ((window as any).encryptionKey) {
-    const key = (window as any).encryptionKey;
-    if (key instanceof Uint8Array) {
-      key.fill(0); // Wipe memory
-    }
-    delete (window as any).encryptionKey;
+  // Clear cached key
+  if (cachedPrivateKey) {
+    cachedPrivateKey.fill(0); // Wipe memory
+    cachedPrivateKey = null;
   }
   
   // Clear IndexedDB

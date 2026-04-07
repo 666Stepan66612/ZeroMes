@@ -16,7 +16,7 @@ import {
 
 /**
  * Generate key pair from password
- * 
+ *
  * @param password - User password
  * @param iterations - Number of hashing iterations
  * @returns Key pair (private, public) and hash for authentication
