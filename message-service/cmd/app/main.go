@@ -52,8 +52,9 @@ func main() {
 	log.Println("Kafka producer initialized")
 
 	messageRepo := repository.NewPostgresRepository(pgPool)
+	outboxRepo := repository.NewOutboxRepository(pgPool)
 
-	messageService := service.NewMessageService(messageRepo, kafkaProducer)
+	messageService := service.NewMessageService(messageRepo, kafkaProducer, outboxRepo)
 
 	grpcServer := grpc.NewServer()
 	grpcHandler := transport.NewGRPCHandler(messageService)
