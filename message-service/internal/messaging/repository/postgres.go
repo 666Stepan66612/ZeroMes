@@ -28,7 +28,7 @@ func (r *postgresRepository) CreateWithChats(ctx context.Context, msg *service.M
 		return err
 	}
 	defer tx.Rollback(ctx)
- 
+
 	_, err = tx.Exec(ctx, `
 		INSERT INTO messages (id, chat_id, sender_id, recipient_id, encrypted_content, message_type, created_at, status)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -37,7 +37,7 @@ func (r *postgresRepository) CreateWithChats(ctx context.Context, msg *service.M
 	if err != nil {
 		return err
 	}
- 
+
 	upsert := `
 		INSERT INTO chats (user_id, companion_id, last_message_at)
 		VALUES ($1, $2, NOW())
@@ -49,7 +49,7 @@ func (r *postgresRepository) CreateWithChats(ctx context.Context, msg *service.M
 	if _, err = tx.Exec(ctx, upsert, msg.RecipientID, msg.SenderID); err != nil {
 		return err
 	}
- 
+
 	return tx.Commit(ctx)
 }
 
@@ -62,7 +62,7 @@ func (r *postgresRepository) GetByChatID(ctx context.Context, chatID string, lim
 			SELECT id, chat_id, sender_id, recipient_id, encrypted_content, message_type, created_at, status
 			FROM messages
 			WHERE chat_id = $1
-			ORDER BY created_at DESC, id DESC
+			ORDER BY created_at ASC, id ASC
 			LIMIT $2
 		`
 
@@ -72,12 +72,12 @@ func (r *postgresRepository) GetByChatID(ctx context.Context, chatID string, lim
 			SELECT id, chat_id, sender_id, recipient_id, encrypted_content, message_type, created_at, status
 			FROM messages
 			WHERE chat_id = $1 AND (created_at, id) < (SELECT created_at, id FROM messages WHERE id = $2)
-			ORDER BY created_at DESC, id DESC
+			ORDER BY created_at ASC, id ASC
 			LIMIT $3
 		`
 		args = []interface{}{chatID, lastMessageID, limit}
 	}
-	
+
 	rows, err := r.pool.Query(ctx, query, args...)
 	if err == pgx.ErrNoRows {
 		return nil, nil
@@ -94,12 +94,12 @@ func (r *postgresRepository) GetByChatID(ctx context.Context, chatID string, lim
 		err := rows.Scan(
 			&msg.ID,
 			&msg.ChatID,
-    		&msg.SenderID,
-    		&msg.RecipientID,
+			&msg.SenderID,
+			&msg.RecipientID,
 			&msg.EncryptedContent,
-    		&msg.MessageType,
-    		&msg.CreatedAt,
-    		&msg.Status,
+			&msg.MessageType,
+			&msg.CreatedAt,
+			&msg.Status,
 		)
 		if err != nil {
 			return nil, err
@@ -120,13 +120,13 @@ func (r *postgresRepository) GetByID(ctx context.Context, messageID string) (*se
 	msg := &service.Message{}
 	err := r.pool.QueryRow(ctx, query, messageID).Scan(
 		&msg.ID,
-    	&msg.ChatID,
-    	&msg.SenderID,
-    	&msg.RecipientID,
-    	&msg.EncryptedContent,
-    	&msg.MessageType,
-    	&msg.CreatedAt,
-    	&msg.Status,
+		&msg.ChatID,
+		&msg.SenderID,
+		&msg.RecipientID,
+		&msg.EncryptedContent,
+		&msg.MessageType,
+		&msg.CreatedAt,
+		&msg.Status,
 	)
 
 	if err == pgx.ErrNoRows {
@@ -171,13 +171,26 @@ func (r *postgresRepository) UpdateStatusBatch(ctx context.Context, chatID, user
 }
 
 func (r *postgresRepository) GetChats(ctx context.Context, userID string) ([]*service.ChatsList, error) {
-	query :=  `
-		SELECT user_id, companion_id, created_at, last_message_at,
-		       COALESCE(encrypted_key, '') as encrypted_key,
-		       COALESCE(key_iv, '') as key_iv
-		FROM chats
-		WHERE user_id = $1
-		ORDER BY last_message_at DESC
+	query := `
+		SELECT c.user_id, c.companion_id, c.created_at, c.last_message_at,
+		       COALESCE(c.encrypted_key, '') as encrypted_key,
+		       COALESCE(c.key_iv, '') as key_iv,
+		       COALESCE(m.encrypted_content, '') as last_message
+		FROM chats c
+		LEFT JOIN LATERAL (
+			SELECT encrypted_content
+			FROM messages
+			WHERE chat_id = (
+				CASE
+					WHEN c.user_id < c.companion_id THEN c.user_id || ':' || c.companion_id
+					ELSE c.companion_id || ':' || c.user_id
+				END
+			)
+			ORDER BY created_at DESC
+			LIMIT 1
+		) m ON true
+		WHERE c.user_id = $1
+		ORDER BY c.last_message_at DESC
 	`
 
 	rows, err := r.pool.Query(ctx, query, userID)
@@ -194,12 +207,13 @@ func (r *postgresRepository) GetChats(ctx context.Context, userID string) ([]*se
 	for rows.Next() {
 		cht := &service.ChatsList{}
 		err := rows.Scan(
-    		&cht.UserID,
-    		&cht.CompanionID,
-    		&cht.CreatedAt,
+			&cht.UserID,
+			&cht.CompanionID,
+			&cht.CreatedAt,
 			&cht.LastMessageAt,
 			&cht.EncryptedKey,
 			&cht.KeyIV,
+			&cht.LastMessage,
 		)
 		if err != nil {
 			return nil, err
@@ -217,11 +231,12 @@ func (r *postgresRepository) GetChats(ctx context.Context, userID string) ([]*se
 
 func (r *postgresRepository) SaveChatKeys(ctx context.Context, userID, companionID, encryptedKey, keyIV string) error {
 	query := `
-		UPDATE chats
-		SET encrypted_key = $1, key_iv = $2
-		WHERE user_id = $3 AND companion_id = $4
+		INSERT INTO chats (user_id, companion_id, encrypted_key, key_iv, last_message_at)
+		VALUES ($1, $2, $3, $4, NOW())
+		ON CONFLICT (user_id, companion_id)
+		DO UPDATE SET encrypted_key = $3, key_iv = $4
 	`
-	_, err := r.pool.Exec(ctx, query, encryptedKey, keyIV, userID, companionID)
+	_, err := r.pool.Exec(ctx, query, userID, companionID, encryptedKey, keyIV)
 	return err
 }
 
@@ -238,17 +253,17 @@ func (r *postgresRepository) UpdateChatKeys(ctx context.Context, userID string, 
 		SET encrypted_key = $1, key_iv = $2
 		WHERE user_id = $3 AND companion_id = $4
 	`
-    for _, key := range keys {
-        result, err := tx.Exec(ctx, query, key.EncryptedKey, key.KeyIV, userID, key.CompanionID)
-        if err != nil {
-            return 0, fmt.Errorf("failed to update chat key for companion %s: %w", key.CompanionID, err)
-        }
-        count += int(result.RowsAffected())
-    }
+	for _, key := range keys {
+		result, err := tx.Exec(ctx, query, key.EncryptedKey, key.KeyIV, userID, key.CompanionID)
+		if err != nil {
+			return 0, fmt.Errorf("failed to update chat key for companion %s: %w", key.CompanionID, err)
+		}
+		count += int(result.RowsAffected())
+	}
 
 	if err := tx.Commit(ctx); err != nil {
 		return 0, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-    return count, nil
+	return count, nil
 }

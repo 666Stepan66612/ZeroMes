@@ -25,8 +25,9 @@
         }
     }
     
-    # API
+    # API (strip /api prefix)
     handle /api/* {
+        uri strip_prefix /api
         reverse_proxy api-gateway:8083 {
             header_up Host {host}
             header_up X-Real-IP {remote_host}

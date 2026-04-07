@@ -11,6 +11,8 @@ require (
 	google.golang.org/grpc v1.79.1
 )
 
+replace github.com/666Stepan66612/ZeroMes/pkg => ../pkg
+
 require (
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.15.0 // indirect

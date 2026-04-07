@@ -21,6 +21,11 @@ func main() {
 	realtimeServiceAddr := os.Getenv("REALTIME_SERVICE_ADDR")
 	jwtSecret := os.Getenv("JWT_ACCESS_SECRET")
 
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_ADDR"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+	})
+
 	messageClient, err := service.NewMessageClient(messageServiceAddr)
 	if err != nil {
 		slog.Error("failed to connect to message client", "err", err)
@@ -28,17 +33,12 @@ func main() {
 	}
 	defer messageClient.Close()
 
-	realtimeClient, err := service.NewRealtimeClient(realtimeServiceAddr)
+	realtimeClient, err := service.NewRealtimeClient(realtimeServiceAddr, redisClient)
 	if err != nil {
 		slog.Error("failed to connect to realtime client", "err", err)
 		os.Exit(1)
 	}
 	defer realtimeClient.Close()
-
-	redisClient := redis.NewClient(&redis.Options{
-    	Addr: os.Getenv("REDIS_ADDR"),
-		Password: os.Getenv("REDIS_PASSWORD"),
-	})
 
 	authClient := service.NewAuthClient(jwtSecret, authServiceURL)
 
@@ -54,11 +54,12 @@ func main() {
 	}
 
 	r := gin.Default()
+	r.Use(middleware.CORS())
 	r.Use(func(c *gin.Context) {
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 1<<20)
 		c.Next()
 	})
-	
+
 	authLimit := middleware.RateLimiter(redisClient, 120, time.Minute)
 
 	auth := r.Group("/auth")

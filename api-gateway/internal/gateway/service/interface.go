@@ -8,7 +8,7 @@ import (
 
 type AuthClient interface {
 	ValidateToken(token string) (userID string, err error)
-	ChangePassword(ctx context.Context, login, oldHash, newHash string) (string, error)
+	ChangePassword(ctx context.Context, login, oldHash, newHash, newPublicKey string) (string, error)
 }
 
 type MessageClient interface {
@@ -24,6 +24,8 @@ type MessageClient interface {
 
 type RealtimeClient interface {
 	Connect(ctx context.Context, userID string, send chan<- []byte) error
+	CheckOnlineStatus(ctx context.Context, userID string) (bool, error)
+	Close() error
 }
 
 type GatewayService interface {

@@ -46,11 +46,11 @@ func (c *MessageClientService) SendMessage(ctx context.Context, chatID, senderID
 	}
 	slog.Info("message-service SendMessage success", "message_id", resp.Message.Id)
 	return &domain.Message{
-		ID:        resp.Message.Id,
-		ChatID:    resp.Message.ChatId,
-		SenderID:  resp.Message.SenderId,
-		Content:   resp.Message.EncryptedContent,
-		CreatedAt: resp.Message.CreatedAt.AsTime().String(),
+		ID:               resp.Message.Id,
+		ChatID:           resp.Message.ChatId,
+		SenderID:         resp.Message.SenderId,
+		EncryptedContent: resp.Message.EncryptedContent,
+		CreatedAt:        resp.Message.CreatedAt.AsTime().String(),
 	}, nil
 }
 
@@ -68,12 +68,12 @@ func (c *MessageClientService) GetMessages(ctx context.Context, chatID, userID, 
 	messages := make([]*domain.Message, len(resp.Messages))
 	for i, m := range resp.Messages {
 		messages[i] = &domain.Message{
-			ID:        m.Id,
-			ChatID:    m.ChatId,
-			SenderID:  m.SenderId,
-			Content:   m.EncryptedContent,
-			CreatedAt: m.CreatedAt.AsTime().String(),
-			Status:    int32(m.Status),
+			ID:               m.Id,
+			ChatID:           m.ChatId,
+			SenderID:         m.SenderId,
+			EncryptedContent: m.EncryptedContent,
+			CreatedAt:        m.CreatedAt.AsTime().String(),
+			Status:           int32(m.Status),
 		}
 	}
 
@@ -111,12 +111,15 @@ func (c *MessageClientService) AlterMessage(ctx context.Context, messageID, user
 }
 
 func (c *MessageClientService) GetChats(ctx context.Context, userID string) (*domain.GetChatsResponse, error) {
+	slog.Info("calling message-service GetChats", "user_id", userID)
 	resp, err := c.client.GetChats(ctx, &messagepb.GetChatsRequest{
 		UserId: userID,
 	})
 	if err != nil {
+		slog.Error("message-service GetChats failed", "err", err)
 		return nil, err
 	}
+	slog.Info("message-service GetChats success", "chats_count", len(resp.Chats))
 
 	chats := make([]*domain.Chat, len(resp.Chats))
 	for i, ch := range resp.Chats {
@@ -126,6 +129,7 @@ func (c *MessageClientService) GetChats(ctx context.Context, userID string) (*do
 			LastMessageAt: ch.LastMessageAt.AsTime().String(),
 			EncryptedKey:  ch.EncryptedKey,
 			KeyIV:         ch.KeyIv,
+			LastMessage:   ch.LastMessage,
 		}
 	}
 
@@ -145,7 +149,7 @@ func (c *MessageClientService) SaveChatKeys(ctx context.Context, userID, compani
 func (c *MessageClientService) UpdateChatKeys(ctx context.Context, userID string, keys []domain.ChatKeyUpdate) (int, error) {
 	slog.Info("calling message-service UpdateChatKeys", "user_id", userID, "keys_count", len(keys))
 
-	// Конвертируем domain.ChatKeyUpdate в protobuf ChatKeyUpdate
+	// Convert domain.ChatKeyUpdate to protobuf ChatKeyUpdate
 	pbKeys := make([]*messagepb.ChatKeyUpdate, len(keys))
 	for i, k := range keys {
 		pbKeys[i] = &messagepb.ChatKeyUpdate{

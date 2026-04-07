@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Storage Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 3px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🔐 Secure Storage Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Session Storage (Remember Me = OFF)</h2>
+        <button onclick="testSessionStorage()">Save to Session Storage</button>
+        <button onclick="checkStorage()">Check Storage</button>
+        <button onclick="clearAll()">Clear All</button>
+        <div id="session-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Persistent Storage (Remember Me = ON)</h2>
+        <button onclick="testPersistentStorage()">Save to IndexedDB</button>
+        <button onclick="checkStorage()">Check Storage</button>
+        <button onclick="clearAll()">Clear All</button>
+        <div id="persistent-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Current Storage State</h2>
+        <div id="storage-state" class="result"></div>
+    </div>
+
+    <script>
+        const testKey = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
+
+        function testSessionStorage() {
+            try {
+                const base64Key = btoa(String.fromCharCode(...testKey));
+                sessionStorage.setItem('private_key', base64Key);
+                localStorage.setItem('key_storage_type', 'session');
+                
+                document.getElementById('session-result').innerHTML = 
+                    '<span class="success">✅ Saved to sessionStorage</span><br>' +
+                    'Close this tab and reopen - key should be gone!';
+            } catch (error) {
+                document.getElementById('session-result').innerHTML = 
+                    '<span class="error">❌ Error: ' + error.message + '</span>';
+            }
+        }
+
+        async function testPersistentStorage() {
+            try {
+                // Open IndexedDB
+                const db = await openDB();
+                
+                // Encrypt key (simplified - just for testing)
+                const iv = crypto.getRandomValues(new Uint8Array(12));
+                const encrypted = testKey; // In real code, this would be encrypted
+                
+                // Save to IndexedDB
+                const transaction = db.transaction(['keys'], 'readwrite');
+                const store = transaction.objectStore('keys');
+                
+                await new Promise((resolve, reject) => {
+                    const request = store.put({ encrypted, iv }, 'private_key');
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+                
+                localStorage.setItem('key_storage_type', 'persistent');
+                
+                db.close();
+                
+                document.getElementById('persistent-result').innerHTML = 
+                    '<span class="success">✅ Saved to IndexedDB</span><br>' +
+                    'Close browser and reopen - key should persist!';
+            } catch (error) {
+                document.getElementById('persistent-result').innerHTML = 
+                    '<span class="error">❌ Error: ' + error.message + '</span>';
+            }
+        }
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('SecureMessengerDB', 1);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('keys')) {
+                        db.createObjectStore('keys');
+                    }
+                };
+            });
+        }
+
+        async function checkStorage() {
+            let html = '<h3>Storage Contents:</h3>';
+            
+            // Check sessionStorage
+            const sessionKey = sessionStorage.getItem('private_key');
+            html += '<strong>sessionStorage:</strong> ' + 
+                (sessionKey ? '<span class="success">✅ Has key</span>' : '<span class="error">❌ Empty</span>') + '<br>';
+            
+            // Check localStorage
+            const storageType = localStorage.getItem('key_storage_type');
+            html += '<strong>localStorage (type):</strong> ' + 
+                (storageType || '<span class="error">none</span>') + '<br>';
+            
+            // Check IndexedDB
+            try {
+                const db = await openDB();
+                const transaction = db.transaction(['keys'], 'readonly');
+                const store = transaction.objectStore('keys');
+                
+                const data = await new Promise((resolve, reject) => {
+                    const request = store.get('private_key');
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+                
+                db.close();
+                
+                html += '<strong>IndexedDB:</strong> ' + 
+                    (data ? '<span class="success">✅ Has key</span>' : '<span class="error">❌ Empty</span>');
+            } catch (error) {
+                html += '<strong>IndexedDB:</strong> <span class="error">❌ Error: ' + error.message + '</span>';
+            }
+            
+            document.getElementById('storage-state').innerHTML = html;
+        }
+
+        async function clearAll() {
+            // Clear sessionStorage
+            sessionStorage.removeItem('private_key');
+            
+            // Clear localStorage
+            localStorage.removeItem('key_storage_type');
+            localStorage.removeItem('private_key');
+            
+            // Clear IndexedDB
+            try {
+                const db = await openDB();
+                const transaction = db.transaction(['keys'], 'readwrite');
+                const store = transaction.objectStore('keys');
+                
+                await new Promise((resolve, reject) => {
+                    const request = store.delete('private_key');
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+                
+                db.close();
+            } catch (error) {
+                console.error('Error clearing IndexedDB:', error);
+            }
+            
+            document.getElementById('storage-state').innerHTML = 
+                '<span class="success">✅ All storage cleared</span>';
+            document.getElementById('session-result').innerHTML = '';
+            document.getElementById('persistent-result').innerHTML = '';
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', checkStorage);
+    </script>
+</body>
+</html>

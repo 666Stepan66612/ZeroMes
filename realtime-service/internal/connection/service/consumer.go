@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"time"
 
 	domain "realtime-service/internal/cores/domain"
 
@@ -22,12 +23,12 @@ type KafkaConsumer struct {
 func NewKafkaConsumer(brokers []string, topic, groupID string, manager ConnectionManager) *KafkaConsumer {
 	return &KafkaConsumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
-			Brokers: brokers,
-			Topic:   topic,
-			GroupID: groupID,
+			Brokers:     brokers,
+			Topic:       topic,
+			GroupID:     groupID,
 			StartOffset: kafka.FirstOffset,
-            MinBytes:    1,
-            MaxBytes:    10e6,     
+			MinBytes:    1,
+			MaxBytes:    10e6,
 		}),
 		manager: manager,
 	}
@@ -70,7 +71,7 @@ func (c *KafkaConsumer) Start(ctx context.Context) error {
 				SenderID:    protoMsg.SenderId,
 				RecipientID: protoMsg.RecipientId,
 				Content:     protoMsg.EncryptedContent,
-				Timestamp:   protoMsg.CreatedAt.AsTime().Unix(),
+				Timestamp:   protoMsg.CreatedAt.AsTime().Format(time.RFC3339),
 			}
 
 			if err := c.manager.DeliverMessage(ctx, msg); err != nil {

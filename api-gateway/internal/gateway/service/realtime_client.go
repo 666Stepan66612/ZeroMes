@@ -3,10 +3,12 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"api-gateway/internal/cores/domain"
 
 	realtimepb "github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepb"
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
@@ -15,9 +17,10 @@ import (
 type RealtimeClientService struct {
 	conn   *grpc.ClientConn
 	client realtimepb.ConnectionServiceClient
+	redis  *redis.Client
 }
 
-func NewRealtimeClient(addr string) (*RealtimeClientService, error) {
+func NewRealtimeClient(addr string, redisClient *redis.Client) (*RealtimeClientService, error) {
 	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
@@ -25,6 +28,7 @@ func NewRealtimeClient(addr string) (*RealtimeClientService, error) {
 	return &RealtimeClientService{
 		conn:   conn,
 		client: realtimepb.NewConnectionServiceClient(conn),
+		redis:  redisClient,
 	}, nil
 }
 
@@ -119,4 +123,13 @@ func (c *RealtimeClientService) Connect(ctx context.Context, userID string, send
 	}()
 
 	return nil
+}
+
+func (c *RealtimeClientService) CheckOnlineStatus(ctx context.Context, userID string) (bool, error) {
+	key := fmt.Sprintf("user:%s:online", userID)
+	exists, err := c.redis.Exists(ctx, key).Result()
+	if err != nil {
+		return false, err
+	}
+	return exists > 0, nil
 }

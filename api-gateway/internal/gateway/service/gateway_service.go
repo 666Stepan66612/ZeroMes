@@ -35,11 +35,15 @@ func (s *gatewayService) HandleWebSocket(ctx context.Context, userID string, sen
 			}
 			var req domain.WSRequest
 			if err := json.Unmarshal(data, &req); err != nil {
-				slog.Debug("invalid websocket request", "user_id", userID, "err", err)
+				slog.Debug("invalid websocket request", "user_id", userID, "err", err, "data", string(data))
 				sendResponse(send, "error", map[string]string{"error": "invalid request"})
 				continue
 			}
+			slog.Info("websocket message received", "user_id", userID, "type", req.Type)
 			switch req.Type {
+			case "ping":
+				sendResponse(send, "pong", nil)
+
 			case "send_message":
 				slog.Info("send_message request", "user_id", userID, "recipient_id", req.RecipientID)
 				result, err := s.messageClient.SendMessage(ctx, req.ChatID, userID, req.RecipientID, req.Content, req.MessageType)
@@ -92,21 +96,33 @@ func (s *gatewayService) HandleWebSocket(ctx context.Context, userID string, sen
 					slog.Warn("get_chats failed", "user_id", userID, "err", err)
 					sendResponse(send, "error", map[string]string{"error": "failed to fetch chats"})
 					continue
-				} else {
-					sendResponse(send, "chats", result)
-					continue
 				}
-			
+				slog.Info("get_chats success", "user_id", userID, "chats_count", len(result.Chats))
+				if len(result.Chats) > 0 {
+					slog.Info("first chat debug", "chat_id", result.Chats[0].ID, "last_message", result.Chats[0].LastMessage)
+				}
+				sendResponse(send, "chats", result)
+
 			case "save_chat_keys":
-    			err := s.messageClient.SaveChatKeys(ctx, userID, req.CompanionID, req.EncryptedKey, req.KeyIV)
+				err := s.messageClient.SaveChatKeys(ctx, userID, req.CompanionID, req.EncryptedKey, req.KeyIV)
 				if err != nil {
 					slog.Warn("save_chat_keys failed", "user_id", userID, "err", err)
-					sendResponse(send, "error", map[string]string{"error": "failed to fetch chats"})
-					continue
-				} else {
-					sendResponse(send, "keys_saved", nil)
+					sendResponse(send, "error", map[string]string{"error": "failed to save chat keys"})
 					continue
 				}
+				sendResponse(send, "chat_keys_saved", nil)
+
+			case "check_online_status":
+				isOnline, err := s.realtimeClient.CheckOnlineStatus(ctx, req.UserID)
+				if err != nil {
+					slog.Warn("check_online_status failed", "user_id", userID, "target_user", req.UserID, "err", err)
+					sendResponse(send, "error", map[string]string{"error": "failed to check online status"})
+					continue
+				}
+				sendResponse(send, "online_status", map[string]interface{}{
+					"user_id":   req.UserID,
+					"is_online": isOnline,
+				})
 
 			default:
 				slog.Warn("unknown websocket command", "user_id", userID, "type", req.Type)
@@ -123,8 +139,9 @@ func sendResponse(send chan<- []byte, msgType string, payload interface{}) {
 	}
 	data, err := json.Marshal(resp)
 	if err != nil {
-		slog.Error("failed to marshal websocket response", "err", err)
+		slog.Error("failed to marshal websocket response", "err", err, "type", msgType)
 		return
 	}
+	slog.Info("sending websocket response", "type", msgType)
 	send <- data
 }

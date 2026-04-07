@@ -143,13 +143,15 @@ func (h *GRPCHandler) GetChats(ctx context.Context, req *pb.GetChatsRequest) (*p
 	pbChats := make([]*pb.Chat, 0, len(chats))
 	for _, cht := range chats {
 		pbChats = append(pbChats, &pb.Chat{
-			Id:            cht.ChatID,
-			UserId:        cht.UserID,
-			CompanionId:   cht.CompanionID,
-			CreatedAt:     timestamppb.New(cht.CreatedAt),
-			LastMessageAt: timestamppb.New(cht.LastMessageAt),
-			EncryptedKey:  cht.EncryptedKey,
-			KeyIv:         cht.KeyIV,
+			Id:             cht.ChatID,
+			UserId:         cht.UserID,
+			CompanionId:    cht.CompanionID,
+			CompanionLogin: "", // TODO: Get from auth-service or store in chats table
+			CreatedAt:      timestamppb.New(cht.CreatedAt),
+			LastMessageAt:  timestamppb.New(cht.LastMessageAt),
+			EncryptedKey:   cht.EncryptedKey,
+			KeyIv:          cht.KeyIV,
+			LastMessage:    cht.LastMessage,
 		})
 	}
 
@@ -177,22 +179,22 @@ func (h *GRPCHandler) UpdateChatKeys(ctx context.Context, req *pb.UpdateChatKeys
 	keys := make([]service.ChatKeyUpdate, len(req.Keys))
 	for i, k := range req.Keys {
 		keys[i] = service.ChatKeyUpdate{
-			CompanionID: k.CompanionId,
+			CompanionID:  k.CompanionId,
 			EncryptedKey: k.EncryptedKey,
-			KeyIV: k.KeyIv,
+			KeyIV:        k.KeyIv,
 		}
 	}
 
 	count, err := h.messageService.UpdateChatKeys(ctx, req.UserId, keys)
 	if err != nil {
 		return &pb.UpdateChatKeysResponse{
-			Success: false,
+			Success:      false,
 			UpdatedCount: 0,
 		}, status.Errorf(codes.Internal, "failed to update chat keys: %v", err)
 	}
 
 	return &pb.UpdateChatKeysResponse{
-		Success: true,
+		Success:      true,
 		UpdatedCount: int32(count),
 	}, nil
 }
