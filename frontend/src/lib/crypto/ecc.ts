@@ -11,10 +11,10 @@ import { sha256 } from '@noble/hashes/sha2.js'
  * Uses multiple SHA256 iterations for strengthening
  * 
  * @param password - User password
- * @param iterations - Number of hashing iterations (default 10000)
+ * @param iterations - Number of hashing iterations (default 1000000)
  * @returns Private key (32 bytes)
  */
-export function derivePrivateKey(password: string, iterations = 10000): Uint8Array {
+export function derivePrivateKey(password: string, iterations = 1000000): Uint8Array {
   let hash: Uint8Array = new TextEncoder().encode(password)
   
   // Multiple SHA256 iterations for brute-force protection
