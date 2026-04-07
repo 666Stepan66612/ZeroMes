@@ -60,15 +60,18 @@ func main() {
 		c.Next()
 	})
 
-	authLimit := middleware.RateLimiter(redisClient, 120, time.Minute)
+	// Rate limiters with different strictness levels
+	strictAuthLimit := middleware.RateLimiter(redisClient, 5, time.Minute)
+	authLimit := middleware.RateLimiter(redisClient, 10, time.Minute)
+	apiLimit := middleware.RateLimiter(redisClient, 60, time.Minute)
 
 	auth := r.Group("/auth")
 	{
-		auth.POST("/register", authLimit, authProxy.Register)
-		auth.POST("/login", authLimit, authProxy.Login)
+		auth.POST("/register", strictAuthLimit, authProxy.Register)
+		auth.POST("/login", strictAuthLimit, authProxy.Login)
 		auth.POST("/refresh", authLimit, authProxy.Refresh)
 		auth.POST("/logout", authLimit, authProxy.Logout)
-		auth.GET("/search", middleware.JWTMiddleware(jwtSecret, redisClient), authProxy.Search)
+		auth.GET("/search", middleware.JWTMiddleware(jwtSecret, redisClient), apiLimit, authProxy.Search)
 		auth.POST("/change-password", authLimit, sagaHandler.ChangePassword)
 	}
 
