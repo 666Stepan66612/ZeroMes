@@ -7,6 +7,7 @@ import (
 	"message-service/internal/messaging/repository"
 	"message-service/internal/messaging/service"
 	"message-service/internal/messaging/transport"
+	worker "message-service/internal/cores/outbox-worker"
 	"message-service/pkg/kafka"
 	"net"
 	"os"
@@ -52,8 +53,14 @@ func main() {
 	log.Println("Kafka producer initialized")
 
 	messageRepo := repository.NewPostgresRepository(pgPool)
+	outboxRepo := repository.NewOutboxRepository(pgPool)
+	outboxWorker := worker.NewOutboxWorker(outboxRepo, kafkaProducer)
 
-	messageService := service.NewMessageService(messageRepo, kafkaProducer)
+	workerCtx, workerCancel := context.WithCancel(context.Background())
+	defer workerCancel()
+	go outboxWorker.Start(workerCtx)
+
+	messageService := service.NewMessageService(messageRepo, kafkaProducer, outboxRepo)
 
 	grpcServer := grpc.NewServer()
 	grpcHandler := transport.NewGRPCHandler(messageService)
