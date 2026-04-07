@@ -32,3 +32,11 @@ type KafkaProducer interface {
     PublishMessageRead(ctx context.Context, chatID, readerID, senderID, lastMessageID string) error
     Close() error
 }
+
+type OutboxRepository interface {
+    SaveToOutbox(ctx context.Context, event *OutboxEvent) error
+    GetPendingEvents(ctx context.Context, limit int) ([]*OutboxEvent, error)
+    MarkEventProcessed(ctx context.Context, eventID string) error
+    MarkEventFailed(ctx context.Context, eventID string, errorMsg string) error
+    IncrementRetryCount(ctx context.Context, eventID string) error
+}
