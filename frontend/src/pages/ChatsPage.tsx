@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getChats, saveChatKeys, getUserPublicKey, checkOnlineStatus, getMessages } from '@/lib/api';
 import { getWebSocketClient } from '@/lib/api/websocket';
-import { restorePrivateKey, fromHex } from '@/lib/crypto';
+import { restorePrivateKey, fromHex, clearKeys, isRememberMeEnabled } from '@/lib/crypto';
 import { deriveChatKey, encryptChatKeyWithPrivateKey, decryptMessage } from '@/lib/crypto/encryption';
 import { ChatList, ChatWindow, SearchModal } from '@/components';
 import type { Chat, User } from '@/types/api';
@@ -29,16 +29,28 @@ export function ChatsPage() {
     selectedChatIdRef.current = selectedChatId;
   }, [selectedChatId]);
 
+  // Clear keys on tab close if remember_me is false
   useEffect(() => {
-    // Check if user is logged in
-    const privateKey = restorePrivateKey();
-    if (!privateKey) {
-      navigate('/login');
-      return;
-    }
+    const handleBeforeUnload = () => {
+      if (!isRememberMeEnabled()) {
+        clearKeys(); // Fire and forget - async cleanup
+      }
+    };
 
-    // Connect to WebSocket and load chats
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Check if user is logged in and initialize
     const initializeConnection = async () => {
+      const privateKey = await restorePrivateKey();
+      if (!privateKey) {
+        navigate('/login');
+        return;
+      }
       const ws = getWebSocketClient();
       
       const unsubscribeStatus = ws.onStatus((status) => {
@@ -286,7 +298,7 @@ export function ChatsPage() {
       
       // Check for chats without encrypted_key and generate them
       // Also fetch companion logins and decrypt last message
-      const privateKey = restorePrivateKey();
+      const privateKey = await restorePrivateKey();
       if (privateKey) {
         const updatedChats = await Promise.all(
           chatsData.map(async (chat) => {
@@ -425,7 +437,7 @@ export function ChatsPage() {
       }
 
       // Get private key
-      const privateKey = restorePrivateKey();
+      const privateKey = await restorePrivateKey();
       if (!privateKey) {
         navigate('/login');
         return;

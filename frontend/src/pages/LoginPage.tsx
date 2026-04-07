@@ -36,20 +36,30 @@ export function LoginPage() {
     setLoading(true);
 
     try {
+      console.log('[LoginPage] Starting login, rememberMe:', rememberMe);
+      
       // Generate key pair from password
       const keyPair = await generateKeyPair(password);
+      console.log('[LoginPage] Key pair generated');
 
       // Login
       await login({
         login: loginValue.trim(),
         auth_hash: keyPair.authHash,
       });
+      console.log('[LoginPage] Login successful');
 
-      // Save private key (localStorage or RAM based on rememberMe)
-      savePrivateKey(keyPair.privateKey, rememberMe);
+      // Save private key (sessionStorage or IndexedDB based on rememberMe)
+      console.log('[LoginPage] Saving private key, rememberMe:', rememberMe);
+      await savePrivateKey(keyPair.privateKey, rememberMe);
+      console.log('[LoginPage] Private key saved');
       
       // Save login to localStorage
       localStorage.setItem('user_login', loginValue.trim());
+
+      // Small delay to ensure storage is written
+      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('[LoginPage] Redirecting to chats');
 
       // Redirect to chats
       navigate('/chats');
@@ -123,7 +133,7 @@ export function LoginPage() {
               <span>Remember me</span>
             </label>
             <p className="help-text">
-              Keep me logged in (saves keys to localStorage)
+              Stay logged in even after closing browser (recommended)
             </p>
           </div>
 

@@ -55,7 +55,7 @@ export function ChangePasswordPage() {
 
     try {
       // Step 1: Restore old private key
-      const oldPrivateKey = restorePrivateKey();
+      const oldPrivateKey = await restorePrivateKey();
       if (!oldPrivateKey) {
         throw new Error('No private key found. Please login again.');
       }
@@ -113,8 +113,8 @@ export function ChangePasswordPage() {
       });
 
       // Step 7: Clear old keys and save new ones
-      clearKeys();
-      savePrivateKey(newKeyPair.privateKey, true); // Always save to localStorage after password change
+      await clearKeys();
+      await savePrivateKey(newKeyPair.privateKey, true); // Always save to localStorage after password change
 
       // Step 8: Redirect to login
       navigate('/login', {
@@ -132,11 +132,11 @@ export function ChangePasswordPage() {
   const handleLogout = async () => {
     try {
       await logout();
-      clearKeys();
+      await clearKeys();
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
-      clearKeys();
+      await clearKeys();
       navigate('/login');
     }
   };

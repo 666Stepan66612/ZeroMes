@@ -43,7 +43,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
   useEffect(() => {
     const decryptKey = async () => {
       try {
-        const privateKey = restorePrivateKey();
+        const privateKey = await restorePrivateKey();
         if (!privateKey || !chat.encrypted_key) {
           console.error('Missing private key or encrypted chat key');
           setChatKey(null);

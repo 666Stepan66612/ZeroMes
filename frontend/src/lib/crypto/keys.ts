@@ -3,9 +3,16 @@
  * Generation, storage and restoration of keys
  */
 
-import { derivePrivateKey, derivePublicKey, toBase64, fromBase64, toHex } from './ecc'
+import { derivePrivateKey, derivePublicKey, toHex } from './ecc'
 import { sha256 } from '@noble/hashes/sha2.js'
 import type { KeyPair } from '../../types/crypto'
+import {
+  savePrivateKeySecure,
+  restorePrivateKeySecure,
+  hasStoredKeySecure,
+  clearKeysSecure,
+  isPersistentStorageEnabled
+} from './secureStorage'
 
 /**
  * Generate key pair from password
@@ -14,10 +21,10 @@ import type { KeyPair } from '../../types/crypto'
  * @param iterations - Number of hashing iterations
  * @returns Key pair (private, public) and hash for authentication
  */
-export function generateKeyPair(
+export async function generateKeyPair(
   password: string,
   iterations = 10000
-): KeyPair {
+): Promise<KeyPair> {
   // 1. Generate private key from password
   const privateKey = derivePrivateKey(password, iterations)
   
@@ -38,56 +45,26 @@ export function generateKeyPair(
 }
 
 /**
- * Save private key
- * 
+ * Save private key securely
+ *
  * @param privateKey - Private key to save
- * @param rememberMe - Save to localStorage (true) or RAM only (false)
+ * @param rememberMe - If true, persist in IndexedDB (survives browser restart). If false, use sessionStorage (cleared on tab close).
  */
-export function savePrivateKey(
+export async function savePrivateKey(
   privateKey: Uint8Array,
   rememberMe: boolean
-): void {
-  const base64Key = toBase64(privateKey)
-  
-  if (rememberMe) {
-    // Save to localStorage (on disk, but deleted when browser cache is cleared)
-    localStorage.setItem('private_key', base64Key)
-    localStorage.setItem('remember_me', 'true')
-    // console.log('💾 Key saved to localStorage')
-  } else {
-    // Save to RAM only (deleted when tab is closed)
-    ;(window as any).encryptionKey = privateKey
-    // console.log('🔒 Key in memory only (more secure)')
-  }
+): Promise<void> {
+  await savePrivateKeySecure(privateKey, rememberMe)
 }
 
 /**
- * Restore private key
- * Checks RAM first, then localStorage
+ * Restore private key from secure storage
+ * Checks RAM first, then IndexedDB/sessionStorage
  * 
  * @returns Private key or null if not found
  */
-export function restorePrivateKey(): Uint8Array | null {
-  // Check RAM first
-  const ramKey = (window as any).encryptionKey
-  if (ramKey instanceof Uint8Array) {
-    return ramKey
-  }
-  
-  // Then check localStorage
-  const stored = localStorage.getItem('private_key')
-  if (stored) {
-    try {
-      return fromBase64(stored)
-    } catch (error) {
-      console.error('Error restoring key from localStorage:', error)
-      // Clear corrupted key
-      localStorage.removeItem('private_key')
-      return null
-    }
-  }
-  
-  return null
+export async function restorePrivateKey(): Promise<Uint8Array | null> {
+  return await restorePrivateKeySecure()
 }
 
 /**
@@ -96,41 +73,24 @@ export function restorePrivateKey(): Uint8Array | null {
  * @returns true if key is stored
  */
 export function hasStoredKey(): boolean {
-  return !!(
-    (window as any).encryptionKey ||
-    localStorage.getItem('private_key')
-  )
+  return hasStoredKeySecure()
 }
 
 /**
- * Clear all stored keys
+ * Clear all stored keys securely
  * Used on logout
  */
-export function clearKeys(): void {
-  // Clear RAM
-  if ((window as any).encryptionKey) {
-    // Wipe memory (fill with zeros)
-    const key = (window as any).encryptionKey
-    if (key instanceof Uint8Array) {
-      key.fill(0)
-    }
-    delete (window as any).encryptionKey
-  }
-  
-  // Clear localStorage
-  localStorage.removeItem('private_key')
-  localStorage.removeItem('remember_me')
-  
-  console.log('✅ All keys deleted')
+export async function clearKeys(): Promise<void> {
+  await clearKeysSecure()
 }
 
 /**
- * Check if "Remember me" flag is set
+ * Check if "Remember me" (persistent storage) is enabled
  * 
  * @returns true if user chose "Remember me"
  */
 export function isRememberMeEnabled(): boolean {
-  return localStorage.getItem('remember_me') === 'true'
+  return isPersistentStorageEnabled()
 }
 
 /**

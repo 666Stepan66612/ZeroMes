@@ -48,8 +48,8 @@ export function RegisterPage() {
           .join(''),
       });
 
-      // Save private key (localStorage or RAM based on rememberMe)
-      savePrivateKey(keyPair.privateKey, rememberMe);
+      // Save private key (sessionStorage or IndexedDB based on rememberMe)
+      await savePrivateKey(keyPair.privateKey, rememberMe);
       
       // Save login to localStorage
       localStorage.setItem('user_login', login.trim());
