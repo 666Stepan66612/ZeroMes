@@ -75,24 +75,33 @@ func (w *OutboxWorker) publishEvent(ctx context.Context, event *service.OutboxEv
     switch event.EventType {
     case "message_sent":
         var msg service.Message
-        json.Unmarshal(event.Payload, &msg)
+        if err := json.Unmarshal(event.Payload, &msg); err != nil {
+            return err
+        }
         return w.kafkaProducer.PublishMessageSent(ctx, &msg)
         
     case "message_deleted":
         var msg service.Message
-        json.Unmarshal(event.Payload, &msg)
+        if err := json.Unmarshal(event.Payload, &msg); err != nil {
+            return err
+        }
         return w.kafkaProducer.PublishMessageDeleted(ctx, &msg)
         
     case "message_altered":
-        var data map[string]interface{}
-        json.Unmarshal(event.Payload, &data)
-        msg := data["message"].(service.Message)
-        newContent := data["new_content"].(string)
-        return w.kafkaProducer.PublishMessageAltered(ctx, &msg, newContent)
+        var data struct {
+            Message    service.Message `json:"message"`
+            NewContent string          `json:"new_content"`
+        }
+        if err := json.Unmarshal(event.Payload, &data); err != nil {
+            return err
+        }
+        return w.kafkaProducer.PublishMessageAltered(ctx, &data.Message, data.NewContent)
         
     case "message_read":
         var data map[string]string
-        json.Unmarshal(event.Payload, &data)
+        if err := json.Unmarshal(event.Payload, &data); err != nil {
+            return err
+        }
         return w.kafkaProducer.PublishMessageRead(ctx, 
             data["chat_id"], data["user_id"], data["sender_id"], data["last_message_id"])
     }
