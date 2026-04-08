@@ -3,6 +3,13 @@
  * Export all encryption functions
  */
 
+// Utility functions
+export {
+  isCryptoAvailable,
+  getCryptoSubtle,
+  isSecureContext
+} from './utils'
+
 // ECC functions
 export {
   derivePrivateKey,

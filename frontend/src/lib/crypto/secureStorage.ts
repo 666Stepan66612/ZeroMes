@@ -4,6 +4,8 @@
  * Private key is kept in closure, NOT in window object
  */
 
+import { getCryptoSubtle } from './utils';
+
 const DB_NAME = 'SecureMessengerDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'keys';
@@ -35,13 +37,15 @@ async function initDB(): Promise<IDBDatabase> {
  * This adds an extra layer - even if XSS reads IndexedDB, data is encrypted
  */
 async function deriveStorageKey(): Promise<CryptoKey> {
+  const subtle = getCryptoSubtle();
+  
   // Use browser-specific data as salt (not perfect, but better than nothing)
   const fingerprint = `${navigator.userAgent}|${navigator.language}|${screen.width}x${screen.height}`;
   const encoder = new TextEncoder();
   const data = encoder.encode(fingerprint);
   
   // Import as key material
-  const keyMaterial = await crypto.subtle.importKey(
+  const keyMaterial = await subtle.importKey(
     'raw',
     data,
     { name: 'PBKDF2' },
@@ -55,7 +59,7 @@ async function deriveStorageKey(): Promise<CryptoKey> {
     0x73, 0x73, 0x65, 0x6e, 0x67, 0x65, 0x72, 0x32
   ]); // "securemessenger2" in hex
   
-  return await crypto.subtle.deriveKey(
+  return await subtle.deriveKey(
     {
       name: 'PBKDF2',
       salt: salt,
@@ -73,10 +77,11 @@ async function deriveStorageKey(): Promise<CryptoKey> {
  * Encrypt data before storing
  */
 async function encryptData(data: Uint8Array): Promise<{ encrypted: ArrayBuffer; iv: Uint8Array }> {
+  const subtle = getCryptoSubtle();
   const key = await deriveStorageKey();
   const iv = crypto.getRandomValues(new Uint8Array(12));
   
-  const encrypted = await crypto.subtle.encrypt(
+  const encrypted = await subtle.encrypt(
     { name: 'AES-GCM', iv: iv as BufferSource },
     key,
     data as BufferSource
@@ -89,9 +94,10 @@ async function encryptData(data: Uint8Array): Promise<{ encrypted: ArrayBuffer; 
  * Decrypt data after reading
  */
 async function decryptData(encrypted: ArrayBuffer, iv: Uint8Array): Promise<Uint8Array> {
+  const subtle = getCryptoSubtle();
   const key = await deriveStorageKey();
   
-  const decrypted = await crypto.subtle.decrypt(
+  const decrypted = await subtle.decrypt(
     { name: 'AES-GCM', iv: iv as BufferSource },
     key,
     encrypted

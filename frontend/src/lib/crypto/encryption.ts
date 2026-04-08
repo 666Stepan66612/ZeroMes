@@ -4,6 +4,7 @@
  */
 
 import { computeSharedSecret } from './ecc'
+import { getCryptoSubtle } from './utils'
 import type { EncryptedMessage } from '../../types/crypto'
 
 /**
@@ -17,11 +18,13 @@ export async function encryptMessage(
   message: string,
   chatKey: Uint8Array
 ): Promise<EncryptedMessage> {
+  const subtle = getCryptoSubtle();
+  
   // Generate nonce (12 bytes for GCM)
   const nonce = crypto.getRandomValues(new Uint8Array(12))
   
   // Import key for Web Crypto API
-  const key = await crypto.subtle.importKey(
+  const key = await subtle.importKey(
     'raw',
     chatKey as BufferSource,
     { name: 'AES-GCM' },
@@ -33,7 +36,7 @@ export async function encryptMessage(
   const messageBytes = new TextEncoder().encode(message)
   
   // Encrypt
-  const ciphertext = await crypto.subtle.encrypt(
+  const ciphertext = await subtle.encrypt(
     { name: 'AES-GCM', iv: nonce },
     key,
     messageBytes
@@ -59,8 +62,10 @@ export async function decryptMessage(
   nonce: string,
   chatKey: Uint8Array
 ): Promise<string> {
+  const subtle = getCryptoSubtle();
+  
   // Import key
-  const key = await crypto.subtle.importKey(
+  const key = await subtle.importKey(
     'raw',
     chatKey as BufferSource,
     { name: 'AES-GCM' },
@@ -74,7 +79,7 @@ export async function decryptMessage(
   
   try {
     // Decryption
-    const plaintext = await crypto.subtle.decrypt(
+    const plaintext = await subtle.decrypt(
       { name: 'AES-GCM', iv: nonceBytes as BufferSource },
       key,
       ciphertextBytes as BufferSource
@@ -153,8 +158,10 @@ export async function encryptChatKeyWithPrivateKey(
   chatKey: Uint8Array,
   privateKey: Uint8Array
 ): Promise<EncryptedMessage> {
+  const subtle = getCryptoSubtle();
+  
   // Use private key as AES key (32 bytes)
-  const aesKey = await crypto.subtle.importKey(
+  const aesKey = await subtle.importKey(
     'raw',
     privateKey as BufferSource,
     { name: 'AES-GCM', length: 256 },
@@ -164,7 +171,7 @@ export async function encryptChatKeyWithPrivateKey(
   
   const nonce = crypto.getRandomValues(new Uint8Array(12))
   
-  const encrypted = await crypto.subtle.encrypt(
+  const encrypted = await subtle.encrypt(
     { name: 'AES-GCM', iv: nonce },
     aesKey,
     chatKey as BufferSource
@@ -192,6 +199,7 @@ export async function decryptChatKeyWithPrivateKey(
   encryptedKey: string,
   privateKey: Uint8Array
 ): Promise<Uint8Array> {
+  const subtle = getCryptoSubtle();
   const combined = base64ToArrayBuffer(encryptedKey)
   
   // Extract nonce and encrypted data
@@ -199,7 +207,7 @@ export async function decryptChatKeyWithPrivateKey(
   const encrypted = combined.slice(12)
   
   // Use private key as AES key
-  const aesKey = await crypto.subtle.importKey(
+  const aesKey = await subtle.importKey(
     'raw',
     privateKey as BufferSource,
     { name: 'AES-GCM', length: 256 },
@@ -207,7 +215,7 @@ export async function decryptChatKeyWithPrivateKey(
     ['decrypt']
   )
   
-  const decrypted = await crypto.subtle.decrypt(
+  const decrypted = await subtle.decrypt(
     { name: 'AES-GCM', iv: nonce },
     aesKey,
     encrypted
