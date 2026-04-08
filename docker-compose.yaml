@@ -283,6 +283,7 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./frontend/dist:/var/www/frontend:ro  # path to frontend
+      - ./certs:/certs:ro 
       - caddy_data:/data
       - caddy_config:/config
     networks:

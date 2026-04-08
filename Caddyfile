@@ -6,6 +6,7 @@
 
 # Production с автоматическим HTTPS
 khmelev.site {
+    tls /certs/cert.pem /certs/key.pem
     # Caddy автоматически получит SSL сертификат от Let's Encrypt!
     
     log {
