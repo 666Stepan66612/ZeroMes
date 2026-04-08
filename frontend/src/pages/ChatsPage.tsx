@@ -362,7 +362,7 @@ export function ChatsPage() {
             // Fetch companion login from auth-service
             try {
               console.log(`[ChatsPage] Fetching login for companion_id: ${chat.companion_id}`);
-              const response = await fetch(`http://localhost/api/auth/search?id=${chat.companion_id}`, {
+              const response = await fetch(`/api/auth/search?id=${chat.companion_id}`, {
                 credentials: 'include', // Include cookies for JWT
               });
               const data = await response.json();

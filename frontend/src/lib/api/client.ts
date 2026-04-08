@@ -2,7 +2,7 @@
  * Base HTTP client for API requests
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 /**
  * Custom API Error class

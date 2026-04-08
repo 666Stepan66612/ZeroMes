@@ -36,7 +36,13 @@ export class WebSocketClient {
   private statusHandlers: Set<StatusHandler> = new Set();
   private errorHandlers: Set<ErrorHandler> = new Set();
 
-  constructor(baseUrl: string = 'ws://localhost') {
+  constructor(baseUrl?: string) {
+    // Auto-detect WebSocket URL based on current location
+    if (!baseUrl) {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      baseUrl = `${protocol}//${host}`;
+    }
     this.url = `${baseUrl}/ws`;
   }
 
