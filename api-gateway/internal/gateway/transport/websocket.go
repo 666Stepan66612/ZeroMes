@@ -3,12 +3,10 @@ package transport
 import (
 	"context"
 	"net/http"
-	"os"
-	"strings"
 
 	"api-gateway/internal/cores/domain"
-	"api-gateway/internal/gateway/service"
 	apperrors "api-gateway/internal/cores/errors"
+	"api-gateway/internal/gateway/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -26,19 +24,14 @@ func NewWebSocketHandler(gatewayService service.GatewayService) *WebSocketHandle
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		if os.Getenv("ENV") == "development" {
-			origin := r.Header.Get("Origin")
-			return strings.HasPrefix(origin, "http://localhost:") || 
-			       strings.HasPrefix(origin, "http://127.0.0.1:")
-		}
-		
+		// Allow all origins for now (WebSocket is authenticated via JWT)
+		// In production, you should whitelist specific origins
 		return true
-
 	},
 }
 
 func (h *WebSocketHandler) Handle(c *gin.Context) {
-	conn, err := upgrader.Upgrade(c. Writer, c.Request, nil)
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": apperrors.ErrUpdate})
 		return
@@ -61,7 +54,7 @@ func (h *WebSocketHandler) Handle(c *gin.Context) {
 				return
 			}
 			select {
-			case recv <-data:
+			case recv <- data:
 			case <-ctx.Done():
 				return
 			}

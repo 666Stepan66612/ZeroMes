@@ -74,6 +74,8 @@ func main() {
 		auth.POST("/change-password", authLimit, sagaHandler.ChangePassword)
 	}
 
+	// WebSocket endpoint - no rate limiting (JWT auth is enough)
+	// Rate limiting on WebSocket causes issues with reconnections
 	r.GET("/ws", middleware.JWTMiddleware(jwtSecret, redisClient), wsHandler.Handle)
 
 	quit := make(chan os.Signal, 1)
