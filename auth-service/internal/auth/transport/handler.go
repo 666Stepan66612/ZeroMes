@@ -228,8 +228,8 @@ func setTokenCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 		Name:     "access_token",
 		Value:    accessToken,
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		Secure:   false,                // Set to true only for HTTPS in production
+		SameSite: http.SameSiteLaxMode, // Lax mode allows cookies in WebSocket
 		Path:     "/",
 		MaxAge:   int(15 * time.Minute.Seconds()), // == access token
 	})
@@ -238,7 +238,7 @@ func setTokenCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 		Value:    refreshToken,
 		HttpOnly: true,
 		Secure:   false,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 		Path:     "/auth", // only for refresh endpoint
 		MaxAge:   int(7 * 24 * time.Hour.Seconds()),
 	})
@@ -248,14 +248,14 @@ func clearTokenCookies(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false, // Set to true only for HTTPS in production
 		Path:     "/",
 		MaxAge:   -1,
 	})
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false,
 		Path:     "/auth",
 		MaxAge:   -1,
 	})

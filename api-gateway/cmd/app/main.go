@@ -54,7 +54,6 @@ func main() {
 	}
 
 	r := gin.Default()
-	r.Use(middleware.CORS())
 	r.Use(func(c *gin.Context) {
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 1<<20)
 		c.Next()
