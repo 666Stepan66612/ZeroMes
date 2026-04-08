@@ -43,7 +43,25 @@ export class WebSocketClient {
       const host = window.location.host;
       baseUrl = `${protocol}//${host}`;
     }
-    this.url = `${baseUrl}/ws`;
+    
+    // Get access token from cookie to pass in URL
+    // WebSocket doesn't send cookies automatically in all browsers
+    const token = this.getAccessToken();
+    this.url = token ? `${baseUrl}/ws?token=${encodeURIComponent(token)}` : `${baseUrl}/ws`;
+  }
+
+  /**
+   * Get access token from cookie
+   */
+  private getAccessToken(): string | null {
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'access_token') {
+        return decodeURIComponent(value);
+      }
+    }
+    return null;
   }
 
   /**

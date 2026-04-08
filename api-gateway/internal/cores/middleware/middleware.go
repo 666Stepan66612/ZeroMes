@@ -17,22 +17,29 @@ func JWTMiddleware(secret string, redisClient *redis.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var token string
 
+		// Try cookie first
 		cookie, err := c.Cookie("access_token")
 		if err == nil {
 			token = cookie
 		} else {
+			// Try Authorization header
 			token = strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
+		}
+
+		// For WebSocket: try query parameter (since cookies may not be sent)
+		if token == "" {
+			token = c.Query("token")
 		}
 
 		if token == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-			return 
+			return
 		}
 
 		userID, err := pkgjwt.ValidateAccessToken(token, secret)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-			return 
+			return
 		}
 
 		if _, err := uuid.Parse(userID); err != nil {
@@ -44,8 +51,8 @@ func JWTMiddleware(secret string, redisClient *redis.Client) gin.HandlerFunc {
 		tokenHash := hex.EncodeToString(hash[:])
 		val, _ := redisClient.Get(context.Background(), "blacklist:"+tokenHash).Result()
 		if val != "" {
-    		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token revoked"})
-    		return
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token revoked"})
+			return
 		}
 
 		c.Set("userID", userID)
