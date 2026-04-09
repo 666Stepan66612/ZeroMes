@@ -64,7 +64,7 @@ khmelev.site {
     }
 }
 
-# Redirect www to non-www (опционально)
-www.khmelev.site {
-    redir https://khmelev.site{uri} permanent
-}
+# Redirect www to non-www (закомментировано, т.к. www не настроен в DNS)
+# www.khmelev.site {
+#     redir https://khmelev.site{uri} permanent
+# }
