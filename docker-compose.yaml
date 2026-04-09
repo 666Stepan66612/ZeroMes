@@ -278,8 +278,8 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443"
-      - "443:443/udp"  # HTTP/3
+      - "8443:443"  # Используем порт 8443 вместо 443 (обход перехвата провайдера)
+      - "8443:443/udp"  # HTTP/3
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./frontend/dist:/var/www/frontend:ro  # path to frontend
