@@ -54,13 +54,17 @@ export class WebSocketClient {
    * Get access token from cookie
    */
   private getAccessToken(): string | null {
+    console.log('[WebSocket] Reading access_token from cookies...');
+    console.log('[WebSocket] document.cookie:', document.cookie);
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
       if (name === 'access_token') {
+        console.log('[WebSocket] Found access_token');
         return decodeURIComponent(value);
       }
     }
+    console.log('[WebSocket] access_token not found in cookies');
     return null;
   }
 
