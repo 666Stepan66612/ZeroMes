@@ -44,10 +44,8 @@ export class WebSocketClient {
       baseUrl = `${protocol}//${host}`;
     }
     
-    // Get access token from cookie to pass in URL
-    // WebSocket doesn't send cookies automatically in all browsers
-    const token = this.getAccessToken();
-    this.url = token ? `${baseUrl}/ws?token=${encodeURIComponent(token)}` : `${baseUrl}/ws`;
+    // Store base URL, will add token when connecting
+    this.url = `${baseUrl}/ws`;
   }
 
   /**
@@ -79,7 +77,13 @@ export class WebSocketClient {
     this.setStatus('connecting');
 
     try {
-      this.ws = new WebSocket(this.url);
+      // Get token at connection time (not in constructor)
+      const token = this.getAccessToken();
+      const wsUrl = token ? `${this.url}?token=${encodeURIComponent(token)}` : this.url;
+      
+      console.log('[WebSocket] Connecting to:', wsUrl.replace(/token=[^&]+/, 'token=***'));
+      
+      this.ws = new WebSocket(wsUrl);
       
       this.ws.onopen = () => this.handleOpen();
       this.ws.onmessage = (event) => this.handleMessage(event);

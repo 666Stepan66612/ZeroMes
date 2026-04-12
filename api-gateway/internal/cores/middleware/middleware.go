@@ -21,7 +21,9 @@ func JWTMiddleware(secret string, redisClient *redis.Client) gin.HandlerFunc {
 		cookie, err := c.Cookie("access_token")
 		if err == nil {
 			token = cookie
+			println("[JWT] Token from cookie:", token[:20]+"...")
 		} else {
+			println("[JWT] Cookie error:", err.Error())
 			// Try Authorization header
 			token = strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
 		}
@@ -29,9 +31,13 @@ func JWTMiddleware(secret string, redisClient *redis.Client) gin.HandlerFunc {
 		// For WebSocket: try query parameter (since cookies may not be sent)
 		if token == "" {
 			token = c.Query("token")
+			if token != "" {
+				println("[JWT] Token from query")
+			}
 		}
 
 		if token == "" {
+			println("[JWT] No token found, returning 401")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
