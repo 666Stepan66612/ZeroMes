@@ -31,12 +31,18 @@ var upgrader = websocket.Upgrader{
 }
 
 func (h *WebSocketHandler) Handle(c *gin.Context) {
+	println("[WebSocket] Handler called, userID:", c.GetString("userID"))
+	println("[WebSocket] Attempting upgrade...")
+
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
+		println("[WebSocket] Upgrade failed:", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": apperrors.ErrUpdate})
 		return
 	}
 	defer conn.Close()
+
+	println("[WebSocket] Upgrade successful!")
 
 	userID := c.GetString("userID")
 	token, _ := c.Cookie("access_token")

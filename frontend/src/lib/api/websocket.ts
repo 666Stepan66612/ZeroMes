@@ -51,21 +51,6 @@ export class WebSocketClient {
   /**
    * Get access token from cookie
    */
-  private getAccessToken(): string | null {
-    console.log('[WebSocket] Reading access_token from cookies...');
-    console.log('[WebSocket] document.cookie:', document.cookie);
-    const cookies = document.cookie.split(';');
-    for (const cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
-      if (name === 'access_token') {
-        console.log('[WebSocket] Found access_token');
-        return decodeURIComponent(value);
-      }
-    }
-    console.log('[WebSocket] access_token not found in cookies');
-    return null;
-  }
-
   /**
    * Connect to WebSocket server
    */
@@ -77,13 +62,11 @@ export class WebSocketClient {
     this.setStatus('connecting');
 
     try {
-      // Get token at connection time (not in constructor)
-      const token = this.getAccessToken();
-      const wsUrl = token ? `${this.url}?token=${encodeURIComponent(token)}` : this.url;
+      // WebSocket will use cookies automatically (no need for token in URL)
+      console.log('[WebSocket] Connecting to:', this.url);
+      console.log('[WebSocket] Cookies will be sent automatically');
       
-      console.log('[WebSocket] Connecting to:', wsUrl.replace(/token=[^&]+/, 'token=***'));
-      
-      this.ws = new WebSocket(wsUrl);
+      this.ws = new WebSocket(this.url);
       
       this.ws.onopen = () => this.handleOpen();
       this.ws.onmessage = (event) => this.handleMessage(event);
