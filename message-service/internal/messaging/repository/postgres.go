@@ -62,7 +62,7 @@ func (r *postgresRepository) GetByChatID(ctx context.Context, chatID string, lim
 			SELECT id, chat_id, sender_id, recipient_id, encrypted_content, message_type, created_at, status
 			FROM messages
 			WHERE chat_id = $1
-			ORDER BY created_at ASC, id ASC
+			ORDER BY created_at DESC, id DESC
 			LIMIT $2
 		`
 
@@ -72,7 +72,7 @@ func (r *postgresRepository) GetByChatID(ctx context.Context, chatID string, lim
 			SELECT id, chat_id, sender_id, recipient_id, encrypted_content, message_type, created_at, status
 			FROM messages
 			WHERE chat_id = $1 AND (created_at, id) < (SELECT created_at, id FROM messages WHERE id = $2)
-			ORDER BY created_at ASC, id ASC
+			ORDER BY created_at DESC, id DESC
 			LIMIT $3
 		`
 		args = []interface{}{chatID, lastMessageID, limit}

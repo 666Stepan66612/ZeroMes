@@ -594,3 +594,4 @@ export function ChatWindow({ chat }: ChatWindowProps) {
     </div>
   );
 }
+
