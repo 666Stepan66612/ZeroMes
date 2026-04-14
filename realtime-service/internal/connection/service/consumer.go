@@ -35,11 +35,18 @@ func NewKafkaConsumer(brokers []string, topic, groupID string, manager Connectio
 }
 
 func (c *KafkaConsumer) Start(ctx context.Context) error {
-	slog.Info("Kafka consumer started, waiting for messages...")
+	slog.Info("Kafka consumer started",
+		"brokers", c.reader.Config().Brokers,
+		"topic", c.reader.Config().Topic,
+		"groupID", c.reader.Config().GroupID)
+	slog.Info("Waiting for messages from Kafka...")
+	
 	for {
+		slog.Info("Attempting to read message from Kafka...")
 		kafkaMsg, err := c.reader.ReadMessage(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
+				slog.Info("Context cancelled, stopping consumer")
 				return nil
 			}
 			slog.Error("kafka read error", "err", err)
