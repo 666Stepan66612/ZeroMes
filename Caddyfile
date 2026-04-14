@@ -25,17 +25,11 @@ khmelev.site {
     }
     
     # WebSocket
-    @websocket {
-        path /ws
-    }
-    handle @websocket {
+    handle /ws {
         reverse_proxy api-gateway:8083 {
-            header_up Host {host}
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-            header_up Connection {>Connection}
-            header_up Upgrade {>Upgrade}
+            # Явно передаем WebSocket заголовки
+            header_up Connection "Upgrade"
+            header_up Upgrade "websocket"
         }
     }
     
