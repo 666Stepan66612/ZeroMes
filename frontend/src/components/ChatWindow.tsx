@@ -274,7 +274,8 @@ export function ChatWindow({ chat }: ChatWindowProps) {
         })
       );
       
-      setMessages(decryptedMessages);
+      // Reverse to show oldest first (backend returns newest first)
+      setMessages(decryptedMessages.reverse());
     } catch (error) {
       console.error('Failed to load messages:', error);
     } finally {
