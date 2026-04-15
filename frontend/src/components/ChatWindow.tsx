@@ -37,7 +37,10 @@ export function ChatWindow({ chat }: ChatWindowProps) {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [editingMessage, setEditingMessage] = useState<{ id: string; content: string } | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Decrypt chat key when chat changes
   useEffect(() => {
@@ -60,6 +63,11 @@ export function ChatWindow({ chat }: ChatWindowProps) {
   }, [chat.id, chat.encrypted_key]);
 
   useEffect(() => {
+    // Reset pagination state when chat changes
+    setMessages([]);
+    setHasMore(true);
+    setLoadingMore(false);
+    
     if (chat.id && chatKey) {
       loadMessages();
       markMessagesAsRead();
@@ -223,6 +231,22 @@ export function ChatWindow({ chat }: ChatWindowProps) {
     scrollToBottom();
   }, [messages]);
 
+  // Handle scroll for pagination
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    
+    const handleScroll = () => {
+      // Load more when scrolled near the top
+      if (container.scrollTop < 100 && hasMore && !loadingMore) {
+        loadMoreMessages();
+      }
+    };
+    
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [hasMore, loadingMore, messages.length]);
+
   const loadMessages = async () => {
     if (!chat.id || !chatKey) return;
 
@@ -276,10 +300,94 @@ export function ChatWindow({ chat }: ChatWindowProps) {
       
       // Reverse to show oldest first (backend returns newest first)
       setMessages(decryptedMessages.reverse());
+      
+      // Update hasMore flag from backend response
+      setHasMore(response.has_more || false);
     } catch (error) {
       console.error('Failed to load messages:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMoreMessages = async () => {
+    if (!chat.id || !chatKey || !hasMore || loadingMore || messages.length === 0) return;
+    
+    // Get ID of the oldest message (first in array after reverse)
+    const oldestMessage = messages[0];
+    if (!oldestMessage) return;
+    
+    try {
+      setLoadingMore(true);
+      
+      // Save current scroll position
+      const container = messagesContainerRef.current;
+      const oldScrollHeight = container?.scrollHeight || 0;
+      
+      const response = await getMessages({
+        chat_id: chat.id,
+        limit: 50,
+        last_message_id: oldestMessage.id,
+      });
+      
+      if (response.messages.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      
+      // Decrypt messages
+      const decryptedMessages = await Promise.all(
+        response.messages.map(async (msg) => {
+          try {
+            const encryptedMsg: EncryptedMessage = JSON.parse(msg.encrypted_content);
+            
+            const key = await crypto.subtle.importKey(
+              'raw',
+              chatKey as BufferSource,
+              { name: 'AES-GCM' },
+              false,
+              ['decrypt']
+            );
+            
+            const ciphertextBytes = Uint8Array.from(atob(encryptedMsg.ciphertext), c => c.charCodeAt(0));
+            const nonceBytes = Uint8Array.from(atob(encryptedMsg.nonce), c => c.charCodeAt(0));
+            
+            const plaintext = await crypto.subtle.decrypt(
+              { name: 'AES-GCM', iv: nonceBytes },
+              key,
+              ciphertextBytes
+            );
+            
+            const decryptedText = new TextDecoder().decode(plaintext);
+            return { ...msg, decryptedContent: decryptedText };
+          } catch (error) {
+            console.error('Failed to decrypt message:', error);
+            return { ...msg, decryptedContent: '[Decryption failed]' };
+          }
+        })
+      );
+      
+      // Reverse to maintain order (backend returns DESC)
+      const reversedMessages = decryptedMessages.reverse();
+      
+      // Add to the beginning of the array
+      setMessages(prev => [...reversedMessages, ...prev]);
+      
+      // Restore scroll position
+      setTimeout(() => {
+        if (container) {
+          const newScrollHeight = container.scrollHeight;
+          container.scrollTop = newScrollHeight - oldScrollHeight;
+        }
+      }, 0);
+      
+      // Update hasMore flag
+      setHasMore(response.has_more || false);
+      
+    } catch (error) {
+      console.error('Failed to load more messages:', error);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -484,7 +592,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
         </div>
       </div>
 
-      <div className="chat-messages">
+      <div className="chat-messages" ref={messagesContainerRef}>
         {loading ? (
           <div className="loading">Loading messages...</div>
         ) : messages.length === 0 ? (
@@ -493,7 +601,13 @@ export function ChatWindow({ chat }: ChatWindowProps) {
             <p className="help-text">Send a message to start the conversation</p>
           </div>
         ) : (
-          messages.map((message) => {
+          <>
+            {loadingMore && (
+              <div className="loading-more" style={{ textAlign: 'center', padding: '10px', color: '#666' }}>
+                Loading older messages...
+              </div>
+            )}
+            {messages.map((message) => {
             const isSent = message.sender_id !== chat.companion_id;
             const displayStatus: string | number | undefined = message.localStatus || message.status;
             
@@ -537,7 +651,8 @@ export function ChatWindow({ chat }: ChatWindowProps) {
                 </div>
               </div>
             );
-          })
+          })}
+          </>
         )}
         <div ref={messagesEndRef} />
       </div>
