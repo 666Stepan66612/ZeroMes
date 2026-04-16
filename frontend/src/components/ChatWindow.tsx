@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { checkOnlineStatus } from '@/lib/api/messages';
 import type { FormEvent, MouseEvent } from 'react';
 import type { Chat, Message } from '@/types/api';
@@ -231,22 +231,6 @@ export function ChatWindow({ chat }: ChatWindowProps) {
     scrollToBottom();
   }, [messages]);
 
-  // Handle scroll for pagination
-  useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-    
-    const handleScroll = () => {
-      // Load more when scrolled near the top
-      if (container.scrollTop < 100 && hasMore && !loadingMore) {
-        loadMoreMessages();
-      }
-    };
-    
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [hasMore, loadingMore, messages.length]);
-
   const loadMessages = async () => {
     if (!chat.id || !chatKey) return;
 
@@ -310,12 +294,28 @@ export function ChatWindow({ chat }: ChatWindowProps) {
     }
   };
 
-  const loadMoreMessages = async () => {
-    if (!chat.id || !chatKey || !hasMore || loadingMore || messages.length === 0) return;
+  const loadMoreMessages = useCallback(async () => {
+    console.log('[ChatWindow] loadMoreMessages called', {
+      hasChat: !!chat.id,
+      hasChatKey: !!chatKey,
+      hasMore,
+      loadingMore,
+      messagesLength: messages.length
+    });
+    
+    if (!chat.id || !chatKey || !hasMore || loadingMore || messages.length === 0) {
+      console.log('[ChatWindow] loadMoreMessages early return');
+      return;
+    }
     
     // Get ID of the oldest message (first in array after reverse)
     const oldestMessage = messages[0];
-    if (!oldestMessage) return;
+    if (!oldestMessage) {
+      console.log('[ChatWindow] No oldest message found');
+      return;
+    }
+    
+    console.log('[ChatWindow] Loading more messages, oldest message ID:', oldestMessage.id);
     
     try {
       setLoadingMore(true);
@@ -324,10 +324,16 @@ export function ChatWindow({ chat }: ChatWindowProps) {
       const container = messagesContainerRef.current;
       const oldScrollHeight = container?.scrollHeight || 0;
       
+      console.log('[ChatWindow] Requesting messages with last_message_id:', oldestMessage.id);
       const response = await getMessages({
         chat_id: chat.id,
         limit: 50,
         last_message_id: oldestMessage.id,
+      });
+      
+      console.log('[ChatWindow] Received response:', {
+        messagesCount: response.messages.length,
+        hasMore: response.has_more
       });
       
       if (response.messages.length === 0) {
@@ -389,7 +395,35 @@ export function ChatWindow({ chat }: ChatWindowProps) {
     } finally {
       setLoadingMore(false);
     }
-  };
+  }, [chat.id, chatKey, hasMore, loadingMore, messages]);
+
+  // Handle scroll for pagination
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) {
+      console.log('[ChatWindow] No messages container ref');
+      return;
+    }
+    
+    console.log('[ChatWindow] Setting up scroll handler');
+    
+    const handleScroll = () => {
+      console.log('[ChatWindow] Scroll event:', {
+        scrollTop: container.scrollTop,
+        hasMore,
+        loadingMore
+      });
+      
+      // Load more when scrolled near the top
+      if (container.scrollTop < 100 && hasMore && !loadingMore) {
+        console.log('[ChatWindow] Triggering loadMoreMessages from scroll');
+        loadMoreMessages();
+      }
+    };
+    
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [hasMore, loadingMore, loadMoreMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getChats, saveChatKeys, getUserPublicKey, checkOnlineStatus, getMessages } from '@/lib/api';
+import { getChats, saveChatKeys, getUserPublicKey, checkOnlineStatus } from '@/lib/api';
 import { getWebSocketClient } from '@/lib/api/websocket';
 import { restorePrivateKey, fromHex, clearKeys, isRememberMeEnabled } from '@/lib/crypto';
 import { deriveChatKey, encryptChatKeyWithPrivateKey, decryptMessage } from '@/lib/crypto/encryption';
@@ -386,20 +386,8 @@ export function ChatsPage() {
               updatedChat.is_online = false;
             }
             
-            // Calculate unread count
-            try {
-              const userId = localStorage.getItem('user_id');
-              if (userId) {
-                const messagesResponse = await getMessages({ chat_id: chat.id, limit: 100 });
-                const unreadCount = messagesResponse.messages.filter(
-                  msg => msg.status !== 'read' && msg.sender_id !== userId
-                ).length;
-                updatedChat.unread_count = unreadCount;
-              }
-            } catch (error) {
-              console.error('[ChatsPage] Failed to calculate unread count:', error);
-              updatedChat.unread_count = 0;
-            }
+            // Set unread count to 0 initially, will update asynchronously
+            updatedChat.unread_count = 0;
             
             return updatedChat;
           })
