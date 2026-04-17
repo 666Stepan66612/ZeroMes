@@ -42,6 +42,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const initialLoadDone = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Decrypt chat key when chat changes
   useEffect(() => {
@@ -74,6 +75,11 @@ export function ChatWindow({ chat }: ChatWindowProps) {
       loadMessages();
       markMessagesAsRead();
     }
+    
+    // Auto-focus input when chat opens
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
   }, [chat.id, chatKey]);
 
   // Subscribe to WebSocket messages for real-time updates
@@ -83,8 +89,6 @@ export function ChatWindow({ chat }: ChatWindowProps) {
     const ws = getWebSocketClient();
     
     const unsubscribe = ws.onMessage(async (message: any) => {
-      console.log('[ChatWindow] WebSocket message received:', message.type, message);
-      
       // Handle sent messages (our own messages)
       // Note: We handle this in handleSendMessage directly, so we can skip this event
       // to avoid duplicate messages. The WebSocket event is already consumed by sendMessageAPI.
@@ -99,8 +103,6 @@ export function ChatWindow({ chat }: ChatWindowProps) {
         
         // Only process messages for this chat
         if (msg.chat_id !== chat.id) return;
-        
-        console.log('[ChatWindow] Received new message for current chat:', msg);
         
         try {
           // Decrypt the message
@@ -156,7 +158,6 @@ export function ChatWindow({ chat }: ChatWindowProps) {
       if (message.type === 'message_deleted') {
         const messageId = message.payload?.message_id;
         if (messageId) {
-          console.log('[ChatWindow] Message deleted:', messageId);
           setMessages(prev => prev.filter(m => m.id !== messageId));
         }
       }
@@ -165,7 +166,6 @@ export function ChatWindow({ chat }: ChatWindowProps) {
       if (message.type === 'message_altered') {
         const { message_id, new_content } = message.payload || {};
         if (message_id && new_content) {
-          console.log('[ChatWindow] Message altered:', message_id);
           try {
             // Decrypt the new content
             const encryptedMsg: EncryptedMessage = JSON.parse(new_content);
@@ -205,7 +205,6 @@ export function ChatWindow({ chat }: ChatWindowProps) {
       if (message.type === 'message_read') {
         const { chat_id, last_message_id } = message.payload || {};
         if (chat_id === chat.id && last_message_id) {
-          console.log('[ChatWindow] Messages marked as read up to:', last_message_id);
           // Update all messages up to last_message_id to 'read' status
           setMessages(prev => {
             const lastReadIndex = prev.findIndex(msg => msg.id === last_message_id);
@@ -297,27 +296,15 @@ export function ChatWindow({ chat }: ChatWindowProps) {
   };
 
   const loadMoreMessages = useCallback(async () => {
-    console.log('[ChatWindow] loadMoreMessages called', {
-      hasChat: !!chat.id,
-      hasChatKey: !!chatKey,
-      hasMore,
-      loadingMore,
-      messagesLength: messages.length
-    });
-    
     if (!chat.id || !chatKey || !hasMore || loadingMore || messages.length === 0) {
-      console.log('[ChatWindow] loadMoreMessages early return');
       return;
     }
     
     // Get ID of the oldest message (first in array after reverse)
     const oldestMessage = messages[0];
     if (!oldestMessage) {
-      console.log('[ChatWindow] No oldest message found');
       return;
     }
-    
-    console.log('[ChatWindow] Loading more messages, oldest message ID:', oldestMessage.id);
     
     try {
       setLoadingMore(true);
@@ -326,16 +313,10 @@ export function ChatWindow({ chat }: ChatWindowProps) {
       const container = messagesContainerRef.current;
       const oldScrollHeight = container?.scrollHeight || 0;
       
-      console.log('[ChatWindow] Requesting messages with last_message_id:', oldestMessage.id);
       const response = await getMessages({
         chat_id: chat.id,
         limit: 50,
         last_message_id: oldestMessage.id,
-      });
-      
-      console.log('[ChatWindow] Received response:', {
-        messagesCount: response.messages.length,
-        hasMore: response.has_more
       });
       
       if (response.messages.length === 0) {
@@ -402,24 +383,11 @@ export function ChatWindow({ chat }: ChatWindowProps) {
   // Handle scroll for pagination
   useEffect(() => {
     const container = messagesContainerRef.current;
-    if (!container) {
-      console.log('[ChatWindow] No messages container ref');
-      return;
-    }
-    
-    console.log('[ChatWindow] Setting up scroll handler');
+    if (!container) return;
     
     const handleScroll = () => {
-      console.log('[ChatWindow] Scroll event:', {
-        scrollTop: container.scrollTop,
-        hasMore,
-        loadingMore,
-        initialLoadDone: initialLoadDone.current
-      });
-      
       // Load more when scrolled near the top (but only after initial load is done)
       if (container.scrollTop < 100 && hasMore && !loadingMore && initialLoadDone.current) {
-        console.log('[ChatWindow] Triggering loadMoreMessages from scroll');
         loadMoreMessages();
       }
     };
@@ -443,9 +411,8 @@ export function ChatWindow({ chat }: ChatWindowProps) {
     if (lastCompanionMessage && lastCompanionMessage.status !== 'read') {
       try {
         await markAsRead(chat.id, lastCompanionMessage.id);
-        console.log('[ChatWindow] Marked messages as read up to:', lastCompanionMessage.id);
       } catch (error) {
-        console.error('[ChatWindow] Failed to mark messages as read:', error);
+        console.error('Failed to mark messages as read:', error);
       }
     }
   };
@@ -648,18 +615,6 @@ export function ChatWindow({ chat }: ChatWindowProps) {
             const isSent = message.sender_id !== chat.companion_id;
             const displayStatus: string | number | undefined = message.localStatus || message.status;
             
-            // Debug logging for status
-            if (isSent && message.id) {
-              console.log(`[ChatWindow] Message ${message.id.substring(0, 8)} status:`, {
-                localStatus: message.localStatus,
-                status: message.status,
-                displayStatus,
-                displayStatusType: typeof displayStatus,
-                isDelivered: displayStatus === 'delivered',
-                isRead: displayStatus === 'read'
-              });
-            }
-            
             return (
               <div
                 key={message.id}
@@ -704,6 +659,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
           </div>
         )}
         <input
+          ref={inputRef}
           type="text"
           value={messageText}
           onChange={(e) => setMessageText(e.target.value)}

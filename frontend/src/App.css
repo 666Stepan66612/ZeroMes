@@ -11,6 +11,19 @@
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+:root[data-theme="dark"] {
+  --primary-color: #48484a;
+  --primary-hover: #5a5a5c;
+  --error-color: #ff453a;
+  --success-color: #32d74b;
+  --bg-color: #1c1c1e;
+  --bg-secondary: #000000;
+  --text-color: #ffffff;
+  --text-secondary: #98989d;
+  --border-color: #48484a;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -25,6 +38,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: var(--bg-secondary);
   color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Auth Pages Layout */
@@ -45,6 +59,7 @@ body {
   padding: 40px;
   width: 100%;
   max-width: 420px;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .register-container h1,
