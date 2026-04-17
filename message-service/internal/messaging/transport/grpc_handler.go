@@ -57,6 +57,8 @@ func (h *GRPCHandler) SendMessage(ctx context.Context, req *pb.SendMessageReques
 }
 
 func (h *GRPCHandler) GetMessages(ctx context.Context, req *pb.GetMessagesRequest) (*pb.GetMessagesResponse, error) {
+	slog.Info("GetMessages gRPC request", "chat_id", req.ChatId, "user_id", req.UserId, "limit", req.Limit, "last_message_id", req.LastMessageId)
+
 	messages, err := h.messageService.GetMessages(
 		ctx,
 		req.ChatId,
@@ -67,6 +69,8 @@ func (h *GRPCHandler) GetMessages(ctx context.Context, req *pb.GetMessagesReques
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
+
+	slog.Info("GetMessages gRPC response", "messages_count", len(messages))
 
 	pbMessages := make([]*pb.Message, 0, len(messages))
 	for _, msg := range messages {

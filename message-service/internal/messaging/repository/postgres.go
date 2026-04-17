@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 
 	apperrors "message-service/internal/cores/errors"
@@ -54,6 +55,8 @@ func (r *postgresRepository) CreateWithChats(ctx context.Context, msg *service.M
 }
 
 func (r *postgresRepository) GetByChatID(ctx context.Context, chatID string, limit int, lastMessageID string) ([]*service.Message, error) {
+	slog.Info("GetByChatID repository", "chat_id", chatID, "limit", limit, "last_message_id", lastMessageID)
+
 	var query string
 	var args []interface{}
 
@@ -107,6 +110,7 @@ func (r *postgresRepository) GetByChatID(ctx context.Context, chatID string, lim
 		messages = append(messages, msg)
 	}
 
+	slog.Info("GetByChatID repository result", "messages_count", len(messages))
 	return messages, rows.Err()
 }
 

@@ -55,12 +55,14 @@ func (s *gatewayService) HandleWebSocket(ctx context.Context, userID string, sen
 				sendResponse(send, "message_sent", result)
 
 			case "get_messages":
+				slog.Info("get_messages request", "user_id", userID, "chat_id", req.ChatID, "limit", req.Limit, "last_message_id", req.LastMessageID)
 				result, err := s.messageClient.GetMessages(ctx, req.ChatID, userID, req.LastMessageID, int32(req.Limit))
 				if err != nil {
 					slog.Warn("get_messages failed", "user_id", userID, "err", err)
 					sendResponse(send, "error", map[string]string{"error": "failed to fetch messages"})
 					continue
 				}
+				slog.Info("get_messages response", "user_id", userID, "messages_count", len(result.Messages), "has_more", result.HasMore)
 				sendResponse(send, "messages", result)
 
 			case "mark_as_read":

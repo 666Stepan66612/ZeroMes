@@ -41,6 +41,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
   const [loadingMore, setLoadingMore] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const initialLoadDone = useRef(false);
 
   // Decrypt chat key when chat changes
   useEffect(() => {
@@ -67,6 +68,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
     setMessages([]);
     setHasMore(true);
     setLoadingMore(false);
+    initialLoadDone.current = false;
     
     if (chat.id && chatKey) {
       loadMessages();
@@ -241,11 +243,6 @@ export function ChatWindow({ chat }: ChatWindowProps) {
         limit: 50,
       });
       
-      console.log('[ChatWindow] Loaded messages:', response.messages.map(m => ({
-        id: m.id.substring(0, 8),
-        status: m.status,
-        sender_id: m.sender_id.substring(0, 8)
-      })));
       
       // Decrypt all messages
       const decryptedMessages = await Promise.all(
@@ -287,6 +284,11 @@ export function ChatWindow({ chat }: ChatWindowProps) {
       
       // Update hasMore flag from backend response
       setHasMore(response.has_more || false);
+      
+      // Mark initial load as done
+      setTimeout(() => {
+        initialLoadDone.current = true;
+      }, 100);
     } catch (error) {
       console.error('Failed to load messages:', error);
     } finally {
@@ -411,11 +413,12 @@ export function ChatWindow({ chat }: ChatWindowProps) {
       console.log('[ChatWindow] Scroll event:', {
         scrollTop: container.scrollTop,
         hasMore,
-        loadingMore
+        loadingMore,
+        initialLoadDone: initialLoadDone.current
       });
       
-      // Load more when scrolled near the top
-      if (container.scrollTop < 100 && hasMore && !loadingMore) {
+      // Load more when scrolled near the top (but only after initial load is done)
+      if (container.scrollTop < 100 && hasMore && !loadingMore && initialLoadDone.current) {
         console.log('[ChatWindow] Triggering loadMoreMessages from scroll');
         loadMoreMessages();
       }
@@ -637,7 +640,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
         ) : (
           <>
             {loadingMore && (
-              <div className="loading-more" style={{ textAlign: 'center', padding: '10px', color: '#666' }}>
+              <div className="loading-more">
                 Loading older messages...
               </div>
             )}

@@ -172,7 +172,7 @@ export function LoginPage() {
         </div>
 
         <div className="security-notice">
-          <p>🔒 End-to-end encrypted messaging</p>
+          <p>End-to-end encrypted messaging</p>
           <p>Your messages are secure and private</p>
         </div>
       </div>
