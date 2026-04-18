@@ -4,7 +4,7 @@ import { getChats, saveChatKeys, getUserPublicKey, checkOnlineStatus } from '@/l
 import { getWebSocketClient } from '@/lib/api/websocket';
 import { restorePrivateKey, fromHex, clearKeys, isRememberMeEnabled } from '@/lib/crypto';
 import { deriveChatKey, encryptChatKeyWithPrivateKey, decryptMessage } from '@/lib/crypto/encryption';
-import { ChatList, ChatWindow, SearchModal } from '@/components';
+import { ChatList, ChatWindow, SearchModal, ThemeToggle } from '@/components';
 import type { Chat, User } from '@/types/api';
 import './ChatsPage.css';
 
@@ -475,6 +475,7 @@ export function ChatsPage() {
         <div className="sidebar-header">
           <h2>Chats</h2>
           <div className="header-actions">
+            <ThemeToggle />
             <button
               className="btn-icon"
               onClick={() => setShowSearch(true)}
