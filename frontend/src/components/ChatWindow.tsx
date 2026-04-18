@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { checkOnlineStatus } from '@/lib/api/messages';
 import type { FormEvent, MouseEvent } from 'react';
 import type { Chat, Message } from '@/types/api';
+import { MessageStatus } from '@/types/api';
 import { getMessages, sendMessage as sendMessageAPI, deleteMessage, editMessage, markAsRead } from '@/lib/api/messages';
 import { encryptMessage, decryptChatKeyWithPrivateKey } from '@/lib/crypto/encryption';
 import { restorePrivateKey } from '@/lib/crypto/keys';
@@ -613,7 +614,27 @@ export function ChatWindow({ chat }: ChatWindowProps) {
             )}
             {messages.map((message) => {
             const isSent = message.sender_id !== chat.companion_id;
-            const displayStatus: string | number | undefined = message.localStatus || message.status;
+            const displayStatus = message.localStatus || message.status;
+            
+            // Normalize status to string for consistent handling
+            const getStatusIcon = () => {
+              if (displayStatus === 'pending') return ' ⏰';
+              
+              // Handle both string and number formats from backend
+              const status = typeof displayStatus === 'number' ? displayStatus : displayStatus;
+              
+              if (status === 'sent' || status === MessageStatus.SENT) {
+                return ' ✓';
+              }
+              if (status === 'delivered' || status === MessageStatus.DELIVERED) {
+                return ' ✓';
+              }
+              if (status === 'read' || status === MessageStatus.READ) {
+                return ' ✓✓';
+              }
+              
+              return '';
+            };
             
             return (
               <div
@@ -630,14 +651,8 @@ export function ChatWindow({ chat }: ChatWindowProps) {
                     minute: '2-digit',
                   })}
                   {isSent && (
-                    <span className="message-status">
-                      {displayStatus === 'pending' && ' ⏰'}
-                      {/* @ts-ignore - backend sends numbers, frontend uses strings */}
-                      {(displayStatus === 'sent' || displayStatus == 0) && ' ✓'}
-                      {/* @ts-ignore */}
-                      {(displayStatus === 'delivered' || displayStatus == 1) && ' ✓'}
-                      {/* @ts-ignore */}
-                      {(displayStatus === 'read' || displayStatus == 2) && ' ✓✓'}
+                    <span className="message-status" title={`Status: ${displayStatus}`}>
+                      {getStatusIcon()}
                     </span>
                   )}
                 </div>

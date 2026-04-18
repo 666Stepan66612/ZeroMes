@@ -50,6 +50,16 @@ export interface RefreshTokenResponse {
   refresh_token: string
 }
 
+// Message status constants - backend sends numbers, frontend uses strings
+export const MessageStatus = {
+  SENT: 0,
+  DELIVERED: 1,
+  READ: 2
+} as const;
+
+export type MessageStatusValue = typeof MessageStatus[keyof typeof MessageStatus];
+export type MessageStatusString = 'sent' | 'delivered' | 'read';
+
 // Message types
 export interface Message {
   id: string
@@ -59,7 +69,7 @@ export interface Message {
   encrypted_content: string
   message_type: 'text' | 'image' | 'file'
   created_at: string
-  status: 'sent' | 'delivered' | 'read'
+  status: MessageStatusValue | MessageStatusString | number // Support both formats
 }
 
 export interface SendMessageRequest {
