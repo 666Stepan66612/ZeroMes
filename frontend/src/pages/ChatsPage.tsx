@@ -4,7 +4,8 @@ import { getChats, saveChatKeys, getUserPublicKey, checkOnlineStatus } from '@/l
 import { getWebSocketClient } from '@/lib/api/websocket';
 import { restorePrivateKey, fromHex, clearKeys, isRememberMeEnabled } from '@/lib/crypto';
 import { deriveChatKey, encryptChatKeyWithPrivateKey, decryptMessage } from '@/lib/crypto/encryption';
-import { ChatList, ChatWindow, SearchModal, ThemeToggle } from '@/components';
+import { ChatWindow, SearchModal, ThemeToggle } from '@/components';
+import { VirtualizedChatList } from '@/components/VirtualizedChatList';
 import type { Chat, User } from '@/types/api';
 import './ChatsPage.css';
 
@@ -510,10 +511,11 @@ export function ChatsPage() {
         {loading ? (
           <div className="loading">Loading chats...</div>
         ) : (
-          <ChatList
+          <VirtualizedChatList
             chats={chats}
             selectedChat={selectedChat}
             onSelectChat={handleSelectChat}
+            containerHeight={window.innerHeight - 140}
           />
         )}
       </div>

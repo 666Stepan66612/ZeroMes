@@ -2,13 +2,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { checkOnlineStatus } from '@/lib/api/messages';
 import type { FormEvent, MouseEvent } from 'react';
 import type { Chat, Message } from '@/types/api';
-import { MessageStatus } from '@/types/api';
 import { getMessages, sendMessage as sendMessageAPI, deleteMessage, editMessage, markAsRead } from '@/lib/api/messages';
 import { encryptMessage, decryptChatKeyWithPrivateKey } from '@/lib/crypto/encryption';
 import { restorePrivateKey } from '@/lib/crypto/keys';
 import { getWebSocketClient } from '@/lib/api/websocket';
 import { ContextMenu } from './ContextMenu';
 import { ConfirmDialog } from './ConfirmDialog';
+import { VirtualizedMessageList } from './VirtualizedMessageList';
 import type { EncryptedMessage } from '@/types/crypto';
 
 interface ChatWindowProps {
@@ -597,14 +597,9 @@ export function ChatWindow({ chat }: ChatWindowProps) {
         </div>
       </div>
 
-      <div className="chat-messages" ref={messagesContainerRef}>
+      <div className="chat-messages" ref={messagesContainerRef} style={{ padding: 0 }}>
         {loading ? (
           <div className="loading">Loading messages...</div>
-        ) : messages.length === 0 ? (
-          <div className="no-messages">
-            <p>No messages yet</p>
-            <p className="help-text">Send a message to start the conversation</p>
-          </div>
         ) : (
           <>
             {loadingMore && (
@@ -612,53 +607,12 @@ export function ChatWindow({ chat }: ChatWindowProps) {
                 Loading older messages...
               </div>
             )}
-            {messages.map((message) => {
-            const isSent = message.sender_id !== chat.companion_id;
-            const displayStatus = message.localStatus || message.status;
-            
-            // Normalize status to string for consistent handling
-            const getStatusIcon = () => {
-              if (displayStatus === 'pending') return ' ⏰';
-              
-              // Handle both string and number formats from backend
-              const status = typeof displayStatus === 'number' ? displayStatus : displayStatus;
-              
-              if (status === 'sent' || status === MessageStatus.SENT) {
-                return ' ✓';
-              }
-              if (status === 'delivered' || status === MessageStatus.DELIVERED) {
-                return ' ✓';
-              }
-              if (status === 'read' || status === MessageStatus.READ) {
-                return ' ✓✓';
-              }
-              
-              return '';
-            };
-            
-            return (
-              <div
-                key={message.id}
-                className={`message ${isSent ? 'sent' : 'received'}`}
-                onContextMenu={(e) => handleContextMenu(e, message)}
-              >
-                <div className="message-content">
-                  {message.decryptedContent || message.encrypted_content}
-                </div>
-                <div className="message-time">
-                  {new Date(message.created_at).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                  {isSent && (
-                    <span className="message-status" title={`Status: ${displayStatus}`}>
-                      {getStatusIcon()}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+            <VirtualizedMessageList
+              messages={messages}
+              chat={chat}
+              onContextMenu={handleContextMenu}
+              containerHeight={messagesContainerRef.current?.clientHeight || 500}
+            />
           </>
         )}
         <div ref={messagesEndRef} />
