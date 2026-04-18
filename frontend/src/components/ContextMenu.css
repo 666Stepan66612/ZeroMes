@@ -1,9 +1,9 @@
 .context-menu {
   position: fixed;
-  background: #ffffff;
-  border: 1px solid #e0e0e0;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
   padding: 4px 0;
   min-width: 160px;
   z-index: 1000;
@@ -29,7 +29,7 @@
   text-align: left;
   cursor: pointer;
   font-size: 14px;
-  color: #212121 !important;
+  color: var(--text-color) !important;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -38,28 +38,28 @@
 }
 
 .context-menu-item:hover {
-  background-color: #f5f5f5 !important;
+  background-color: var(--bg-secondary) !important;
 }
 
 .context-menu-item:active {
-  background-color: #eeeeee !important;
+  background-color: var(--border-color) !important;
 }
 
 .context-menu-item-danger {
-  color: #212121 !important;
+  color: var(--error-color) !important;
 }
 
 .context-menu-item-danger:hover {
-  background-color: #f5f5f5 !important;
+  background-color: var(--bg-secondary) !important;
 }
 
 .context-menu-icon {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  color: #757575;
+  color: var(--text-secondary);
 }
 
 .context-menu-item-danger .context-menu-icon {
-  color: #757575;
+  color: var(--error-color);
 }
