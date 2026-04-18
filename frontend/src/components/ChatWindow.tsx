@@ -9,6 +9,7 @@ import { getWebSocketClient } from '@/lib/api/websocket';
 import { ContextMenu } from './ContextMenu';
 import { ConfirmDialog } from './ConfirmDialog';
 import { VirtualizedMessageList } from './VirtualizedMessageList';
+import { useToast } from './ToastContainer';
 import type { EncryptedMessage } from '@/types/crypto';
 
 interface ChatWindowProps {
@@ -44,6 +45,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const initialLoadDone = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { showError, showSuccess } = useToast();
 
   // Decrypt chat key when chat changes
   useEffect(() => {
@@ -274,6 +276,7 @@ export function ChatWindow({ chat }: ChatWindowProps) {
             return { ...msg, decryptedContent: decryptedText };
           } catch (error) {
             console.error('Failed to decrypt message:', error);
+            showError('Failed to decrypt some messages');
             return { ...msg, decryptedContent: '[Decryption failed]' };
           }
         })
@@ -547,9 +550,10 @@ export function ChatWindow({ chat }: ChatWindowProps) {
       await deleteMessage(deleteConfirm);
       setMessages(prev => prev.filter(m => m.id !== deleteConfirm));
       setDeleteConfirm(null);
+      showSuccess('Message deleted');
     } catch (error) {
       console.error('Failed to delete message:', error);
-      alert('Failed to delete message');
+      showError('Failed to delete message. Please try again.');
     }
   };
 
@@ -566,17 +570,18 @@ export function ChatWindow({ chat }: ChatWindowProps) {
       await editMessage(editingMessage.id, encryptedContent);
 
       // Update local state
-      setMessages(prev => prev.map(m => 
-        m.id === editingMessage.id 
+      setMessages(prev => prev.map(m =>
+        m.id === editingMessage.id
           ? { ...m, encrypted_content: encryptedContent, decryptedContent: messageText }
           : m
       ));
 
       setMessageText('');
       setEditingMessage(null);
+      showSuccess('Message updated');
     } catch (error) {
       console.error('Failed to edit message:', error);
-      alert('Failed to edit message');
+      showError('Failed to edit message. Please try again.');
     }
   };
 
