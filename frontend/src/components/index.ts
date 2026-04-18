@@ -5,4 +5,5 @@ export { ContextMenu } from './ContextMenu';
 export { ConfirmDialog } from './ConfirmDialog';
 export { ThemeToggle } from './ThemeToggle';
 export { Toast } from './Toast';
-export { ToastProvider, useToast } from './ToastContainer';
+export { ToastProvider } from './ToastContainer';
+export { useToast } from '@/hooks/useToast';

@@ -9,12 +9,13 @@ import { getWebSocketClient } from '@/lib/api/websocket';
 import { ContextMenu } from './ContextMenu';
 import { ConfirmDialog } from './ConfirmDialog';
 import { VirtualizedMessageList } from './VirtualizedMessageList';
-import { useToast } from './ToastContainer';
+import { useToast } from '@/hooks/useToast';
 import type { EncryptedMessage } from '@/types/crypto';
 
 interface ChatWindowProps {
   chat: Chat;
   onChatUpdate: () => void;
+  onBack?: () => void;
 }
 
 interface DecryptedMessage extends Message {
@@ -30,7 +31,7 @@ interface ContextMenuState {
   messageContent: string;
 }
 
-export function ChatWindow({ chat }: ChatWindowProps) {
+export function ChatWindow({ chat, onBack }: ChatWindowProps) {
   const [messages, setMessages] = useState<DecryptedMessage[]>([]);
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -593,6 +594,13 @@ export function ChatWindow({ chat }: ChatWindowProps) {
   return (
     <div className="chat-window">
       <div className="chat-window-header">
+        {onBack && (
+          <button className="btn-back" onClick={onBack} aria-label="Back to chats">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+        )}
         <div className="chat-avatar">
           {(chat.companion_login || chat.companion_id).substring(0, 2).toUpperCase()}
         </div>

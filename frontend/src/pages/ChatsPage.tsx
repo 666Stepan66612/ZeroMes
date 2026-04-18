@@ -267,7 +267,7 @@ export function ChatsPage() {
             try {
               const isOnline = await checkOnlineStatus(chat.companion_id);
               return { ...chat, is_online: isOnline };
-            } catch (error) {
+            } catch {
               return chat; // Keep existing status on error
             }
           })
@@ -303,7 +303,7 @@ export function ChatsPage() {
       if (privateKey) {
         const updatedChats = await Promise.all(
           chatsData.map(async (chat) => {
-            let updatedChat = { ...chat };
+            const updatedChat = { ...chat };
             
             // If chat has no encrypted_key, generate it
             if (!chat.encrypted_key || chat.encrypted_key === '') {
@@ -415,6 +415,10 @@ export function ChatsPage() {
     );
   };
 
+  const handleBackToChats = () => {
+    setSelectedChatId(null);
+  };
+
   const handleNewChat = async (user: User) => {
     try {
       // Check if chat already exists
@@ -471,7 +475,7 @@ export function ChatsPage() {
   };
 
   return (
-    <div className="chats-page">
+    <div className={`chats-page ${selectedChatId ? 'chat-open' : ''}`}>
       <div className="chats-sidebar">
         <div className="sidebar-header">
           <h2>Chats</h2>
@@ -526,6 +530,7 @@ export function ChatsPage() {
             key={`${selectedChat.id}-${chatUpdateTrigger}`}
             chat={selectedChat}
             onChatUpdate={loadChats}
+            onBack={handleBackToChats}
           />
         ) : (
           <div className="no-chat-selected">
