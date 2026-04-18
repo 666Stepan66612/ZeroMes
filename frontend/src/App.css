@@ -1,28 +1,4 @@
-:root {
-  --primary-color: #0084ff;
-  --primary-hover: #006edb;
-  --error-color: #ff3b30;
-  --success-color: #34c759;
-  --bg-color: #ffffff;
-  --bg-secondary: #f5f5f5;
-  --text-color: #000000;
-  --text-secondary: #8e8e93;
-  --border-color: #d1d1d6;
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-:root[data-theme="dark"] {
-  --primary-color: #48484a;
-  --primary-hover: #5a5a5c;
-  --error-color: #ff453a;
-  --success-color: #32d74b;
-  --bg-color: #1c1c1e;
-  --bg-secondary: #000000;
-  --text-color: #ffffff;
-  --text-secondary: #98989d;
-  --border-color: #48484a;
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
+/* CSS variables are now defined in index.css for consistency */
 
 * {
   margin: 0;
