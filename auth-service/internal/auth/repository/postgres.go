@@ -4,12 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"auth-service/internal/auth/service"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// escapeILIKE escapes special characters in ILIKE patterns
+func escapeILIKE(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `%`, `\%`)
+	s = strings.ReplaceAll(s, `_`, `\_`)
+	return s
+}
 
 type postgresUserRepository struct {
 	pool *pgxpool.Pool
@@ -77,6 +86,9 @@ func (r *postgresUserRepository) GetByLogin(ctx context.Context, login string) (
 }
 
 func (r *postgresUserRepository) SearchUsers(ctx context.Context, login string) ([]*service.UserPublic, error) {
+	// Escape special ILIKE characters to prevent injection
+	escapedLogin := escapeILIKE(login)
+
 	query := `
 		SELECT id, login, public_key, created_at
 		FROM users
@@ -84,7 +96,7 @@ func (r *postgresUserRepository) SearchUsers(ctx context.Context, login string) 
 		LIMIT 10
 	`
 
-	rows, err := r.pool.Query(ctx, query, login+"%")
+	rows, err := r.pool.Query(ctx, query, escapedLogin+"%")
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
