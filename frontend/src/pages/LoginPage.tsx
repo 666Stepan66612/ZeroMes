@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login } from '@/lib/api';
 import { generateKeyPair, savePrivateKey, clearKeys } from '@/lib/crypto';
+import { ThemeToggle } from '@/components';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -86,6 +87,9 @@ export function LoginPage() {
 
   return (
     <div className="login-page">
+      <div className="theme-toggle-container">
+        <ThemeToggle />
+      </div>
       <div className="login-container">
         <h1>Welcome Back</h1>
         <p className="subtitle">Login to your secure messenger</p>

@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { register } from '@/lib/api';
 import { generateKeyPair, savePrivateKey } from '@/lib/crypto';
+import { ThemeToggle } from '@/components';
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -68,6 +69,9 @@ export function RegisterPage() {
 
   return (
     <div className="register-page">
+      <div className="theme-toggle-container">
+        <ThemeToggle />
+      </div>
       <div className="register-container">
         <h1>Create Account</h1>
         <p className="subtitle">Join the secure messenger</p>

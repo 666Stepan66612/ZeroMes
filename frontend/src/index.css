@@ -1,7 +1,7 @@
 :root {
   /* Unified color system - Light theme */
-  --primary-color: #0084ff;
-  --primary-hover: #006edb;
+  --primary-color: #000000;
+  --primary-hover: #1a1a1a;
   --error-color: #ff3b30;
   --success-color: #34c759;
   --warning-color: #fbc02d;

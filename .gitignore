@@ -10,3 +10,4 @@ test-scripts/
 frontend/dist/
 frontend/node_modules/
 frontend/.env.local
+CLAUDE.md

@@ -6,6 +6,7 @@ import { generateKeyPair, restorePrivateKey, savePrivateKey, clearKeys } from '@
 import { getChats } from '@/lib/api/messages';
 import { decryptChatKey, encryptChatKey } from '@/lib/crypto/encryption';
 import type { ChatKeyUpdate } from '@/types/api';
+import { ThemeToggle } from '@/components';
 import './ChangePasswordPage.css';
 
 export function ChangePasswordPage() {
@@ -146,15 +147,18 @@ export function ChangePasswordPage() {
       <div className="change-password-container">
         <div className="settings-header">
           <h1>Settings</h1>
-          <button
-            onClick={() => navigate('/chats')}
-            className="btn-back"
-            title="Back to chats"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m15 18-6-6 6-6"/>
-            </svg>
-          </button>
+          <div className="settings-header-actions">
+            <ThemeToggle />
+            <button
+              onClick={() => navigate('/chats')}
+              className="btn-back"
+              title="Back to chats"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="settings-section profile-section">

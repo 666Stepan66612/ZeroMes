@@ -25,6 +25,14 @@ body {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  position: relative;
+}
+
+.theme-toggle-container {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
 }
 
 .register-container,
