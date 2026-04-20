@@ -10,4 +10,12 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    include: ['react-window'],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/react-window/, /node_modules/],
+    },
+  },
 })
