@@ -6,11 +6,11 @@ import { getMessages, sendMessage as sendMessageAPI, deleteMessage, editMessage,
 import { encryptMessage, decryptChatKeyWithPrivateKey } from '@/lib/crypto/encryption';
 import { restorePrivateKey } from '@/lib/crypto/keys';
 import { getWebSocketClient } from '@/lib/api/websocket';
+import { decryptMessageContent } from '@/lib/crypto/messageDecryption';
 import { ContextMenu } from './ContextMenu';
 import { ConfirmDialog } from './ConfirmDialog';
 import { VirtualizedMessageList } from './VirtualizedMessageList';
 import { useToast } from '@/hooks/useToast';
-import type { EncryptedMessage } from '@/types/crypto';
 
 interface ChatWindowProps {
   chat: Chat;
@@ -76,8 +76,13 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     initialLoadDone.current = false;
     
     if (chat.id && chatKey) {
-      loadMessages();
-      markMessagesAsRead();
+      // Load messages first, then mark as read after messages are loaded
+      loadMessages().then(() => {
+        // Small delay to ensure messages state is updated
+        setTimeout(() => {
+          markMessagesAsRead();
+        }, 100);
+      });
     }
     
     // Auto-focus input when chat opens
@@ -91,8 +96,12 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     if (!chat.id || !chatKey) return;
 
     const ws = getWebSocketClient();
+    let isSubscribed = true; // Flag to prevent state updates after unmount
     
     const unsubscribe = ws.onMessage(async (message: any) => {
+      // Check if still subscribed before updating state
+      if (!isSubscribed) return;
+      
       // Handle sent messages (our own messages)
       // Note: We handle this in handleSendMessage directly, so we can skip this event
       // to avoid duplicate messages. The WebSocket event is already consumed by sendMessageAPI.
@@ -109,30 +118,8 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
         if (msg.chat_id !== chat.id) return;
         
         try {
-          // Decrypt the message
-          const encryptedMsg: EncryptedMessage = JSON.parse(msg.encrypted_content);
-          
-          // Import key for decryption
-          const key = await crypto.subtle.importKey(
-            'raw',
-            chatKey as BufferSource,
-            { name: 'AES-GCM' },
-            false,
-            ['decrypt']
-          );
-          
-          // Decode base64
-          const ciphertextBytes = Uint8Array.from(atob(encryptedMsg.ciphertext), c => c.charCodeAt(0));
-          const nonceBytes = Uint8Array.from(atob(encryptedMsg.nonce), c => c.charCodeAt(0));
-          
-          // Decrypt
-          const plaintext = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv: nonceBytes },
-            key,
-            ciphertextBytes
-          );
-          
-          const decryptedText = new TextDecoder().decode(plaintext);
+          // Decrypt the message using helper
+          const decryptedText = await decryptMessageContent(msg.encrypted_content, chatKey);
           
           // Create new message object
           const newMessage: DecryptedMessage = {
@@ -171,27 +158,8 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
         const { message_id, new_content } = message.payload || {};
         if (message_id && new_content) {
           try {
-            // Decrypt the new content
-            const encryptedMsg: EncryptedMessage = JSON.parse(new_content);
-            
-            const key = await crypto.subtle.importKey(
-              'raw',
-              chatKey as BufferSource,
-              { name: 'AES-GCM' },
-              false,
-              ['decrypt']
-            );
-            
-            const ciphertextBytes = Uint8Array.from(atob(encryptedMsg.ciphertext), c => c.charCodeAt(0));
-            const nonceBytes = Uint8Array.from(atob(encryptedMsg.nonce), c => c.charCodeAt(0));
-            
-            const plaintext = await crypto.subtle.decrypt(
-              { name: 'AES-GCM', iv: nonceBytes },
-              key,
-              ciphertextBytes
-            );
-            
-            const decryptedText = new TextDecoder().decode(plaintext);
+            // Decrypt the new content using helper
+            const decryptedText = await decryptMessageContent(new_content, chatKey);
             
             // Update message in state
             setMessages(prev => prev.map(m => 
@@ -228,6 +196,7 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     });
 
     return () => {
+      isSubscribed = false; // Prevent state updates after cleanup
       unsubscribe();
     };
   }, [chat.id, chatKey, chat.companion_id]);
@@ -247,33 +216,11 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
       });
       
       
-      // Decrypt all messages
+      // Decrypt all messages using helper
       const decryptedMessages = await Promise.all(
         response.messages.map(async (msg) => {
           try {
-            const encryptedMsg: EncryptedMessage = JSON.parse(msg.encrypted_content);
-            
-            // Import key for decryption
-            const key = await crypto.subtle.importKey(
-              'raw',
-              chatKey as BufferSource,
-              { name: 'AES-GCM' },
-              false,
-              ['decrypt']
-            );
-            
-            // Decode base64
-            const ciphertextBytes = Uint8Array.from(atob(encryptedMsg.ciphertext), c => c.charCodeAt(0));
-            const nonceBytes = Uint8Array.from(atob(encryptedMsg.nonce), c => c.charCodeAt(0));
-            
-            // Decrypt
-            const plaintext = await crypto.subtle.decrypt(
-              { name: 'AES-GCM', iv: nonceBytes },
-              key,
-              ciphertextBytes
-            );
-            
-            const decryptedText = new TextDecoder().decode(plaintext);
+            const decryptedText = await decryptMessageContent(msg.encrypted_content, chatKey);
             return { ...msg, decryptedContent: decryptedText };
           } catch (error) {
             console.error('Failed to decrypt message:', error);
@@ -329,30 +276,11 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
         return;
       }
       
-      // Decrypt messages
+      // Decrypt messages using helper
       const decryptedMessages = await Promise.all(
         response.messages.map(async (msg) => {
           try {
-            const encryptedMsg: EncryptedMessage = JSON.parse(msg.encrypted_content);
-            
-            const key = await crypto.subtle.importKey(
-              'raw',
-              chatKey as BufferSource,
-              { name: 'AES-GCM' },
-              false,
-              ['decrypt']
-            );
-            
-            const ciphertextBytes = Uint8Array.from(atob(encryptedMsg.ciphertext), c => c.charCodeAt(0));
-            const nonceBytes = Uint8Array.from(atob(encryptedMsg.nonce), c => c.charCodeAt(0));
-            
-            const plaintext = await crypto.subtle.decrypt(
-              { name: 'AES-GCM', iv: nonceBytes },
-              key,
-              ciphertextBytes
-            );
-            
-            const decryptedText = new TextDecoder().decode(plaintext);
+            const decryptedText = await decryptMessageContent(msg.encrypted_content, chatKey);
             return { ...msg, decryptedContent: decryptedText };
           } catch (error) {
             console.error('Failed to decrypt message:', error);

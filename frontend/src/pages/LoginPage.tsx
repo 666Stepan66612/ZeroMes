@@ -43,13 +43,9 @@ export function LoginPage() {
       localStorage.clear(); // Clear all localStorage including user_login, tokens, etc.
       sessionStorage.clear(); // Clear all sessionStorage
       
-      // Clear all cookies (JWT tokens are stored in cookies)
-      document.cookie.split(";").forEach((c) => {
-        document.cookie = c
-          .replace(/^ +/, "")
-          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-      });
-      console.log('[LoginPage] Old user data and cookies cleared');
+      // Note: JWT tokens are HttpOnly cookies and cannot be cleared from JavaScript
+      // They will be overwritten by the server on successful login
+      console.log('[LoginPage] Old user data cleared');
       
       // Generate key pair from password
       const keyPair = await generateKeyPair(password);

@@ -278,8 +278,9 @@ export function ChatsPage() {
       }
     };
 
-    // Check immediately and then every 2 seconds
-    const interval = setInterval(checkAllOnlineStatuses, 2000);
+    // Check immediately and then every 10 seconds (reduced from 2s to avoid excessive requests)
+    // With 50 chats: 2s = 25 req/s, 10s = 5 req/s
+    const interval = setInterval(checkAllOnlineStatuses, 10000);
 
     return () => clearInterval(interval);
   }, [chats.length]); // Only depend on length to avoid infinite loop

@@ -42,7 +42,7 @@ const MessageRow = ({ index, style, data }: { index: number; style: React.CSSPro
   
   // Normalize status to string for consistent handling
   const getStatusIcon = () => {
-    if (displayStatus === 'pending') return ' ⏰';
+    if (displayStatus === 'pending') return ' pending';
     
     const status = typeof displayStatus === 'number' ? displayStatus : displayStatus;
     
