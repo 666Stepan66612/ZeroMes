@@ -227,7 +227,7 @@ func setTokenCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
 		Value:    accessToken,
-		HttpOnly: false,                // Allow JavaScript to read for WebSocket authentication
+		HttpOnly: true,                 // Protect from XSS attacks
 		Secure:   true,                 // HTTPS only
 		SameSite: http.SameSiteLaxMode, // Lax mode allows cookies in WebSocket
 		Path:     "/",

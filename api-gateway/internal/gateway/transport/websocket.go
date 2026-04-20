@@ -3,6 +3,8 @@ package transport
 import (
 	"context"
 	"net/http"
+	"os"
+	"strings"
 
 	"api-gateway/internal/cores/domain"
 	apperrors "api-gateway/internal/cores/errors"
@@ -24,10 +26,42 @@ func NewWebSocketHandler(gatewayService service.GatewayService) *WebSocketHandle
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		// Allow all origins for now (WebSocket is authenticated via JWT)
-		// In production, you should whitelist specific origins
-		return true
+		origin := r.Header.Get("Origin")
+
+		// In production, check against whitelist
+		allowedOrigins := getWhitelistedOrigins()
+		for _, allowed := range allowedOrigins {
+			if origin == allowed {
+				return true
+			}
+		}
+
+		// Development mode fallback
+		if os.Getenv("ENV") == "development" {
+			return true
+		}
+
+		return false
 	},
+}
+
+func getWhitelistedOrigins() []string {
+	// Get from environment or config
+	originsEnv := os.Getenv("ALLOWED_ORIGINS")
+	if originsEnv != "" {
+		return strings.Split(originsEnv, ",")
+	}
+
+	// Default production origins
+	domain := os.Getenv("DOMAIN")
+	if domain == "" {
+		domain = "khmelev.site:8443"
+	}
+
+	return []string{
+		"https://" + domain,
+		"http://localhost:5173", // Local development
+	}
 }
 
 func (h *WebSocketHandler) Handle(c *gin.Context) {
