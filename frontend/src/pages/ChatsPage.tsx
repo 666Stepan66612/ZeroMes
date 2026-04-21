@@ -352,12 +352,12 @@ export function ChatsPage() {
             
             // Decrypt last message if available
             console.log('[ChatsPage] Processing last_message for chat:', chat.companion_id, 'last_message:', chat.last_message);
-            if (chat.last_message && chat.encrypted_key) {
+            if (chat.last_message && chat.last_message !== '' && chat.encrypted_key) {
               try {
                 const companionPublicKey = await getUserPublicKey(chat.companion_id);
                 const companionPubKeyBytes = fromHex(companionPublicKey);
                 const chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
-                
+
                 // Parse encrypted message (format: {"ciphertext":"...","nonce":"..."})
                 console.log('[ChatsPage] Parsing last_message:', chat.last_message);
                 const encryptedData = JSON.parse(chat.last_message);
@@ -374,6 +374,9 @@ export function ChatsPage() {
                 console.error('[ChatsPage] Failed to decrypt last message:', error);
                 updatedChat.last_message_preview = 'Message...';
               }
+            } else {
+              // No last message yet
+              updatedChat.last_message_preview = 'No messages yet';
             }
             
             // Fetch companion login from auth-service

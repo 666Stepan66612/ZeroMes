@@ -25,9 +25,12 @@ const ChatRow = ({ index, style, data }: { index: number; style: React.CSSProper
   const chat = chats[index];
 
   if (!chat) return null;
-  
+
+  // Safety check: ensure style is defined
+  const safeStyle = style || {};
+
   return (
-    <div style={style}>
+    <div style={safeStyle}>
       <div
         className={`chat-item ${selectedChat?.id === chat.id ? 'active' : ''}`}
         onClick={() => onSelectChat(chat)}
@@ -39,7 +42,7 @@ const ChatRow = ({ index, style, data }: { index: number; style: React.CSSProper
           <div className="chat-header">
             <span className="chat-name">{chat.companion_login || chat.companion_id}</span>
             <span className="chat-time">
-              {chat.last_message_at && !isNaN(new Date(chat.last_message_at).getTime())
+              {chat.last_message_at && chat.last_message_at !== '' && !isNaN(new Date(chat.last_message_at).getTime())
                 ? new Date(chat.last_message_at).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
