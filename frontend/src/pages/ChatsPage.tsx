@@ -272,19 +272,26 @@ export function ChatsPage() {
   useEffect(() => {
     const checkAllOnlineStatuses = async () => {
       if (chatsRef.current.length === 0) return;
-      
+
       try {
-        const updatedChats = await Promise.all(
+        const onlineStatuses = await Promise.all(
           chatsRef.current.map(async (chat) => {
             try {
               const isOnline = await checkOnlineStatus(chat.companion_id);
-              return { ...chat, is_online: isOnline };
+              return { companion_id: chat.companion_id, is_online: isOnline };
             } catch {
-              return chat; // Keep existing status on error
+              return { companion_id: chat.companion_id, is_online: chat.is_online || false };
             }
           })
         );
-        setChats(updatedChats);
+
+        // Update only is_online field, don't replace entire chat objects
+        setChats(prevChats =>
+          prevChats.map(chat => {
+            const status = onlineStatuses.find(s => s.companion_id === chat.companion_id);
+            return status ? { ...chat, is_online: status.is_online } : chat;
+          })
+        );
       } catch (error) {
         console.error('[ChatsPage] Failed to check online statuses:', error);
       }

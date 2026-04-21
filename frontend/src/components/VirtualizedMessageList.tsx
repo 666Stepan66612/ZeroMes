@@ -32,20 +32,23 @@ interface MessageRowData {
 
 // Компонент для отдельного сообщения
 const MessageRow = ({ index, style, data }: { index: number; style: React.CSSProperties; data: MessageRowData }) => {
+  // Safety check: ensure data exists
+  if (!data || !data.messages || !data.chat) return null;
+
   const { messages, chat, onContextMenu } = data;
   const message = messages[index];
-  
+
   if (!message) return null;
-  
+
   const isSent = message.sender_id !== chat.companion_id;
   const displayStatus = message.localStatus || message.status;
-  
+
   // Normalize status to string for consistent handling
   const getStatusIcon = () => {
     if (displayStatus === 'pending') return ' pending';
-    
+
     const status = typeof displayStatus === 'number' ? displayStatus : displayStatus;
-    
+
     if (status === 'sent' || status === MessageStatus.SENT) {
       return ' ✓';
     }
@@ -55,12 +58,15 @@ const MessageRow = ({ index, style, data }: { index: number; style: React.CSSPro
     if (status === 'read' || status === MessageStatus.READ) {
       return ' ✓✓';
     }
-    
+
     return '';
   };
-  
+
+  // Safety check: ensure style is defined
+  const safeStyle = style || {};
+
   return (
-    <div style={style}>
+    <div style={safeStyle}>
       <div
         className={`message ${isSent ? 'sent' : 'received'}`}
         onContextMenu={(e) => onContextMenu(e, message)}
