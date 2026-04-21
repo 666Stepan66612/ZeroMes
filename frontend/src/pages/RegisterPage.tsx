@@ -51,14 +51,15 @@ export function RegisterPage() {
 
       // Save private key (sessionStorage or IndexedDB based on rememberMe)
       await savePrivateKey(keyPair.privateKey, rememberMe);
-      
+
       // Save login to localStorage
       localStorage.setItem('user_login', login.trim());
 
-      // Redirect to login
-      navigate('/login', {
-        state: { message: 'Registration successful! Please login.' }
-      });
+      // Small delay to ensure storage is written
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Redirect directly to chats (user is already authenticated after registration)
+      navigate('/chats');
     } catch (err) {
       console.error('Registration error:', err);
       setError(err instanceof Error ? err.message : 'Registration failed');
