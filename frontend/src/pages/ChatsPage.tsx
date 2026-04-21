@@ -60,7 +60,14 @@ export function ChatsPage() {
 
       const unsubscribeMessage = ws.onMessage(async (message: any) => {
         console.log('New message:', message);
-        
+        console.log('Message type:', message?.type);
+
+        // Skip unknown message types
+        if (!message || !message.type) {
+          console.warn('[ChatsPage] Invalid message format:', message);
+          return;
+        }
+
         // Handle new message notification (incoming messages from others)
         if (message.type === 'new_message') {
           const msg = message.payload;
@@ -186,35 +193,35 @@ export function ChatsPage() {
         // Handle message_sent confirmation (update last message for sender)
         if (message.type === 'message_sent') {
           const msg = message.payload;
-          
+
           if (!msg || !msg.chat_id) {
             return;
           }
-          
+
           // Update last message preview for the chat we just sent to (use ref)
           const existingChat = chatsRef.current.find(c => c.id === msg.chat_id);
-          
+
           if (existingChat) {
             try {
               // Decrypt the message content
               const companionPublicKey = await getUserPublicKey(existingChat.companion_id);
               const companionPubKeyBytes = fromHex(companionPublicKey);
               const chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
-              
+
               const encryptedData = JSON.parse(msg.encrypted_content);
               const decrypted = await decryptMessage(
                 encryptedData.ciphertext,
                 encryptedData.nonce,
                 chatKey
               );
-              
+
               const preview = decrypted.length > 50 ? decrypted.substring(0, 50) + '...' : decrypted;
-              
+
               console.log('[ChatsPage] message_sent msg.created_at:', msg.created_at, 'type:', typeof msg.created_at);
-              
+
               // Use current time if created_at is invalid
               const messageTime = msg.created_at || new Date().toISOString();
-              
+
               // Update chats state with new last message preview
               setChats(prevChats => {
                 const updated = prevChats.map(chat =>
@@ -222,13 +229,18 @@ export function ChatsPage() {
                     ? { ...chat, last_message_preview: preview, last_message_at: messageTime }
                     : chat
                 ).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
-                
+
                 return updated;
               });
             } catch (error) {
               console.error('[ChatsPage] Failed to decrypt sent message:', error);
             }
           }
+        }
+
+        // Handle other message types (chats, online_status, etc.) - just log for now
+        if (message.type !== 'new_message' && message.type !== 'message_sent') {
+          console.log('[ChatsPage] Unhandled message type:', message.type, 'payload:', message.payload);
         }
       });
 
