@@ -18,9 +18,12 @@ interface ChatRowData {
 
 // Компонент для отдельного чата
 const ChatRow = ({ index, style, data }: { index: number; style: React.CSSProperties; data: ChatRowData }) => {
+  // Safety check: ensure data exists
+  if (!data || !data.chats) return null;
+
   const { chats, selectedChat, onSelectChat } = data;
   const chat = chats[index];
-  
+
   if (!chat) return null;
   
   return (

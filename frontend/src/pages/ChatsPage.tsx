@@ -291,6 +291,9 @@ export function ChatsPage() {
     return chats.find(c => c.id === selectedChatId) || null;
   }, [selectedChatId, chats]);
 
+  // Safety check: ensure chats is always an array
+  const safeChats = Array.isArray(chats) ? chats : [];
+
   const loadChats = async () => {
     try {
       setLoading(true);
@@ -517,7 +520,7 @@ export function ChatsPage() {
           <div className="loading">Loading chats...</div>
         ) : (
           <VirtualizedChatList
-            chats={chats}
+            chats={safeChats}
             selectedChat={selectedChat}
             onSelectChat={handleSelectChat}
             containerHeight={window.innerHeight - 140}
