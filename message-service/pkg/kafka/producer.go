@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"message-service/internal/messaging/service"
 
@@ -19,13 +20,17 @@ type Producer struct {
 func NewProducer(brokers []string, topic string) *Producer {
 	return &Producer{
 		writer: &kafka.Writer{
-			Addr: kafka.TCP(brokers...),
-			Topic: topic,
-			Balancer: &kafka.LeastBytes{},
-			Compression: kafka.Snappy,
-			RequiredAcks: kafka.RequireAll,
-			Async: false,
-			AllowAutoTopicCreation: true,  
+			Addr:                   kafka.TCP(brokers...),
+			Topic:                  topic,
+			Balancer:               &kafka.LeastBytes{},
+			Compression:            kafka.Lz4,
+			RequiredAcks:           kafka.RequireOne,
+			Async:                  false,
+			AllowAutoTopicCreation: true,
+			BatchSize:              100,
+			BatchTimeout:           10 * time.Millisecond,
+			ReadTimeout:            10 * time.Second,
+			WriteTimeout:           10 * time.Second,
 		},
 	}
 }
