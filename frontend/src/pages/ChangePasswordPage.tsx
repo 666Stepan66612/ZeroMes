@@ -144,11 +144,13 @@ export function ChangePasswordPage() {
 
   return (
     <div className="change-password-page">
+      <div className="theme-toggle-container">
+        <ThemeToggle />
+      </div>
       <div className="change-password-container">
         <div className="settings-header">
           <h1>Settings</h1>
           <div className="settings-header-actions">
-            <ThemeToggle />
             <button
               onClick={() => navigate('/chats')}
               className="btn-back"

@@ -163,7 +163,7 @@ export function RegisterPage() {
         </div>
 
         <div className="security-notice">
-          <p>🔒 Your password is never sent to the server</p>
+          <p>Your password is never sent to the server</p>
           <p>All encryption happens on your device</p>
         </div>
       </div>
