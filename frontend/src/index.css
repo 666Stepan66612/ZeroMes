@@ -145,9 +145,6 @@ code {
 }
 
 .theme-toggle {
-  position: fixed;
-  top: 20px;
-  right: 20px;
   padding: 0;
   border: none;
   background: transparent;
