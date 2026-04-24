@@ -71,6 +71,18 @@ func (r *postgresRepository) GetByChatID(ctx context.Context, chatID string, lim
 
 		args = []interface{}{chatID, limit}
 	} else {
+		// First check if lastMessageID exists
+		var exists bool
+		checkQuery := `SELECT EXISTS(SELECT 1 FROM messages WHERE id = $1)`
+		if err := r.pool.QueryRow(ctx, checkQuery, lastMessageID).Scan(&exists); err != nil {
+			return nil, err
+		}
+
+		if !exists {
+			slog.Warn("lastMessageID not found, returning empty result", "last_message_id", lastMessageID)
+			return []*service.Message{}, nil
+		}
+
 		query = `
 			SELECT id, chat_id, sender_id, recipient_id, encrypted_content, message_type, created_at, status
 			FROM messages

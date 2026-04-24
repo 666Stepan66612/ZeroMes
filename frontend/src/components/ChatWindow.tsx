@@ -251,9 +251,9 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     if (!chat.id || !chatKey || !hasMore || loadingMore || messages.length === 0) {
       return;
     }
-    
-    // Get ID of the oldest message (first in array after reverse)
-    const oldestMessage = messages[0];
+
+    // Get ID of the oldest message (last in array after reverse)
+    const oldestMessage = messages[messages.length - 1];
     if (!oldestMessage) {
       return;
     }
