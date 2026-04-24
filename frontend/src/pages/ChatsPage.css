@@ -626,11 +626,11 @@
   }
 
   .message.sent {
-    margin-right: 12px;
+    margin-right: 8px;
   }
 
   .message.received {
-    margin-left: 12px;
+    margin-left: 16px;
   }
 
   .chat-messages {
