@@ -630,11 +630,7 @@
   }
 
   .message.received {
-    margin-left: 16px;
-  }
-
-  .chat-messages {
-    padding: 16px 8px;
+    margin-left: 8px;
   }
 
   .chat-input {
