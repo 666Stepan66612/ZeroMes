@@ -42,6 +42,7 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
   const [editingMessage, setEditingMessage] = useState<{ id: string; content: string } | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const initialLoadDone = useRef(false);
@@ -205,6 +206,27 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     scrollToBottom();
   }, [messages]);
 
+  // Check if user is at bottom of chat
+  const isAtBottom = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    const threshold = 100; // pixels from bottom
+    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+  };
+
+  // Handle scroll to show/hide scroll button
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      setShowScrollButton(!isAtBottom());
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const loadMessages = async () => {
     if (!chat.id || !chatKey) return;
 
@@ -333,6 +355,10 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const scrollToBottomInstant = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+  };
+
   const markMessagesAsRead = async () => {
     if (!chat.id || messages.length === 0) return;
 
@@ -380,6 +406,7 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
 
     if (!messageText.trim() || !chatKey) return;
 
+    const wasAtBottom = isAtBottom();
     const startTime = performance.now();
     const tempId = `temp-${Date.now()}`;
     const tempMessage: DecryptedMessage = {
@@ -399,6 +426,11 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     setMessages(prev => [...prev, tempMessage]);
     const textToSend = messageText;
     setMessageText('');
+
+    // Scroll to bottom if user was at bottom
+    if (wasAtBottom) {
+      setTimeout(() => scrollToBottomInstant(), 0);
+    }
 
     try {
       // Encrypt message before sending
@@ -425,7 +457,12 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
           ? { ...sentMessage, decryptedContent: textToSend, localStatus: 'sent' }
           : m
       ));
-      
+
+      // Scroll to bottom if user was at bottom
+      if (wasAtBottom) {
+        setTimeout(() => scrollToBottomInstant(), 0);
+      }
+
       // Don't call onChatUpdate() to avoid re-rendering the chat list
       // The chat list will be updated via WebSocket 'chats' event
     } catch (error) {
@@ -557,6 +594,18 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
           </>
         )}
         <div ref={messagesEndRef} />
+
+        {showScrollButton && (
+          <button
+            className="scroll-to-bottom-btn"
+            onClick={scrollToBottom}
+            aria-label="Scroll to bottom"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14M19 12l-7 7-7-7"/>
+            </svg>
+          </button>
+        )}
       </div>
 
       <form className="chat-input" onSubmit={editingMessage ? handleSubmitEdit : handleSendMessage}>
