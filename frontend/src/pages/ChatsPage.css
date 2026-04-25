@@ -339,6 +339,7 @@
 
 .message {
   max-width: 65%;
+  min-width: 200px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -347,13 +348,13 @@
 .message.sent {
   align-self: flex-end;
   align-items: flex-end;
-  margin-right: 16px;
+  margin-right: 0;
 }
 
 .message.received {
   align-self: flex-start;
   align-items: flex-start;
-  margin-left: 16px;
+  margin-left: 0;
 }
 
 .message-content {
@@ -623,14 +624,15 @@
 
   .message {
     max-width: 80%;
+    min-width: 150px;
   }
 
   .message.sent {
-    margin-right: 8px;
+    margin-right: 0;
   }
 
   .message.received {
-    margin-left: 8px;
+    margin-left: 0;
   }
 
   .chat-input {
