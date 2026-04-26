@@ -210,7 +210,7 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
   const isAtBottom = () => {
     const container = messagesContainerRef.current;
     if (!container) return true;
-    const threshold = 100; // pixels from bottom
+    const threshold = 150;
     return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
   };
 
@@ -220,10 +220,13 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     if (!container) return;
 
     const handleScroll = () => {
-      setShowScrollButton(!isAtBottom());
+      const atBottom = isAtBottom();
+      setShowScrollButton(!atBottom);
     };
 
     container.addEventListener('scroll', handleScroll);
+    handleScroll();
+
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -595,17 +598,15 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
         )}
         <div ref={messagesEndRef} />
 
-        {showScrollButton && (
-          <button
-            className="scroll-to-bottom-btn"
-            onClick={scrollToBottom}
-            aria-label="Scroll to bottom"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5v14M19 12l-7 7-7-7"/>
-            </svg>
-          </button>
-        )}
+        <button
+          className={`scroll-to-bottom-btn ${showScrollButton ? 'visible' : ''}`}
+          onClick={scrollToBottom}
+          aria-label="Scroll to bottom"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 5v14M19 12l-7 7-7-7"/>
+          </svg>
+        </button>
       </div>
 
       <form className="chat-input" onSubmit={editingMessage ? handleSubmitEdit : handleSendMessage}>
