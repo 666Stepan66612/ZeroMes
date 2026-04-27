@@ -76,18 +76,16 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     setHasMore(true);
     setLoadingMore(false);
     initialLoadDone.current = false;
-    
+
     if (chat.id && chatKey) {
-      // Load messages first, then mark as read after messages are loaded
       loadMessages().then(() => {
-        // Small delay to ensure messages state is updated
         setTimeout(() => {
           markMessagesAsRead();
+          initialLoadDone.current = true;
         }, 100);
       });
     }
-    
-    // Auto-focus input when chat opens
+
     setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
@@ -203,7 +201,11 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     };
   }, [chat.id, chatKey, chat.companion_id]);
 
-  // Handle at bottom state change from VirtualizedMessageList
+  const scrollToBottom = () => {
+    setTriggerScrollToBottom(true);
+    setTimeout(() => setTriggerScrollToBottom(false), 100);
+  };
+
   const handleAtBottomChange = useCallback((atBottom: boolean) => {
     setShowScrollButton(!atBottom);
   }, []);
@@ -217,9 +219,8 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
         chat_id: chat.id,
         limit: 50,
       });
-      
-      
-      // Decrypt all messages using helper
+
+
       const decryptedMessages = await Promise.all(
         response.messages.map(async (msg) => {
           try {
@@ -233,13 +234,10 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
         })
       );
       
-      // Reverse to show oldest first (backend returns newest first)
       setMessages(decryptedMessages.reverse());
-      
-      // Update hasMore flag from backend response
+
       setHasMore(response.has_more || false);
-      
-      // Mark initial load as done
+
       setTimeout(() => {
         initialLoadDone.current = true;
       }, 100);
@@ -255,31 +253,25 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
       return;
     }
 
-    // Get ID of the oldest message (first in array after reverse)
     const oldestMessage = messages[0];
     if (!oldestMessage) {
       return;
     }
-    
+
     try {
       setLoadingMore(true);
-      
-      // Save current scroll position
-      const container = messagesContainerRef.current;
-      const oldScrollHeight = container?.scrollHeight || 0;
-      
+
       const response = await getMessages({
         chat_id: chat.id,
         limit: 50,
         last_message_id: oldestMessage.id,
       });
-      
+
       if (response.messages.length === 0) {
         setHasMore(false);
         return;
       }
-      
-      // Decrypt messages using helper
+
       const decryptedMessages = await Promise.all(
         response.messages.map(async (msg) => {
           try {
@@ -291,24 +283,13 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
           }
         })
       );
-      
-      // Reverse to maintain order (backend returns DESC)
+
       const reversedMessages = decryptedMessages.reverse();
-      
-      // Add to the beginning of the array
+
       setMessages(prev => [...reversedMessages, ...prev]);
-      
-      // Restore scroll position
-      setTimeout(() => {
-        if (container) {
-          const newScrollHeight = container.scrollHeight;
-          container.scrollTop = newScrollHeight - oldScrollHeight;
-        }
-      }, 0);
-      
-      // Update hasMore flag
+
       setHasMore(response.has_more || false);
-      
+
     } catch (error) {
       console.error('Failed to load more messages:', error);
     } finally {
@@ -355,20 +336,6 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
   };
 
   // Mark messages as read when new messages arrive
-  useEffect(() => {
-    if (messages.length > 0) {
-      markMessagesAsRead();
-    }
-  }, [messages.length]);
-
-  // Check online status when chat opens
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const status = await checkOnlineStatus(chat.companion_id);
-        setIsOnline(status);
-      } catch (error) {
-        console.error('Failed to check online status:', error);
       }
     };
 
@@ -546,21 +513,17 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
         {loading ? (
           <div className="loading">Loading messages...</div>
         ) : (
-          <>
-            {loadingMore && (
-              <div className="loading-more">
-                Loading older messages...
-              </div>
-            )}
-            <VirtualizedMessageList
-              messages={messages}
-              chat={chat}
-              onContextMenu={handleContextMenu}
-              containerHeight={messagesContainerRef.current?.clientHeight || 500}
-              onAtBottomChange={handleAtBottomChange}
-              scrollToBottom={triggerScrollToBottom}
-            />
-          </>
+          <VirtualizedMessageList
+            messages={messages}
+            chat={chat}
+            onContextMenu={handleContextMenu}
+            containerHeight={messagesContainerRef.current?.clientHeight || 500}
+            onAtBottomChange={handleAtBottomChange}
+            scrollToBottom={triggerScrollToBottom}
+            onLoadMore={loadMoreMessages}
+            hasMore={hasMore}
+            loadingMore={loadingMore}
+          />
         )}
         <div ref={messagesEndRef} />
 

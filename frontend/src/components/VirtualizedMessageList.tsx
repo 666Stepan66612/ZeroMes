@@ -23,6 +23,9 @@ interface VirtualizedMessageListProps {
   containerHeight: number;
   onAtBottomChange?: (atBottom: boolean) => void;
   scrollToBottom?: boolean;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
 }
 
 export function VirtualizedMessageList({
@@ -32,6 +35,9 @@ export function VirtualizedMessageList({
   containerHeight,
   onAtBottomChange,
   scrollToBottom,
+  onLoadMore,
+  hasMore,
+  loadingMore,
 }: VirtualizedMessageListProps) {
   const listRef = useRef<VirtuosoHandle>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -58,6 +64,13 @@ export function VirtualizedMessageList({
     onAtBottomChange?.(atBottom);
   };
 
+  // Handle loading more messages when scrolling to top
+  const handleStartReached = () => {
+    if (hasMore && !loadingMore && onLoadMore) {
+      onLoadMore();
+    }
+  };
+
   if (messages.length === 0) {
     return (
       <div className="no-messages">
@@ -75,6 +88,15 @@ export function VirtualizedMessageList({
       followOutput="smooth"
       atBottomStateChange={handleAtBottomStateChange}
       atBottomThreshold={200}
+      startReached={handleStartReached}
+      overscan={200}
+      components={{
+        Header: () => loadingMore ? (
+          <div className="loading-more">
+            Loading older messages...
+          </div>
+        ) : null,
+      }}
       itemContent={(_index, message) => {
         const isSent = message.sender_id !== chat.companion_id;
         const displayStatus = message.localStatus || message.status;
