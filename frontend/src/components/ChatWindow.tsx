@@ -18,9 +18,10 @@ interface ChatWindowProps {
   onBack?: () => void;
 }
 
-interface DecryptedMessage extends Message {
+interface DecryptedMessage extends Omit<Message, 'status'> {
   decryptedContent?: string;
   localStatus?: 'pending' | 'sent' | 'delivered' | 'read';
+  status: string | number;
 }
 
 interface ContextMenuState {
@@ -297,31 +298,9 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     }
   }, [chat.id, chatKey, hasMore, loadingMore, messages]);
 
-  // Handle scroll for pagination
-  useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-    
-    const handleScroll = () => {
-      // Load more when scrolled near the top (but only after initial load is done)
-      if (container.scrollTop < 100 && hasMore && !loadingMore && initialLoadDone.current) {
-        loadMoreMessages();
-      }
-    };
-    
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [hasMore, loadingMore, loadMoreMessages]);
-
-  const scrollToBottom = () => {
-    setTriggerScrollToBottom(true);
-    setTimeout(() => setTriggerScrollToBottom(false), 100);
-  };
-
   const markMessagesAsRead = async () => {
     if (!chat.id || messages.length === 0) return;
 
-    // Find the last message from companion
     const lastCompanionMessage = [...messages]
       .reverse()
       .find(m => m.sender_id === chat.companion_id);
@@ -335,12 +314,23 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     }
   };
 
-  // Mark messages as read when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0) {
+      markMessagesAsRead();
+    }
+  }, [messages.length]);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const status = await checkOnlineStatus(chat.companion_id);
+        setIsOnline(status);
+      } catch (error) {
+        console.error('Failed to check online status:', error);
       }
     };
 
     checkStatus();
-    // Check every 2 seconds to match chat list
     const interval = setInterval(checkStatus, 2000);
 
     return () => clearInterval(interval);

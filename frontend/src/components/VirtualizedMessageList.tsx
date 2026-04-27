@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
+import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import type { Chat } from '@/types/api';
 import { MessageStatus } from '@/types/api';
 
