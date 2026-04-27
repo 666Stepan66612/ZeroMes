@@ -43,6 +43,7 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [triggerScrollToBottom, setTriggerScrollToBottom] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const initialLoadDone = useRef(false);
@@ -202,32 +203,9 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     };
   }, [chat.id, chatKey, chat.companion_id]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Check if user is at bottom of chat
-  const isAtBottom = () => {
-    const container = messagesContainerRef.current;
-    if (!container) return true;
-    const threshold = 150;
-    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
-  };
-
-  // Handle scroll to show/hide scroll button
-  useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      const atBottom = isAtBottom();
-      setShowScrollButton(!atBottom);
-    };
-
-    container.addEventListener('scroll', handleScroll);
-    handleScroll();
-
-    return () => container.removeEventListener('scroll', handleScroll);
+  // Handle at bottom state change from VirtualizedMessageList
+  const handleAtBottomChange = useCallback((atBottom: boolean) => {
+    setShowScrollButton(!atBottom);
   }, []);
 
   const loadMessages = async () => {
@@ -355,11 +333,8 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
   }, [hasMore, loadingMore, loadMoreMessages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const scrollToBottomInstant = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    setTriggerScrollToBottom(true);
+    setTimeout(() => setTriggerScrollToBottom(false), 100);
   };
 
   const markMessagesAsRead = async () => {
@@ -409,7 +384,6 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
 
     if (!messageText.trim() || !chatKey) return;
 
-    const wasAtBottom = isAtBottom();
     const startTime = performance.now();
     const tempId = `temp-${Date.now()}`;
     const tempMessage: DecryptedMessage = {
@@ -429,11 +403,6 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     setMessages(prev => [...prev, tempMessage]);
     const textToSend = messageText;
     setMessageText('');
-
-    // Scroll to bottom if user was at bottom
-    if (wasAtBottom) {
-      setTimeout(() => scrollToBottomInstant(), 0);
-    }
 
     try {
       // Encrypt message before sending
@@ -460,11 +429,6 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
           ? { ...sentMessage, decryptedContent: textToSend, localStatus: 'sent' }
           : m
       ));
-
-      // Scroll to bottom if user was at bottom
-      if (wasAtBottom) {
-        setTimeout(() => scrollToBottomInstant(), 0);
-      }
 
       // Don't call onChatUpdate() to avoid re-rendering the chat list
       // The chat list will be updated via WebSocket 'chats' event
@@ -593,6 +557,8 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
               chat={chat}
               onContextMenu={handleContextMenu}
               containerHeight={messagesContainerRef.current?.clientHeight || 500}
+              onAtBottomChange={handleAtBottomChange}
+              scrollToBottom={triggerScrollToBottom}
             />
           </>
         )}

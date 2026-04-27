@@ -304,7 +304,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 24px;
+  padding: 24px 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -354,18 +354,21 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  width: fit-content;
 }
 
 .message.sent {
   align-self: flex-end;
   align-items: flex-end;
   margin-left: auto;
+  margin-right: 0;
 }
 
 .message.received {
   align-self: flex-start;
   align-items: flex-start;
   margin-right: auto;
+  margin-left: 0;
 }
 
 .message-content {
@@ -734,14 +737,17 @@
   .message {
     max-width: 85%;
     min-width: 100px;
+    width: fit-content;
   }
 
   .message.sent {
     margin-left: auto;
+    margin-right: 0;
   }
 
   .message.received {
     margin-right: auto;
+    margin-left: 0;
   }
 
   .scroll-to-bottom-btn {
@@ -773,7 +779,7 @@
   }
 
   .chat-messages {
-    padding: 16px;
+    padding: 16px 12px;
   }
 
   .chat-window-header {

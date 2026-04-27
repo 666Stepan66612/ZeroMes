@@ -1,5 +1,5 @@
-import { useRef, useEffect } from 'react';
-import { Virtuoso } from 'react-virtuoso';
+import { useRef, useEffect, useState } from 'react';
+import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import type { Chat } from '@/types/api';
 import { MessageStatus } from '@/types/api';
 
@@ -11,7 +11,7 @@ interface DecryptedMessage {
   encrypted_content: string;
   message_type: 'text' | 'image' | 'file';
   created_at: string;
-  status: any;
+  status: string | number;
   decryptedContent?: string;
   localStatus?: 'pending' | 'sent' | 'delivered' | 'read';
 }
@@ -21,6 +21,8 @@ interface VirtualizedMessageListProps {
   chat: Chat;
   onContextMenu: (e: React.MouseEvent, message: DecryptedMessage) => void;
   containerHeight: number;
+  onAtBottomChange?: (atBottom: boolean) => void;
+  scrollToBottom?: boolean;
 }
 
 export function VirtualizedMessageList({
@@ -28,15 +30,33 @@ export function VirtualizedMessageList({
   chat,
   onContextMenu,
   containerHeight,
+  onAtBottomChange,
+  scrollToBottom,
 }: VirtualizedMessageListProps) {
-  const listRef = useRef<any>(null);
+  const listRef = useRef<VirtuosoHandle>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const prevMessagesLength = useRef(messages.length);
 
-  // Прокрутка вниз при добавлении новых сообщений
+  // Auto-scroll to bottom when new messages arrive and user is at bottom
   useEffect(() => {
-    if (listRef.current && messages.length > 0) {
-      listRef.current.scrollToIndex({ index: messages.length - 1, behavior: 'smooth' });
+    if (messages.length > prevMessagesLength.current && isAtBottom) {
+      listRef.current?.scrollToIndex({ index: messages.length - 1, behavior: 'smooth' });
     }
-  }, [messages.length]);
+    prevMessagesLength.current = messages.length;
+  }, [messages.length, isAtBottom]);
+
+  // Handle external scroll to bottom request
+  useEffect(() => {
+    if (scrollToBottom && messages.length > 0) {
+      listRef.current?.scrollToIndex({ index: messages.length - 1, behavior: 'smooth' });
+    }
+  }, [scrollToBottom, messages.length]);
+
+  // Track if user is at bottom
+  const handleAtBottomStateChange = (atBottom: boolean) => {
+    setIsAtBottom(atBottom);
+    onAtBottomChange?.(atBottom);
+  };
 
   if (messages.length === 0) {
     return (
@@ -52,11 +72,13 @@ export function VirtualizedMessageList({
       ref={listRef}
       style={{ height: containerHeight }}
       data={messages}
+      followOutput="smooth"
+      atBottomStateChange={handleAtBottomStateChange}
+      atBottomThreshold={200}
       itemContent={(_index, message) => {
         const isSent = message.sender_id !== chat.companion_id;
         const displayStatus = message.localStatus || message.status;
 
-        // Normalize status to string for consistent handling
         const getStatusIcon = () => {
           if (displayStatus === 'pending') return ' pending';
 
@@ -79,7 +101,7 @@ export function VirtualizedMessageList({
           <div
             className={`message ${isSent ? 'sent' : 'received'}`}
             onContextMenu={(e) => onContextMenu(e, message)}
-            style={{ margin: '4px 0' }}
+            style={{ margin: '4px 0', width: 'fit-content' }}
           >
             <div className="message-content">
               {message.decryptedContent || message.encrypted_content}
