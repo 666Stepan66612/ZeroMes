@@ -385,10 +385,15 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
       console.log(`[Performance] WebSocket send took: ${sendTime.toFixed(2)}ms`);
       console.log(`[Performance] Total time: ${(performance.now() - startTime).toFixed(2)}ms`);
 
-      // Replace temp message with real one
+      // Replace temp message with real one from server
+      // IMPORTANT: Keep sender_id from server response, not from temp message
       setMessages(prev => prev.map(m =>
         m.id === tempId
-          ? { ...sentMessage, decryptedContent: textToSend, localStatus: 'sent' }
+          ? {
+              ...sentMessage,
+              decryptedContent: textToSend,
+              localStatus: 'sent'
+            }
           : m
       ));
 

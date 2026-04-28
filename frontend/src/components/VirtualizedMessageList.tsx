@@ -123,7 +123,6 @@ export function VirtualizedMessageList({
           <div
             className={`message ${isSent ? 'sent' : 'received'}`}
             onContextMenu={(e) => onContextMenu(e, message)}
-            style={{ margin: '4px 0', width: 'fit-content' }}
           >
             <div className="message-content">
               {message.decryptedContent || message.encrypted_content}
