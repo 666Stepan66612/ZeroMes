@@ -343,10 +343,15 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
 
     const startTime = performance.now();
     const tempId = `temp-${Date.now()}`;
+
+    // Use a placeholder sender_id that's definitely not the companion
+    // The real sender_id will come from the server response
+    const currentUserId = chat.user_id || 'me';
+
     const tempMessage: DecryptedMessage = {
       id: tempId,
       chat_id: chat.id,
-      sender_id: '', // Will be filled by server
+      sender_id: currentUserId,
       recipient_id: chat.companion_id,
       encrypted_content: '',
       message_type: 'text',

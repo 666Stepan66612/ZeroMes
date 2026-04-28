@@ -367,8 +367,8 @@
 .message.received {
   align-self: flex-start;
   align-items: flex-start;
-  margin-right: auto;
   margin-left: 0;
+  margin-right: auto;
 }
 
 .message-content {
