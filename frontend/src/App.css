@@ -48,7 +48,8 @@ body {
 
 /* Auth Pages Layout */
 .register-page,
-.login-page {
+.login-page,
+.change-password-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -58,6 +59,7 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 .theme-toggle-container {
