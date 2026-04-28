@@ -348,6 +348,43 @@
   to { transform: rotate(360deg); }
 }
 
+/* Date Separator */
+.date-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 24px 0 16px 0;
+  position: relative;
+}
+
+.date-separator::before,
+.date-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.date-separator::before {
+  margin-right: 16px;
+}
+
+.date-separator::after {
+  margin-left: 16px;
+}
+
+.date-separator-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 12px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
 .no-messages {
   flex: 1;
   display: flex;

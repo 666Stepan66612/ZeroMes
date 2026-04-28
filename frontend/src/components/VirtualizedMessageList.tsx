@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import type { Chat } from '@/types/api';
 import { MessageStatus } from '@/types/api';
+import { formatTime, formatDateSeparator, getDateKey } from '@/utils/dateUtils';
 
 interface DecryptedMessage {
   id: string;
@@ -43,20 +44,43 @@ export function VirtualizedMessageList({
   const [isAtBottom, setIsAtBottom] = useState(true);
   const prevMessagesLength = useRef(messages.length);
 
+  // Group messages by date for separators
+  const messagesWithSeparators = messages.reduce((acc, message, index) => {
+    const currentDateKey = getDateKey(message.created_at);
+    const prevDateKey = index > 0 ? getDateKey(messages[index - 1].created_at) : null;
+
+    // Add date separator if day changed
+    if (currentDateKey !== prevDateKey) {
+      acc.push({
+        type: 'separator' as const,
+        date: message.created_at,
+        id: `separator-${currentDateKey}`,
+      });
+    }
+
+    acc.push({
+      type: 'message' as const,
+      data: message,
+      id: message.id,
+    });
+
+    return acc;
+  }, [] as Array<{ type: 'separator' | 'message'; date?: string; data?: DecryptedMessage; id: string }>);
+
   // Auto-scroll to bottom when new messages arrive and user is at bottom
   useEffect(() => {
-    if (messages.length > prevMessagesLength.current && isAtBottom) {
-      listRef.current?.scrollToIndex({ index: messages.length - 1, behavior: 'smooth' });
+    if (messagesWithSeparators.length > prevMessagesLength.current && isAtBottom) {
+      listRef.current?.scrollToIndex({ index: messagesWithSeparators.length - 1, behavior: 'smooth' });
     }
-    prevMessagesLength.current = messages.length;
-  }, [messages.length, isAtBottom]);
+    prevMessagesLength.current = messagesWithSeparators.length;
+  }, [messagesWithSeparators.length, isAtBottom]);
 
   // Handle external scroll to bottom request
   useEffect(() => {
-    if (scrollToBottom && messages.length > 0) {
-      listRef.current?.scrollToIndex({ index: messages.length - 1, behavior: 'smooth' });
+    if (scrollToBottom && messagesWithSeparators.length > 0) {
+      listRef.current?.scrollToIndex({ index: messagesWithSeparators.length - 1, behavior: 'smooth' });
     }
-  }, [scrollToBottom, messages.length]);
+  }, [scrollToBottom, messagesWithSeparators.length]);
 
   // Track if user is at bottom
   const handleAtBottomStateChange = (atBottom: boolean) => {
@@ -80,11 +104,20 @@ export function VirtualizedMessageList({
     );
   }
 
+  if (messagesWithSeparators.length === 0) {
+    return (
+      <div className="no-messages">
+        <p>No messages yet</p>
+        <p className="help-text">Send a message to start the conversation</p>
+      </div>
+    );
+  }
+
   return (
     <Virtuoso
       ref={listRef}
       style={{ height: containerHeight }}
-      data={messages}
+      data={messagesWithSeparators}
       followOutput="smooth"
       atBottomStateChange={handleAtBottomStateChange}
       atBottomThreshold={200}
@@ -97,7 +130,20 @@ export function VirtualizedMessageList({
           </div>
         ) : null,
       }}
-      itemContent={(_index, message) => {
+      itemContent={(_index, item) => {
+        // Render date separator
+        if (item.type === 'separator') {
+          return (
+            <div className="date-separator">
+              <span className="date-separator-text">
+                {formatDateSeparator(item.date!)}
+              </span>
+            </div>
+          );
+        }
+
+        // Render message
+        const message = item.data!;
         const isSent = message.sender_id !== chat.companion_id;
         const displayStatus = message.localStatus || message.status;
 
@@ -128,10 +174,7 @@ export function VirtualizedMessageList({
               {message.decryptedContent || message.encrypted_content}
             </div>
             <div className="message-time">
-              {new Date(message.created_at).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {formatTime(message.created_at)}
               {isSent && (
                 <span className="message-status" title={`Status: ${displayStatus}`}>
                   {getStatusIcon()}
