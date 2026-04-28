@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login } from '@/lib/api';
-import { generateKeyPair, savePrivateKey, clearKeys } from '@/lib/crypto';
+import { generateKeyPair, savePrivateKey } from '@/lib/crypto';
 import { ThemeToggle } from '@/components';
+import { performLogout } from '@/lib/utils/logout';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -38,14 +39,9 @@ export function LoginPage() {
 
     try {
       console.log('[LoginPage] Starting login, rememberMe:', rememberMe);
-      
+
       // Clear ALL old user data first (important for switching users)
-      await clearKeys();
-      localStorage.clear(); // Clear all localStorage including user_login, tokens, etc.
-      sessionStorage.clear(); // Clear all sessionStorage
-      
-      // Note: JWT tokens are HttpOnly cookies and cannot be cleared from JavaScript
-      // They will be overwritten by the server on successful login
+      await performLogout();
       console.log('[LoginPage] Old user data cleared');
       
       // Generate key pair from password

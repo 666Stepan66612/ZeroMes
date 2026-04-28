@@ -2,10 +2,11 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getChats, saveChatKeys, getUserPublicKey, checkOnlineStatus } from '@/lib/api';
 import { getWebSocketClient } from '@/lib/api/websocket';
-import { restorePrivateKey, fromHex, clearKeys, isRememberMeEnabled } from '@/lib/crypto';
+import { restorePrivateKey, fromHex, isRememberMeEnabled } from '@/lib/crypto';
 import { deriveChatKey, encryptChatKeyWithPrivateKey, decryptMessage } from '@/lib/crypto/encryption';
 import { ChatWindow, SearchModal, ThemeToggle } from '@/components';
 import { VirtualizedChatList } from '@/components/VirtualizedChatList';
+import { performLogout } from '@/lib/utils/logout';
 import type { Chat, User } from '@/types/api';
 import './ChatsPage.css';
 
@@ -32,9 +33,9 @@ export function ChatsPage() {
 
   // Clear keys on tab close if remember_me is false
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const handleBeforeUnload = async () => {
       if (!isRememberMeEnabled()) {
-        clearKeys(); // Fire and forget - async cleanup
+        await performLogout();
       }
     };
 
@@ -49,13 +50,20 @@ export function ChatsPage() {
     const initializeConnection = async () => {
       const privateKey = await restorePrivateKey();
       if (!privateKey) {
+        console.log('[ChatsPage] No private key found, redirecting to login');
         navigate('/login');
         return;
       }
+
       const ws = getWebSocketClient();
-      
+
       const unsubscribeStatus = ws.onStatus((status) => {
         setWsConnected(status === 'connected');
+
+        // If WebSocket fails to connect, might be auth issue
+        if (status === 'error') {
+          console.error('[ChatsPage] WebSocket connection error - possible auth issue');
+        }
       });
 
       const unsubscribeMessage = ws.onMessage(async (message: any) => {
@@ -245,13 +253,20 @@ export function ChatsPage() {
       });
 
       ws.connect();
-      
+
       // Wait for connection and then load chats
       try {
         await ws.waitForConnection();
         await loadChats();
       } catch (error) {
-        console.error('Failed to initialize connection:', error);
+        console.error('[ChatsPage] Failed to initialize connection:', error);
+        // If connection fails, might be auth issue - redirect to login
+        if (error instanceof Error && (error.message.includes('Connection') || error.message.includes('timeout'))) {
+          console.log('[ChatsPage] Connection failed, clearing session and redirecting to login...');
+          // Clear everything and redirect to login
+          await performLogout();
+          navigate('/login');
+        }
       }
 
       return () => {

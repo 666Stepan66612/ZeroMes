@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { changePassword, logout } from '@/lib/api';
+import { changePassword } from '@/lib/api';
 import { generateKeyPair, restorePrivateKey, savePrivateKey, clearKeys } from '@/lib/crypto';
 import { getChats } from '@/lib/api/messages';
 import { decryptChatKey, encryptChatKey } from '@/lib/crypto/encryption';
 import type { ChatKeyUpdate } from '@/types/api';
 import { ThemeToggle } from '@/components';
+import { performLogout } from '@/lib/utils/logout';
 import './ChangePasswordPage.css';
 
 export function ChangePasswordPage() {
@@ -131,15 +132,8 @@ export function ChangePasswordPage() {
   };
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      await clearKeys();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      await clearKeys();
-      navigate('/login');
-    }
+    await performLogout();
+    navigate('/login');
   };
 
   return (

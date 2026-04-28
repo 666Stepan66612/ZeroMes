@@ -224,10 +224,20 @@ export class WebSocketClient {
     console.log(`[WebSocket] Closed: ${event.code} ${event.reason}`);
     this.clearPingInterval();
     this.setStatus('disconnected');
-    
+
+    // Check if closure is due to authentication failure (code 1008 = Policy Violation, often used for auth)
+    // or 4001 (custom unauthorized code)
+    if (event.code === 1008 || event.code === 4001 || event.code === 4401) {
+      console.error('[WebSocket] Closed due to authentication failure');
+      // Don't attempt reconnection for auth failures
+      return;
+    }
+
     // Attempt reconnection if not a normal closure
     if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
       this.scheduleReconnect();
+    } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('[WebSocket] Max reconnection attempts reached');
     }
   }
 
