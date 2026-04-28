@@ -194,6 +194,12 @@ body {
   border-radius: 8px;
   color: var(--error-color);
   font-size: 14px;
+  font-weight: 500;
+}
+
+:root[data-theme="dark"] .error-message {
+  background: rgba(255, 69, 58, 0.15);
+  color: var(--error-color);
 }
 
 .success-message {
@@ -203,6 +209,12 @@ body {
   border-radius: 8px;
   color: var(--success-color);
   font-size: 14px;
+  font-weight: 500;
+}
+
+:root[data-theme="dark"] .success-message {
+  background: rgba(50, 215, 75, 0.15);
+  color: var(--success-color);
 }
 
 /* Form Footer */
