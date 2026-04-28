@@ -709,8 +709,8 @@
 
 /* Scroll to Bottom Button */
 .scroll-to-bottom-btn {
-  position: fixed;
-  bottom: 100px;
+  position: absolute;
+  bottom: 80px;
   right: 32px;
   width: 56px;
   height: 56px;
@@ -798,8 +798,8 @@
   }
 
   .scroll-to-bottom-btn {
-    bottom: 80px;
-    right: 16px;
+    bottom: 70px;
+    right: 20px;
     width: 48px;
     height: 48px;
   }
