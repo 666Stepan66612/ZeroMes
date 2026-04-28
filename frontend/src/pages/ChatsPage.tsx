@@ -504,7 +504,17 @@ export function ChatsPage() {
     <div className={`chats-page ${selectedChatId ? 'chat-open' : ''}`}>
       <div className="chats-sidebar">
         <div className="sidebar-header">
-          <h2>Chats</h2>
+          <div className="header-left">
+            <h2>Chats</h2>
+            {!wsConnected && (
+              <div className="connection-spinner" title="Connecting...">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <circle cx="12" cy="12" r="10" opacity="0.25"/>
+                  <path d="M12 2 A10 10 0 0 1 22 12" strokeLinecap="round"/>
+                </svg>
+              </div>
+            )}
+          </div>
           <div className="header-actions">
             <ThemeToggle />
             <button
@@ -528,14 +538,6 @@ export function ChatsPage() {
               </svg>
             </button>
           </div>
-        </div>
-
-        <div className="connection-status">
-          {wsConnected ? (
-            <span className="status-connected">● Connected</span>
-          ) : (
-            <span className="status-disconnected">○ Connecting...</span>
-          )}
         </div>
 
         {loading ? (

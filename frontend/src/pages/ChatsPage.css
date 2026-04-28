@@ -36,11 +36,35 @@
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .sidebar-header h2 {
   font-size: 22px;
   font-weight: 600;
   margin: 0;
   color: var(--text-color);
+}
+
+.connection-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.connection-spinner svg {
+  animation: spin 1s linear infinite;
+  color: var(--text-secondary);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .header-actions {
@@ -66,21 +90,6 @@
 
 .btn-icon:hover {
   background: var(--border-color);
-}
-
-.connection-status {
-  padding: 8px 16px;
-  font-size: 13px;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-}
-
-.status-connected {
-  color: #4caf50;
-}
-
-.status-disconnected {
-  color: var(--text-secondary);
 }
 
 /* Chat List */
