@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	messagepb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
 	"google.golang.org/grpc"
@@ -50,7 +51,7 @@ func (c *MessageClientService) SendMessage(ctx context.Context, chatID, senderID
 		ChatID:           resp.Message.ChatId,
 		SenderID:         resp.Message.SenderId,
 		EncryptedContent: resp.Message.EncryptedContent,
-		CreatedAt:        resp.Message.CreatedAt.AsTime().String(),
+		CreatedAt:        resp.Message.CreatedAt.AsTime().Format(time.RFC3339),
 	}, nil
 }
 
@@ -72,7 +73,7 @@ func (c *MessageClientService) GetMessages(ctx context.Context, chatID, userID, 
 			ChatID:           m.ChatId,
 			SenderID:         m.SenderId,
 			EncryptedContent: m.EncryptedContent,
-			CreatedAt:        m.CreatedAt.AsTime().String(),
+			CreatedAt:        m.CreatedAt.AsTime().Format(time.RFC3339),
 			Status:           int32(m.Status),
 		}
 	}
@@ -126,7 +127,7 @@ func (c *MessageClientService) GetChats(ctx context.Context, userID string) (*do
 		chats[i] = &domain.Chat{
 			ID:            ch.Id,
 			CompanionID:   ch.CompanionId,
-			LastMessageAt: ch.LastMessageAt.AsTime().String(),
+			LastMessageAt: ch.LastMessageAt.AsTime().Format(time.RFC3339),
 			EncryptedKey:  ch.EncryptedKey,
 			KeyIV:         ch.KeyIv,
 			LastMessage:   ch.LastMessage,
