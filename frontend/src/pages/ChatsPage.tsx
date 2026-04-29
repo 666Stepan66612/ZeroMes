@@ -159,12 +159,12 @@ export function ChatsPage() {
               console.log('[ChatsPage] Decrypted message:', decrypted);
               
               const preview = decrypted.length > 50 ? decrypted.substring(0, 50) + '...' : decrypted;
-              
+
               console.log('[ChatsPage] Updating chat with preview:', preview);
-              console.log('[ChatsPage] msg.created_at:', msg.created_at, 'type:', typeof msg.created_at);
-              
-              // Use current time if created_at is invalid
-              const messageTime = msg.created_at || new Date().toISOString();
+              console.log('[ChatsPage] msg.timestamp:', msg.timestamp, 'msg.created_at:', msg.created_at);
+
+              // Use timestamp or created_at (different events use different field names)
+              const messageTime = msg.timestamp || msg.created_at || new Date().toISOString();
               
               // Update chats state with new last message preview and increment unread count
               setChats(prevChats => {
@@ -225,10 +225,10 @@ export function ChatsPage() {
 
               const preview = decrypted.length > 50 ? decrypted.substring(0, 50) + '...' : decrypted;
 
-              console.log('[ChatsPage] message_sent msg.created_at:', msg.created_at, 'type:', typeof msg.created_at);
+              console.log('[ChatsPage] message_sent msg.timestamp:', msg.timestamp, 'msg.created_at:', msg.created_at);
 
-              // Use current time if created_at is invalid
-              const messageTime = msg.created_at || new Date().toISOString();
+              // Use timestamp or created_at (different events use different field names)
+              const messageTime = msg.timestamp || msg.created_at || new Date().toISOString();
 
               // Update chats state with new last message preview
               setChats(prevChats => {

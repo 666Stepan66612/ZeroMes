@@ -6,16 +6,39 @@
 /**
  * Safely parse date string (handles Safari issues with ISO dates)
  */
-export function parseDate(dateString: string): Date {
-  // Safari has issues with ISO dates without 'Z' or timezone
-  // Ensure proper format
-  if (!dateString) return new Date();
+export function parseDate(dateString: string | number): Date {
+  if (!dateString) {
+    return new Date();
+  }
 
-  const date = new Date(dateString);
+  // If it's a number (Unix timestamp in seconds or milliseconds)
+  if (typeof dateString === 'number') {
+    const timestamp = dateString < 10000000000 ? dateString * 1000 : dateString;
+    return new Date(timestamp);
+  }
 
-  // Check if date is valid
+  // Safari compatibility: normalize RFC3339 format
+  // Convert: 2024-01-01T12:00:00+00:00 -> 2024-01-01T12:00:00Z
+  // Convert: 2024-01-01T12:00:00-00:00 -> 2024-01-01T12:00:00Z
+  let normalized = dateString.trim();
+
+  // Replace UTC offset with Z
+  normalized = normalized.replace(/([+-])00:00$/, 'Z');
+
+  // If no timezone indicator at all, add Z
+  const hasTimezone = normalized.endsWith('Z') ||
+                      /[+-]\d{2}:\d{2}$/.test(normalized) ||
+                      /[+-]\d{4}$/.test(normalized);
+
+  if (!hasTimezone && normalized.includes('T')) {
+    normalized = normalized + 'Z';
+  }
+
+  const date = new Date(normalized);
+
+  // Fallback to current date if parsing failed
   if (isNaN(date.getTime())) {
-    console.warn('[dateUtils] Invalid date:', dateString);
+    console.error('[dateUtils] Failed to parse date:', dateString);
     return new Date();
   }
 
@@ -25,7 +48,7 @@ export function parseDate(dateString: string): Date {
 /**
  * Format time (HH:MM)
  */
-export function formatTime(dateString: string): string {
+export function formatTime(dateString: string | number): string {
   const date = parseDate(dateString);
 
   try {
@@ -72,7 +95,7 @@ export function isYesterday(date: Date): boolean {
 /**
  * Format date separator (Today, Yesterday, or date)
  */
-export function formatDateSeparator(dateString: string): string {
+export function formatDateSeparator(dateString: string | number): string {
   const date = parseDate(dateString);
 
   if (isToday(date)) {
@@ -92,8 +115,15 @@ export function formatDateSeparator(dateString: string): string {
     });
   } catch (error) {
     console.error('[dateUtils] Error formatting date separator:', error);
-    // Fallback to ISO date
-    return date.toISOString().split('T')[0];
+    // Fallback to manual formatting
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'];
+    const month = months[date.getMonth()];
+    const day = date.getDate();
+    const year = date.getFullYear();
+    const currentYear = new Date().getFullYear();
+
+    return year !== currentYear ? `${month} ${day}, ${year}` : `${month} ${day}`;
   }
 }
 

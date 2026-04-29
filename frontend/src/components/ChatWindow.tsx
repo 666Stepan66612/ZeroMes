@@ -130,7 +130,7 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
             recipient_id: chat.companion_id,
             encrypted_content: msg.encrypted_content,
             message_type: 'text',
-            created_at: msg.timestamp,
+            created_at: msg.timestamp || msg.created_at,
             status: 'delivered',
             decryptedContent: decryptedText,
           };
