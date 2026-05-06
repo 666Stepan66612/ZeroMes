@@ -111,13 +111,7 @@ func (s *authService) GetByID(ctx context.Context, id string) (*User, error) {
 }
 
 func (s *authService) ChangePassword(ctx context.Context, login, oldAuthHash, newAuthHash, newPublicKey string) (string, error) {
-	if strings.TrimSpace(login) == "" {
-		return "", errors.ErrInvalidInput
-	}
-	if oldAuthHash == "" {
-		return "", errors.ErrInvalidInput
-	}
-	if newAuthHash == "" {
+	if strings.TrimSpace(login) == "" || oldAuthHash == "" || newAuthHash == "" {
 		return "", errors.ErrInvalidInput
 	}
 
