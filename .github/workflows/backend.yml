@@ -31,7 +31,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.23'
+        go-version: '1.25.5'
         cache-dependency-path: auth-service/go.sum
 
     - name: Install dependencies
@@ -68,7 +68,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.23'
+        go-version: '1.25.5'
         cache-dependency-path: message-service/go.sum
 
     - name: Install dependencies
@@ -105,7 +105,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.23'
+        go-version: '1.25.5'
         cache-dependency-path: realtime-service/go.sum
 
     - name: Install dependencies
@@ -136,7 +136,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.23'
+        go-version: '1.25.5'
         cache-dependency-path: api-gateway/go.sum
 
     - name: Install dependencies
@@ -167,7 +167,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.23'
+        go-version: '1.25.5'
 
     - name: Run JWT tests
       working-directory: ./pkg/jwt
