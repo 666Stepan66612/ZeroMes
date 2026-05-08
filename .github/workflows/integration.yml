@@ -1,0 +1,50 @@
+name: Full Integration Check
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  integration-check:
+    name: Integration Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check docker-compose syntax
+      run: docker compose config > /dev/null
+
+    - name: Verify migrations exist
+      run: |
+        echo "Checking auth-service migrations..."
+        test -d auth-service/migrations
+        test -f auth-service/migrations/*.up.sql
+
+        echo "Checking message-service migrations..."
+        test -d message-service/migrations
+        test -f message-service/migrations/*.up.sql
+
+    - name: Verify proto files
+      run: |
+        echo "Checking proto definitions..."
+        test -f pkg/proto/message.proto
+        test -f pkg/proto/realtime.proto
+
+    - name: Check for secrets in code
+      run: |
+        echo "Scanning for potential secrets..."
+        if grep -r "password.*=.*\"" --include="*.go" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules .; then
+          echo "Warning: Found hardcoded passwords"
+          exit 1
+        fi
+        echo "No hardcoded secrets found"
+
+    - name: Verify .env.example exists
+      run: |
+        if [ ! -f .env.example ]; then
+          echo "Warning: .env.example not found"
+          exit 1
+        fi
+        echo ".env.example exists"

@@ -1,0 +1,174 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'auth-service/**'
+      - 'message-service/**'
+      - 'realtime-service/**'
+      - 'api-gateway/**'
+      - 'pkg/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'auth-service/**'
+      - 'message-service/**'
+      - 'realtime-service/**'
+      - 'api-gateway/**'
+      - 'pkg/**'
+
+jobs:
+  test-auth-service:
+    name: Auth Service Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+        cache-dependency-path: auth-service/go.sum
+
+    - name: Install dependencies
+      working-directory: ./auth-service
+      run: go mod download
+
+    - name: Run tests
+      working-directory: ./auth-service
+      run: |
+        go test -v -race -coverprofile=coverage.out ./...
+        go tool cover -func=coverage.out
+
+    - name: Check formatting
+      working-directory: ./auth-service
+      run: |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "Go code is not formatted:"
+          gofmt -d .
+          exit 1
+        fi
+
+    - name: Build
+      working-directory: ./auth-service
+      run: go build -v ./...
+
+  test-message-service:
+    name: Message Service Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+        cache-dependency-path: message-service/go.sum
+
+    - name: Install dependencies
+      working-directory: ./message-service
+      run: go mod download
+
+    - name: Run tests
+      working-directory: ./message-service
+      run: |
+        go test -v -race -coverprofile=coverage.out ./...
+        go tool cover -func=coverage.out
+
+    - name: Check formatting
+      working-directory: ./message-service
+      run: |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "Go code is not formatted:"
+          gofmt -d .
+          exit 1
+        fi
+
+    - name: Build
+      working-directory: ./message-service
+      run: go build -v ./...
+
+  test-realtime-service:
+    name: Realtime Service Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+        cache-dependency-path: realtime-service/go.sum
+
+    - name: Install dependencies
+      working-directory: ./realtime-service
+      run: go mod download
+
+    - name: Check formatting
+      working-directory: ./realtime-service
+      run: |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "Go code is not formatted:"
+          gofmt -d .
+          exit 1
+        fi
+
+    - name: Build
+      working-directory: ./realtime-service
+      run: go build -v ./...
+
+  test-api-gateway:
+    name: API Gateway Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+        cache-dependency-path: api-gateway/go.sum
+
+    - name: Install dependencies
+      working-directory: ./api-gateway
+      run: go mod download
+
+    - name: Check formatting
+      working-directory: ./api-gateway
+      run: |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "Go code is not formatted:"
+          gofmt -d .
+          exit 1
+        fi
+
+    - name: Build
+      working-directory: ./api-gateway
+      run: go build -v ./...
+
+  test-pkg:
+    name: Shared Package Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+
+    - name: Run JWT tests
+      working-directory: ./pkg/jwt
+      run: go test -v -race -coverprofile=coverage.out ./...
