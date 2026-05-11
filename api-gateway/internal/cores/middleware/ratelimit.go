@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
- 
+
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 )
@@ -19,14 +19,14 @@ func RateLimiter(redisClient *redis.Client, limit int, window time.Duration) gin
 		pipe.Expire(context.Background(), key, window)
 		if _, err := pipe.Exec(context.Background()); err != nil {
 			c.Next()
-			return 
+			return
 		}
 
 		if incr.Val() > int64(limit) {
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
 				"error": "too many requests, try again later",
 			})
-			return 
+			return
 		}
 
 		c.Next()

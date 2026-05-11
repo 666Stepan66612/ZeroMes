@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	domain "realtime-service/internal/cores/domain"
 	pb "github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepb"
+	domain "realtime-service/internal/cores/domain"
 )
 
 type ConnectionManager interface {

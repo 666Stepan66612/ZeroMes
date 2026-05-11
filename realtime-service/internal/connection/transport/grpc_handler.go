@@ -20,16 +20,16 @@ import (
 
 type ConnectionHandler struct {
 	pb.UnimplementedConnectionServiceServer
-	manager service.ConnectionManager
+	manager   service.ConnectionManager
 	jwtSecret []byte
-	redis *redis.Client
+	redis     *redis.Client
 }
 
 func NewConnectionHandler(manager service.ConnectionManager, jwtSecret string, redisClient *redis.Client) *ConnectionHandler {
 	return &ConnectionHandler{
-		manager: manager,
+		manager:   manager,
 		jwtSecret: []byte(jwtSecret),
-		redis: redisClient,
+		redis:     redisClient,
 	}
 }
 
@@ -58,33 +58,33 @@ func (h *ConnectionHandler) ConnectionStream(stream pb.ConnectionService_Connect
 	}()
 
 	if err := stream.Send(&pb.ConnectionResponse{
-        Payload: &pb.ConnectionResponse_Status{
-            Status: &pb.ConnectionStatus{
-                UserId:    userID,
-                Connected: true,
-            },
-        },
-    }); err != nil {
-        return err
-    }
+		Payload: &pb.ConnectionResponse_Status{
+			Status: &pb.ConnectionStatus{
+				UserId:    userID,
+				Connected: true,
+			},
+		},
+	}); err != nil {
+		return err
+	}
 
-    for {
-        msg, err := stream.Recv()
-        if err == io.EOF {
-				slog.Debug("client closed stream", "user_id", userID)
-            return err
-        }
+	for {
+		msg, err := stream.Recv()
+		if err == io.EOF {
+			slog.Debug("client closed stream", "user_id", userID)
+			return err
+		}
 		if err != nil {
 			slog.Warn("stream receive error", "user_id", userID, "err", err)
 			return status.Error(codes.Internal, "connection error")
 		}
 
-        switch msg.Payload.(type) {
-        case *pb.ConnectionRequest_Disconnect:
+		switch msg.Payload.(type) {
+		case *pb.ConnectionRequest_Disconnect:
 			slog.Debug("disconnect requested", "user_id", userID)
-            return nil
-        }
-    }
+			return nil
+		}
+	}
 }
 
 type Claims struct {

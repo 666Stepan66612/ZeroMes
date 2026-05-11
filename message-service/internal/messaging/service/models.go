@@ -40,13 +40,13 @@ type ChatKeyUpdate struct {
 }
 
 type OutboxEvent struct {
-    ID          string
-    EventType   string
-    AggregateID string
-    Payload     []byte // JSON
-    CreatedAt   time.Time
-    ProcessedAt *time.Time
-    RetryCount  int
-    LastError   string
-    Status      string    // "pending", "processing", "completed", "failed"
+	ID          string
+	EventType   string
+	AggregateID string
+	Payload     []byte // JSON
+	CreatedAt   time.Time
+	ProcessedAt *time.Time
+	RetryCount  int
+	LastError   string
+	Status      string // "pending", "processing", "completed", "failed"
 }

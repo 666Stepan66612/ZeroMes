@@ -14,17 +14,17 @@ type LoginRequest struct {
 }
 
 type RegisterResponse struct {
-	User         UserDTO `json:"user"`
+	User UserDTO `json:"user"`
 }
 
 type LoginResponse struct {
-	User         UserDTO `json:"user"`
+	User UserDTO `json:"user"`
 }
 
 type UserDTO struct {
-	ID        string `json:"id"`
-	Login     string `json:"login"`
-	PublicKey string `json:"public_key"`
+	ID        string    `json:"id"`
+	Login     string    `json:"login"`
+	PublicKey string    `json:"public_key"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -37,8 +37,8 @@ type SearchUserResponse struct {
 }
 
 type ChangePasswordRequest struct {
-    Login       string `json:"login"`
-    OldAuthHash string `json:"old_auth_hash"`
-    NewAuthHash string `json:"new_auth_hash"`
+	Login        string `json:"login"`
+	OldAuthHash  string `json:"old_auth_hash"`
+	NewAuthHash  string `json:"new_auth_hash"`
 	NewPublicKey string `json:"new_public_key"`
 }

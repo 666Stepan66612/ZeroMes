@@ -3,18 +3,18 @@ package service
 import (
 	"api-gateway/internal/cores/domain"
 	"context"
-	"log/slog"
 	"fmt"
+	"log/slog"
 )
 
 type SagaOrchestrator struct {
-	authClient AuthClient
+	authClient    AuthClient
 	messageClient MessageClient
 }
 
 func NewSagaOrchestrator(authClient AuthClient, messageClient MessageClient) *SagaOrchestrator {
 	return &SagaOrchestrator{
-		authClient: authClient,
+		authClient:    authClient,
 		messageClient: messageClient,
 	}
 }
@@ -34,15 +34,15 @@ func (s *SagaOrchestrator) ChangePassword(ctx context.Context, req *domain.Chang
 		updatedCount, err = s.messageClient.UpdateChatKeys(ctx, userID, req.ChatKeys)
 		if err != nil {
 			slog.Error("saga: message-service failed", "error", err, "user_id", userID)
-            return nil, fmt.Errorf("password changed but failed to update chat keys: %w", err)
+			return nil, fmt.Errorf("password changed but failed to update chat keys: %w", err)
 		}
 		slog.Info("saga: message-service success", "updated_chats", updatedCount)
 	}
 
 	slog.Info("saga: change password completed", "user_id", userID, "updated_chats", updatedCount)
 	return &domain.ChangePasswordResponse{
-		Success: true,
+		Success:      true,
 		UpdatedChats: updatedCount,
-		Message: "password changed successfully",
+		Message:      "password changed successfully",
 	}, nil
 }

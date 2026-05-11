@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
-	"log/slog"
 
 	"realtime-service/internal/connection/repository"
 	"realtime-service/internal/connection/service"
@@ -28,14 +28,14 @@ func main() {
 	}
 
 	instanceID := os.Getenv("INSTANCE_ID")
-    if instanceID == "" {
-        instanceID = "realtime-1"
-    }
+	if instanceID == "" {
+		instanceID = "realtime-1"
+	}
 
 	redisClient := redis.NewClient(&redis.Options{
-		Addr: os.Getenv("REDIS_URL"),
+		Addr:     os.Getenv("REDIS_URL"),
 		Password: os.Getenv("REDIS_PASSWORD"),
-		DB: 0,
+		DB:       0,
 	})
 
 	if err := redisClient.Ping(ctx).Err(); err != nil {
@@ -60,7 +60,7 @@ func main() {
 			slog.Error("kafka consumer error", "err", err)
 		}
 	}()
-	
+
 	jwtSecret := os.Getenv("JWT_SECRET")
 	grpcServer := grpc.NewServer()
 	grpcHandler := transport.NewConnectionHandler(hub, jwtSecret, redisClient)

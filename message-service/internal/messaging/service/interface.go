@@ -28,15 +28,15 @@ type MessageRepository interface {
 type KafkaProducer interface {
 	PublishMessageSent(ctx context.Context, msg *Message) error
 	PublishMessageAltered(ctx context.Context, msg *Message, newContent string) error
-    PublishMessageDeleted(ctx context.Context, msg *Message) error
-    PublishMessageRead(ctx context.Context, chatID, readerID, senderID, lastMessageID string) error
-    Close() error
+	PublishMessageDeleted(ctx context.Context, msg *Message) error
+	PublishMessageRead(ctx context.Context, chatID, readerID, senderID, lastMessageID string) error
+	Close() error
 }
 
 type OutboxRepository interface {
-    SaveToOutbox(ctx context.Context, event *OutboxEvent) error
-    GetPendingEvents(ctx context.Context, limit int) ([]*OutboxEvent, error)
-    MarkEventProcessed(ctx context.Context, eventID string) error
-    MarkEventFailed(ctx context.Context, eventID string, errorMsg string) error
-    IncrementRetryCount(ctx context.Context, eventID string) error
+	SaveToOutbox(ctx context.Context, event *OutboxEvent) error
+	GetPendingEvents(ctx context.Context, limit int) ([]*OutboxEvent, error)
+	MarkEventProcessed(ctx context.Context, eventID string) error
+	MarkEventFailed(ctx context.Context, eventID string, errorMsg string) error
+	IncrementRetryCount(ctx context.Context, eventID string) error
 }

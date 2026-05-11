@@ -242,7 +242,7 @@ func TestRefreshToken_Success(t *testing.T) {
 	refreshToken := "refresh-token-test"
 	userID := "test-user-id-123"
 	tokenPairExpected := &TokenPair{
-		AccessToken: "test-access-token-123",
+		AccessToken:  "test-access-token-123",
 		RefreshToken: refreshToken,
 	}
 
@@ -393,7 +393,7 @@ func TestChangePassword_Success(t *testing.T) {
 	serverSalt := "123"
 	hashedOldAuthHash, _ := HashAuthHash(oldAuthHash, serverSalt)
 	expectingUser := &User{
-		AuthHash: hashedOldAuthHash,
+		AuthHash:   hashedOldAuthHash,
 		ServerSalt: serverSalt,
 	}
 

@@ -2,26 +2,26 @@ package service
 
 import (
 	"context"
-    "crypto/sha256"
-    "encoding/hex"
-    "time"
+	"crypto/sha256"
+	"encoding/hex"
+	"time"
 
-    "github.com/redis/go-redis/v9"
-    "github.com/golang-jwt/jwt/v5"
-    apperrors "auth-service/internal/cores/errors"
+	apperrors "auth-service/internal/cores/errors"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/redis/go-redis/v9"
 )
 
 type tokenService struct {
 	accessSecret  string
 	refreshSecret string
-	redis *redis.Client
+	redis         *redis.Client
 }
 
 func NewTokenService(accessSecret, refreshSecret string, redisClient *redis.Client) TokenService {
 	return &tokenService{
 		accessSecret:  accessSecret,
 		refreshSecret: refreshSecret,
-		redis: redisClient,
+		redis:         redisClient,
 	}
 }
 
@@ -106,7 +106,7 @@ func (s *tokenService) InvalidateRefreshToken(token string) error {
 }
 
 func (s *tokenService) InvalidateAccessToken(token string) error {
-    hash := sha256.Sum256([]byte(token))
-    tokenHash := hex.EncodeToString(hash[:])
-    return s.redis.Set(context.Background(), "blacklist:"+tokenHash, "1", 15*time.Minute).Err()
+	hash := sha256.Sum256([]byte(token))
+	tokenHash := hex.EncodeToString(hash[:])
+	return s.redis.Set(context.Background(), "blacklist:"+tokenHash, "1", 15*time.Minute).Err()
 }

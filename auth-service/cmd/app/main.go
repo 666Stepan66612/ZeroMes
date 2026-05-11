@@ -13,8 +13,8 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"auth-service/internal/auth/repository"
-    "auth-service/internal/auth/service"
-    "auth-service/internal/auth/transport"
+	"auth-service/internal/auth/service"
+	"auth-service/internal/auth/transport"
 )
 
 func main() {
@@ -51,9 +51,9 @@ func main() {
 	log.Println("Connected to PostgreSQL")
 
 	redisClient := redis.NewClient(&redis.Options{
-		Addr: os.Getenv("REDIS_URL"),
+		Addr:     os.Getenv("REDIS_URL"),
 		Password: os.Getenv("REDIS_PASSWORD"),
-		DB: 0,
+		DB:       0,
 	})
 
 	if err := redisClient.Ping(ctx).Err(); err != nil {
@@ -76,7 +76,7 @@ func main() {
 	mux.HandleFunc("POST /auth/change-password", handler.ChangePassword)
 
 	server := &http.Server{
-		Addr: ":" + port,
+		Addr:    ":" + port,
 		Handler: mux,
 	}
 
@@ -89,7 +89,7 @@ func main() {
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<- quit
+	<-quit
 
 	log.Println("Shutting down server...")
 

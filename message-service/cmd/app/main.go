@@ -2,21 +2,21 @@ package main
 
 import (
 	"context"
-	"log"
 	pb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
+	"log"
+	worker "message-service/internal/cores/outbox-worker"
 	"message-service/internal/messaging/repository"
 	"message-service/internal/messaging/service"
 	"message-service/internal/messaging/transport"
-	worker "message-service/internal/cores/outbox-worker"
 	"message-service/pkg/kafka"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"google.golang.org/grpc/reflection" // for test
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection" // for test
 )
 
 func main() {

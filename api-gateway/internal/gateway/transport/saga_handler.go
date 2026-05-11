@@ -40,9 +40,9 @@ func (h *SagaHandler) ChangePassword(c *gin.Context) {
 	}
 
 	if req.NewPublicKey == "" {
-    c.JSON(http.StatusBadRequest, gin.H{"error": "new_public_key is required"})
-    return
-}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "new_public_key is required"})
+		return
+	}
 
 	resp, err := h.orchestrator.ChangePassword(c.Request.Context(), &req)
 	if err != nil {

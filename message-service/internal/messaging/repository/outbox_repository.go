@@ -24,7 +24,7 @@ func (r *outboxRepository) SaveToOutbox(ctx context.Context, event *service.Outb
 		INSERT INTO outbox_events (id, event_type, aggregate_id, payload, created_at, retry_count, status)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
-	
+
 	_, err := r.pool.Exec(ctx, query,
 		event.ID,
 		event.EventType,
@@ -34,7 +34,7 @@ func (r *outboxRepository) SaveToOutbox(ctx context.Context, event *service.Outb
 		event.RetryCount,
 		event.Status,
 	)
-	
+
 	return err
 }
 
@@ -47,13 +47,13 @@ func (r *outboxRepository) GetPendingEvents(ctx context.Context, limit int) ([]*
 		ORDER BY created_at ASC
 		LIMIT $1
 	`
-	
+
 	rows, err := r.pool.Query(ctx, query, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	events := make([]*service.OutboxEvent, 0)
 	for rows.Next() {
 		event := &service.OutboxEvent{}
@@ -73,7 +73,7 @@ func (r *outboxRepository) GetPendingEvents(ctx context.Context, limit int) ([]*
 		}
 		events = append(events, event)
 	}
-	
+
 	return events, rows.Err()
 }
 
@@ -83,7 +83,7 @@ func (r *outboxRepository) MarkEventProcessed(ctx context.Context, eventID strin
 		SET status = 'completed', processed_at = $1
 		WHERE id = $2
 	`
-	
+
 	_, err := r.pool.Exec(ctx, query, time.Now(), eventID)
 	return err
 }
@@ -94,7 +94,7 @@ func (r *outboxRepository) MarkEventFailed(ctx context.Context, eventID string, 
 		SET status = 'failed', last_error = $1
 		WHERE id = $2
 	`
-	
+
 	_, err := r.pool.Exec(ctx, query, errorMsg, eventID)
 	return err
 }
@@ -105,7 +105,7 @@ func (r *outboxRepository) IncrementRetryCount(ctx context.Context, eventID stri
 		SET retry_count = retry_count + 1
 		WHERE id = $1
 	`
-	
+
 	_, err := r.pool.Exec(ctx, query, eventID)
 	return err
 }
@@ -115,7 +115,7 @@ func (r *outboxRepository) DeleteProcessedEvents(ctx context.Context, olderThan 
 		DELETE FROM outbox_events
 		WHERE status = 'completed' AND processed_at < $1
 	`
-	
+
 	_, err := r.pool.Exec(ctx, query, olderThan)
 	return err
 }
@@ -128,13 +128,13 @@ func (r *outboxRepository) GetFailedEvents(ctx context.Context, maxRetries int) 
 		WHERE status = 'pending' AND retry_count >= $1
 		ORDER BY created_at ASC
 	`
-	
+
 	rows, err := r.pool.Query(ctx, query, maxRetries)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	events := make([]*service.OutboxEvent, 0)
 	for rows.Next() {
 		event := &service.OutboxEvent{}
@@ -154,6 +154,6 @@ func (r *outboxRepository) GetFailedEvents(ctx context.Context, maxRetries int) 
 		}
 		events = append(events, event)
 	}
-	
+
 	return events, rows.Err()
 }

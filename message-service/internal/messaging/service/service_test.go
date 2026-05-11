@@ -131,7 +131,6 @@ func (m *MockOutboxRepository) IncrementRetryCount(ctx context.Context, eventID 
 	return args.Error(0)
 }
 
-
 func TestSendMessage_Success(t *testing.T) {
 	mockRepo := new(MockMessageRepository)
 	mockKafkaProd := new(MockKafkaProducer)
@@ -140,16 +139,16 @@ func TestSendMessage_Success(t *testing.T) {
 
 	ctx := context.Background()
 
-    senderID := "user-123"
-    recipientID := "user-456"
-    content := "encrypted-content"
-    msgType := "text"
+	senderID := "user-123"
+	recipientID := "user-456"
+	content := "encrypted-content"
+	msgType := "text"
 
 	mockRepo.On("CreateWithChats", ctx, mock.AnythingOfType("*service.Message")).Return(nil)
 	mockKafkaProd.On("PublishMessageSent", ctx, mock.AnythingOfType("*service.Message")).Return(nil)
 
 	msg, err := service.SendMessage(ctx, "", senderID, recipientID, content, msgType)
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, msg)
 	assert.Equal(t, senderID, msg.SenderID)
@@ -170,10 +169,10 @@ func TestSendMessage_CreateChatsWrong(t *testing.T) {
 
 	ctx := context.Background()
 
-    senderID := "user-123"
-    recipientID := "user-456"
-    content := "encrypted-content"
-    msgType := "text"
+	senderID := "user-123"
+	recipientID := "user-456"
+	content := "encrypted-content"
+	msgType := "text"
 
 	mockRepo.On("CreateWithChats", ctx, mock.AnythingOfType("*service.Message")).Return(errors.ErrUnsupported)
 
@@ -194,17 +193,17 @@ func TestSendMessage_OutBoxSuccess(t *testing.T) {
 
 	ctx := context.Background()
 
-    senderID := "user-123"
-    recipientID := "user-456"
-    content := "encrypted-content"
-    msgType := "text"
+	senderID := "user-123"
+	recipientID := "user-456"
+	content := "encrypted-content"
+	msgType := "text"
 
 	mockRepo.On("CreateWithChats", ctx, mock.AnythingOfType("*service.Message")).Return(nil)
 	mockKafkaProd.On("PublishMessageSent", ctx, mock.AnythingOfType("*service.Message")).Return(errors.ErrUnsupported)
 	mockOutboxRepo.On("SaveToOutbox", ctx, mock.AnythingOfType("*service.OutboxEvent")).Return(nil)
 
 	msg, err := service.SendMessage(ctx, "", senderID, recipientID, content, msgType)
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, msg)
 	assert.Equal(t, senderID, msg.SenderID)
@@ -226,17 +225,17 @@ func TestSendMessage_OutBoxWrong(t *testing.T) {
 
 	ctx := context.Background()
 
-    senderID := "user-123"
-    recipientID := "user-456"
-    content := "encrypted-content"
-    msgType := "text"
+	senderID := "user-123"
+	recipientID := "user-456"
+	content := "encrypted-content"
+	msgType := "text"
 
 	mockRepo.On("CreateWithChats", ctx, mock.AnythingOfType("*service.Message")).Return(nil)
 	mockKafkaProd.On("PublishMessageSent", ctx, mock.AnythingOfType("*service.Message")).Return(errors.ErrUnsupported)
 	mockOutboxRepo.On("SaveToOutbox", ctx, mock.AnythingOfType("*service.OutboxEvent")).Return(errors.ErrUnsupported)
 
 	msg, err := service.SendMessage(ctx, "", senderID, recipientID, content, msgType)
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, msg)
 	assert.Equal(t, senderID, msg.SenderID)
