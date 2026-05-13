@@ -47,6 +47,6 @@ type OutboxEvent struct {
 	CreatedAt   time.Time
 	ProcessedAt *time.Time
 	RetryCount  int
-	LastError   string
+	LastError   *string
 	Status      string // "pending", "processing", "completed", "failed"
 }
