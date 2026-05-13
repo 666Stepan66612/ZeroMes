@@ -32,11 +32,11 @@ import (
 )
 
 var (
-	testDB           *pgxpool.Pool
-	testKafka        service.KafkaProducer
-	kafkaBrokers     []string
-	pgContainer      *postgres.PostgresContainer
-	kafkaContainer   *kafka.KafkaContainer
+	testDB         *pgxpool.Pool
+	testKafka      service.KafkaProducer
+	kafkaBrokers   []string
+	pgContainer    *postgres.PostgresContainer
+	kafkaContainer *kafka.KafkaContainer
 )
 
 func TestMain(m *testing.M) {
