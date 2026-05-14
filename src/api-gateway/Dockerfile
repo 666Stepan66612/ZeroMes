@@ -4,11 +4,11 @@ WORKDIR /build
 
 RUN apk add --no-cache git ca-certificates tzdata
 
-COPY pkg/ /pkg/
-COPY api-gateway/go.mod api-gateway/go.sum ./
+COPY src/pkg/ /pkg/
+COPY src/api-gateway/go.mod src/api-gateway/go.sum ./
 RUN go mod download
 
-COPY api-gateway/ .
+COPY src/api-gateway/ .
 
 RUN CGO_ENABLED=0 GOOS=linux go build \
     -ldflags="-w -s" \

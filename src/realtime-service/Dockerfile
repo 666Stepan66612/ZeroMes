@@ -4,11 +4,11 @@ WORKDIR /build
 
 RUN apk add --no-cache git ca-certificates tzdata
 
-COPY pkg/ /pkg/
-COPY realtime-service/go.mod realtime-service/go.sum ./
+COPY src/pkg/ /pkg/
+COPY src/realtime-service/go.mod src/realtime-service/go.sum ./
 RUN go mod download
 
-COPY realtime-service/ .
+COPY src/realtime-service/ .
 
 RUN CGO_ENABLED=0 GOOS=linux go build \
     -ldflags="-w -s" \

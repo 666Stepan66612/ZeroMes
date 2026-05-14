@@ -25,7 +25,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./${{ matrix.service }}/Dockerfile
+        file: ./src/${{ matrix.service }}/Dockerfile
         push: false
         tags: zeromes/${{ matrix.service }}:test
         cache-from: type=gha
