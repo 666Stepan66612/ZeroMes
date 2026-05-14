@@ -23,7 +23,7 @@ End-to-end encrypted messenger with zero-knowledge architecture. The server neve
 │   Frontend  │ (React + TypeScript)
 │  (Vite SPA) │
 └──────┬──────┘
-       │ HTTPS
+       │ HTTPS/REST :443
        ▼
 ┌─────────────┐
 │    Caddy    │ (Reverse Proxy)
@@ -34,31 +34,39 @@ End-to-end encrypted messenger with zero-knowledge architecture. The server neve
        └─────► /ws     ──────┤
                              ▼
                     ┌────────────────┐
-                    │  API Gateway   │
+                    │  API Gateway   │ :8080
                     └────────┬───────┘
-                             │
+                             │ gRPC
         ┌────────────────────┼────────────────────┐
         │                    │                    │
         ▼                    ▼                    ▼
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
 │Auth Service  │    │Message       │    │Realtime      │
 │(JWT, Users)  │    │Service       │    │Service       │
-│              │    │(Messages)    │    │(WebSocket)   │
-└──────┬───────┘    └──────┬───────┘    └──────┬───────┘
-       │                   │                    │
-       ▼                   ▼                    ▼
-  PostgreSQL          PostgreSQL            Redis
-   (auth_db)         (messages_db)      (connections)
-                           │
-                           ▼
-                        Kafka
-                    (message events)
+│    :50051    │    │(Messages)    │    │(WebSocket)   │
+└──────┬───────┘    │    :50052    │    │    :50053    │
+       │            └───┬──────┬───┘    └───────┬──────┘
+       │ pgx :5432      │      │                │
+       ▼                │      │                │
+  PostgreSQL            │      │ Kafka :9092    │
+   (auth_db)            │      └───────┐        │
+                        │              ▼        │
+                        │           Kafka       │
+                        │       (message events)│
+                        │              │        │
+                        │ pgx :5432    │ Kafka  │
+                        ▼              └────────┤
+                   PostgreSQL                   │
+                  (messages_db)                 │ Redis :6379
+                                                ▼
+                                             Redis
+                                         (connections)
 ```
 
 ## Tech Stack
 
 ### Backend
-- **Go 1.23** - All microservices
+- **Go 1.25.5** - All microservices
 - **gRPC** - Inter-service communication
 - **PostgreSQL** - Persistent storage
 - **Redis** - Session storage & WebSocket registry
@@ -77,7 +85,7 @@ End-to-end encrypted messenger with zero-knowledge architecture. The server neve
 ### Prerequisites
 - Docker & Docker Compose
 - Node.js 20+ (for frontend development)
-- Go 1.23+ (for backend development)
+- Go 1.25.5+ (for backend development)
 
 ### Run Full Stack
 
