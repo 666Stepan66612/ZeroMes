@@ -9,12 +9,12 @@ End-to-end encrypted messenger with zero-knowledge architecture. The server neve
 
 ## Features
 
-- 🔐 **End-to-End Encryption** - AES-256-GCM with ECDH key exchange
-- 🚀 **Real-time messaging** - WebSocket connections
-- 🔑 **Zero-knowledge** - Server stores only encrypted data
-- 🏗️ **Microservices** - Scalable architecture with gRPC
-- 📦 **Event-driven** - Kafka for async communication
-- ✅ **Well-tested** - Comprehensive unit test coverage
+- **End-to-End Encryption** - AES-256-GCM with ECDH key exchange
+- **Real-time messaging** - WebSocket connections
+- **Zero-knowledge** - Server stores only encrypted data
+- **Microservices** - Scalable architecture with gRPC
+- **Event-driven** - Kafka for async communication
+- **Well-tested** - Comprehensive unit test coverage
 
 ## Architecture
 
@@ -210,11 +210,11 @@ npm test
 
 GitHub Actions automatically runs on every push/PR:
 
-- ✅ **Backend Tests** - All Go services unit tests
-- ✅ **Frontend Tests** - ESLint, TypeScript, build
-- ✅ **Docker Build** - Verify all images build
-- ✅ **Code Quality** - golangci-lint, dependency checks
-- ✅ **Integration** - docker-compose validation, security checks
+- **Backend Tests** - All Go services unit tests
+- **Frontend Tests** - ESLint, TypeScript, build
+- **Docker Build** - Verify all images build
+- **Code Quality** - golangci-lint, dependency checks
+- **Integration** - docker-compose validation, security checks
 
 See [CI Documentation](.github/CI.md) for details.
 
@@ -240,14 +240,14 @@ KAFKA_CLUSTER_ID=<random-uuid>
 
 ## Security
 
-- ✅ End-to-end encryption (AES-256-GCM)
-- ✅ ECDH key exchange (secp256k1)
-- ✅ Password hashing (bcrypt + server salt)
-- ✅ JWT with access/refresh tokens
-- ✅ Token blacklist in Redis
-- ✅ HTTPS only (Caddy auto-TLS)
-- ✅ No plaintext storage
-- ✅ Algorithm confusion protection
+- End-to-end encryption (AES-256-GCM)
+- ECDH key exchange (secp256k1)
+- Password hashing (bcrypt + server salt)
+- JWT with access/refresh tokens
+- Token blacklist in Redis
+- HTTPS only (Caddy auto-TLS)
+- No plaintext storage
+- Algorithm confusion protection
 
 ## Contributing
 
