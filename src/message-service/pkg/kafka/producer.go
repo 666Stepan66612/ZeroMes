@@ -7,7 +7,7 @@ import (
 
 	"message-service/internal/messaging/service"
 
-	pb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
+	pb "github.com/666Stepan66612/ZeroMes/src/pkg/gen/messagepb"
 	"github.com/segmentio/kafka-go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"

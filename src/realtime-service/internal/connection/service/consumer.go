@@ -8,8 +8,8 @@ import (
 
 	domain "realtime-service/internal/cores/domain"
 
-	messagepb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
-	realtimepb "github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepb"
+	messagepb "github.com/666Stepan66612/ZeroMes/src/pkg/gen/messagepb"
+	realtimepb "github.com/666Stepan66612/ZeroMes/src/pkg/gen/realtimepb"
 
 	"github.com/segmentio/kafka-go"
 	"google.golang.org/protobuf/proto"
