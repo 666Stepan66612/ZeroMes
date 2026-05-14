@@ -1,5 +1,3 @@
-github.com/666Stepan66612/ZeroMes/pkg v0.0.0-20260329220258-f722c2449440 h1:WcHlpdo+xwK+Bw55B6OQTR/lBkSiy1HVcfH8UcikJI8=
-github.com/666Stepan66612/ZeroMes/pkg v0.0.0-20260329220258-f722c2449440/go.mod h1:TzJ38iacKMWy97IbgznMlGYA5VhWwt1qPmSLFJLkNSc=
 github.com/bsm/ginkgo/v2 v2.12.0 h1:Ny8MWAHyOepLGlLKYmXG4IEkioBysk6GpaRTLC8zwWs=
 github.com/bsm/ginkgo/v2 v2.12.0/go.mod h1:SwYbGRRDovPVboqFv0tPTcG1sN61LM1Z4ARdbAV9g4c=
 github.com/bsm/gomega v1.27.10 h1:yeMWxP2pV2fG3FgAODIY8EiRE3dy0aeFYt4l7wh6yKA=

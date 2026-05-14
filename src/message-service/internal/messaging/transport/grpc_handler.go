@@ -8,7 +8,7 @@ import (
 	apperrors "message-service/internal/cores/errors"
 	"message-service/internal/messaging/service"
 
-	pb "github.com/666Stepan66612/ZeroMes/src/pkg/gen/messagepb"
+	pb "github.com/666Stepan66612/ZeroMes/pkg/gen/messagepb"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
