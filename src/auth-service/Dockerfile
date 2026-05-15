@@ -4,10 +4,10 @@ WORKDIR /build
 
 RUN apk add --no-cache git ca-certificates tzdata
 
-COPY go.mod go.sum ./
+COPY auth-service/go.mod auth-service/go.sum ./
 RUN go mod download
 
-COPY . .
+COPY auth-service/ .
 
 RUN CGO_ENABLED=0 GOOS=linux go build \
     -ldflags="-w -s" \
