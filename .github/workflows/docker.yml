@@ -24,7 +24,7 @@ jobs:
     - name: Build ${{ matrix.service }}
       uses: docker/build-push-action@v5
       with:
-        context: .
+        context: ./src
         file: ./src/${{ matrix.service }}/Dockerfile
         push: false
         tags: zeromes/${{ matrix.service }}:test
