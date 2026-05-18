@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -58,6 +59,8 @@ func main() {
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 1<<20)
 		c.Next()
 	})
+
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Rate limiters with different strictness levels
 	strictAuthLimit := middleware.RateLimiter(redisClient, 5, time.Minute)
