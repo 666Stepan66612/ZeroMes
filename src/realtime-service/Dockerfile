@@ -2,7 +2,8 @@ FROM golang:1.26-alpine AS builder
 
 WORKDIR /build
 
-RUN apk update && apk add git ca-certificates tzdata && rm -rf /var/cache/apk/*
+RUN sed -i 's/https/http/g' /etc/apk/repositories && \
+    apk add --no-cache git ca-certificates tzdata
 
 COPY pkg/ /pkg/
 COPY realtime-service/go.mod realtime-service/go.sum ./
@@ -17,7 +18,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 
 FROM alpine:latest
 
-RUN apk update && apk add git ca-certificates tzdata && rm -rf /var/cache/apk/*
+RUN sed -i 's/https/http/g' /etc/apk/repositories && \
+    apk add --no-cache git ca-certificates tzdata
 
 COPY --from=builder /build/app /app
 
