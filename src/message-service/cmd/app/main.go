@@ -14,6 +14,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"net/http"
+    "github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection" // for test
@@ -77,6 +79,15 @@ func main() {
 		log.Println("gRPC server listening on: ", grpcPort)
 		if err := grpcServer.Serve(listener); err != nil {
 			log.Fatal("Failed to serve: ", err)
+		}
+	}()
+
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.Handler())
+		log.Println("Metrics server on :9091")
+		if err := http.ListenAndServe(":9091", mux); err != nil {
+			log.Fatal("Metrics server error:", err)
 		}
 	}()
 

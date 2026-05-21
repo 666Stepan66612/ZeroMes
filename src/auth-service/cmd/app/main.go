@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 
 	"auth-service/internal/auth/repository"
@@ -74,6 +75,7 @@ func main() {
 	mux.HandleFunc("POST /auth/logout", handler.Logout)
 	mux.HandleFunc("GET /auth/search", handler.Search)
 	mux.HandleFunc("POST /auth/change-password", handler.ChangePassword)
+	mux.Handle("GET /metrics", promhttp.Handler())
 
 	server := &http.Server{
 		Addr:    ":" + port,

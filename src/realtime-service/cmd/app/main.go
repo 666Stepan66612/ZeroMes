@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"net/http"
+    "github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"realtime-service/internal/connection/repository"
 	"realtime-service/internal/connection/service"
@@ -77,6 +79,15 @@ func main() {
 		slog.Info("realtime-service started", "port", port)
 		if err := grpcServer.Serve(lis); err != nil {
 			slog.Error("grpc server error", "err", err)
+		}
+	}()
+
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.Handler())
+		slog.Info("Metrics server on :9092")
+		if err := http.ListenAndServe(":9092", mux); err != nil {
+			slog.Error("metrics server error", "err", err)
 		}
 	}()
 
