@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { changePassword } from '@/lib/api';
 import { generateKeyPair, restorePrivateKey, savePrivateKey, clearKeys } from '@/lib/crypto';
 import { getChats } from '@/lib/api/messages';
-import { decryptChatKey, encryptChatKey } from '@/lib/crypto/encryption';
+import { decryptChatKeyWithPrivateKey, encryptChatKeyWithPrivateKey } from '@/lib/crypto/encryption';
 import type { ChatKeyUpdate } from '@/types/api';
 import { ThemeToggle } from '@/components';
 import { performLogout } from '@/lib/utils/logout';
@@ -81,21 +81,21 @@ export function ChangePasswordPage() {
       for (const chat of chats) {
         try {
           // Decrypt chat key with old password
-          const chatKey = await decryptChatKey(
+          const chatKey = await decryptChatKeyWithPrivateKey(
             chat.encrypted_key,
-            oldPassword
+            oldPrivateKey
           );
 
           // Encrypt chat key with new password
-          const encryptedData = await encryptChatKey(
+          const { ciphertext } = await encryptChatKeyWithPrivateKey(
             chatKey,
-            newPassword
+            newKeyPair.privateKey
           );
 
           chatKeys.push({
             companion_id: chat.companion_id,
-            encrypted_key: encryptedData.ciphertext,
-            key_iv: encryptedData.nonce,
+            encrypted_key: ciphertext,
+            key_iv: '',
           });
         } catch (err) {
           console.error(`Failed to re-encrypt key for chat ${chat.id}:`, err);
