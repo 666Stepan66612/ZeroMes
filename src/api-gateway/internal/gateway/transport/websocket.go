@@ -9,7 +9,8 @@ import (
 	"api-gateway/internal/cores/domain"
 	apperrors "api-gateway/internal/cores/errors"
 	"api-gateway/internal/gateway/service"
-
+	"api-gateway/internal/cores/metrics"
+	
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -76,7 +77,8 @@ func (h *WebSocketHandler) Handle(c *gin.Context) {
 	}
 	defer conn.Close()
 
-	println("[WebSocket] Upgrade successful!")
+	metrics.ActiveWebSocketConnections.Inc()
+    defer metrics.ActiveWebSocketConnections.Dec()
 
 	userID := c.GetString("userID")
 	token, _ := c.Cookie("access_token")

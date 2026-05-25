@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"api-gateway/internal/cores/metrics"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -17,6 +18,7 @@ import (
 )
 
 func main() {
+	metrics.Init()
 	authServiceURL := os.Getenv("AUTH_SERVICE_URL")
 	messageServiceAddr := os.Getenv("MESSAGE_SERVICE_ADDR")
 	realtimeServiceAddr := os.Getenv("REALTIME_SERVICE_ADDR")
@@ -59,6 +61,7 @@ func main() {
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 1<<20)
 		c.Next()
 	})
+	r.Use(middleware.MetricsMiddleware())
 
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 

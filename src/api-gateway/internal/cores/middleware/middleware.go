@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"api-gateway/internal/cores/metrics"
 	pkgjwt "github.com/666Stepan66612/ZeroMes/pkg/jwt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -37,13 +38,14 @@ func JWTMiddleware(secret string, redisClient *redis.Client) gin.HandlerFunc {
 		}
 
 		if token == "" {
-			println("[JWT] No token found, returning 401")
+			metrics.AuthErrorsTotal.WithLabelValues("missing_token").Inc()
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
 
 		userID, err := pkgjwt.ValidateAccessToken(token, secret)
 		if err != nil {
+			metrics.AuthErrorsTotal.WithLabelValues("invalid_token").Inc()
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
@@ -57,6 +59,7 @@ func JWTMiddleware(secret string, redisClient *redis.Client) gin.HandlerFunc {
 		tokenHash := hex.EncodeToString(hash[:])
 		val, _ := redisClient.Get(context.Background(), "blacklist:"+tokenHash).Result()
 		if val != "" {
+			metrics.AuthErrorsTotal.WithLabelValues("revoked_token").Inc()
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token revoked"})
 			return
 		}
