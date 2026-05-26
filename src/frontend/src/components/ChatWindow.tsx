@@ -162,11 +162,11 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
       if (!isSubscribed) return;
 
       const msg = message as { type: string; payload?: unknown };
-      
+
       // Handle sent messages (our own messages)
       // Note: We handle this in handleSendMessage directly, so we can skip this event
       // to avoid duplicate messages. The WebSocket event is already consumed by sendMessageAPI.
-      if (message.type === 'message_sent') {
+      if (msg.type === 'message_sent') {
         // Skip - already handled in handleSendMessage
         return;
       }
