@@ -134,6 +134,29 @@ export function ChatsPage() {
               
               // Reload chats to get the new one
               await loadChats();
+
+              // FIX БАГ 3: после loadChats у нас уже есть расшифрованное сообщение —
+              // сразу обновляем превью, не полагаясь на то что API успело сохранить last_message
+              try {
+                const encryptedData = JSON.parse(msg.encrypted_content);
+                const decrypted = await decryptMessage(
+                  encryptedData.ciphertext,
+                  encryptedData.nonce,
+                  chatKey
+                );
+                const preview = decrypted.length > 50 ? decrypted.substring(0, 50) + '...' : decrypted;
+                const messageTime = msg.timestamp || msg.created_at || new Date().toISOString();
+
+                setChats(prevChats =>
+                  prevChats.map(chat =>
+                    chat.id === msg.chat_id
+                      ? { ...chat, last_message_preview: preview, last_message_at: messageTime }
+                      : chat
+                  ).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
+                );
+              } catch (previewError) {
+                console.error('[ChatsPage] Failed to set preview after new chat load:', previewError);
+              }
             } catch (error) {
               console.error('[ChatsPage] Failed to generate keys for new chat:', error);
             }
@@ -342,7 +365,11 @@ export function ChatsPage() {
         const updatedChats = await Promise.all(
           chatsData.map(async (chat) => {
             const updatedChat = { ...chat };
-            
+
+            // FIX БАГ 2: кешируем публичный ключ и chatKey чтобы не запрашивать дважды
+            let companionPubKeyBytes: Uint8Array | null = null;
+            let chatKey: Uint8Array | null = null;
+
             // If chat has no encrypted_key, generate it
             if (!chat.encrypted_key || chat.encrypted_key === '') {
               try {
@@ -350,10 +377,10 @@ export function ChatsPage() {
                 
                 // Get companion's public key
                 const companionPublicKey = await getUserPublicKey(chat.companion_id);
-                const companionPubKeyBytes = fromHex(companionPublicKey);
+                companionPubKeyBytes = fromHex(companionPublicKey);
                 
                 // Derive chat key using ECDH
-                const chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
+                chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
                 
                 // Encrypt chat key with private key for storage
                 const { ciphertext } = await encryptChatKeyWithPrivateKey(chatKey, privateKey);
@@ -373,12 +400,15 @@ export function ChatsPage() {
             }
             
             // Decrypt last message if available
+        
             console.log('[ChatsPage] Processing last_message for chat:', chat.companion_id, 'last_message:', chat.last_message);
-            if (chat.last_message && chat.last_message !== '' && chat.encrypted_key) {
+            if (chat.last_message && chat.last_message !== '' && updatedChat.encrypted_key) {
               try {
-                const companionPublicKey = await getUserPublicKey(chat.companion_id);
-                const companionPubKeyBytes = fromHex(companionPublicKey);
-                const chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
+                if (!companionPubKeyBytes || !chatKey) {
+                  const companionPublicKey = await getUserPublicKey(chat.companion_id);
+                  companionPubKeyBytes = fromHex(companionPublicKey);
+                  chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
+                }
 
                 // Parse encrypted message (format: {"ciphertext":"...","nonce":"..."})
                 console.log('[ChatsPage] Parsing last_message:', chat.last_message);
