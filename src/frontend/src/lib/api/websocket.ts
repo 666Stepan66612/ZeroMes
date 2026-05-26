@@ -17,7 +17,7 @@ export interface WebSocketMessage {
   data?: IncomingMessage;
 }
 
-type MessageHandler = (message: IncomingMessage) => void;
+type MessageHandler = (message: unknown) => void;
 type StatusHandler = (status: WebSocketStatus) => void;
 type ErrorHandler = (error: Error) => void;
 

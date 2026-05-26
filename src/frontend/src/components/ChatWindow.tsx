@@ -99,9 +99,11 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     const ws = getWebSocketClient();
     let isSubscribed = true; // Flag to prevent state updates after unmount
     
-    const unsubscribe = ws.onMessage(async (message: any) => {
+    const unsubscribe = ws.onMessage(async (message: unknown) => {
       // Check if still subscribed before updating state
       if (!isSubscribed) return;
+
+      const msg = message as { type: string; payload?: unknown };
       
       // Handle sent messages (our own messages)
       // Note: We handle this in handleSendMessage directly, so we can skip this event
@@ -110,27 +112,37 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
         // Skip - already handled in handleSendMessage
         return;
       }
-      
+
       // Handle new messages from others
-      if (message.type === 'new_message') {
-        const msg = message.payload;
-        
+      if (msg.type === 'new_message') {
+        const payload = msg.payload as {
+          id?: string;
+          message_id?: string;
+          chat_id?: string;
+          sender_id?: string;
+          encrypted_content?: string;
+          timestamp?: string;
+          created_at?: string;
+        } | undefined;
+
+        if (!payload) return;
+
         // Only process messages for this chat
-        if (msg.chat_id !== chat.id) return;
-        
+        if (payload.chat_id !== chat.id) return;
+
         try {
           // Decrypt the message using helper
-          const decryptedText = await decryptMessageContent(msg.encrypted_content, chatKey);
-          
+          const decryptedText = await decryptMessageContent(payload.encrypted_content || '', chatKey);
+
           // Create new message object
           const newMessage: DecryptedMessage = {
-            id: msg.message_id,
-            chat_id: msg.chat_id,
-            sender_id: msg.sender_id,
+            id: payload.message_id || payload.id || '',
+            chat_id: payload.chat_id || '',
+            sender_id: payload.sender_id || '',
             recipient_id: chat.companion_id,
-            encrypted_content: msg.encrypted_content,
+            encrypted_content: payload.encrypted_content || '',
             message_type: 'text',
-            created_at: msg.timestamp || msg.created_at,
+            created_at: payload.timestamp || payload.created_at || new Date().toISOString(),
             status: 'delivered',
             decryptedContent: decryptedText,
           };
@@ -145,18 +157,20 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
           console.error('[ChatWindow] Failed to decrypt incoming message:', error);
         }
       }
-      
+
       // Handle message deletion
-      if (message.type === 'message_deleted') {
-        const messageId = message.payload?.message_id;
+      if (msg.type === 'message_deleted') {
+        const payload = msg.payload as { message_id?: string } | undefined;
+        const messageId = payload?.message_id;
         if (messageId) {
           setMessages(prev => prev.filter(m => m.id !== messageId));
         }
       }
-      
+
       // Handle message edit
-      if (message.type === 'message_altered') {
-        const { message_id, new_content } = message.payload || {};
+      if (msg.type === 'message_altered') {
+        const payload = msg.payload as { message_id?: string; new_content?: string } | undefined;
+        const { message_id, new_content } = payload || {};
         if (message_id && new_content) {
           try {
             // Decrypt the new content using helper
@@ -173,10 +187,11 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
           }
         }
       }
-      
+
       // Handle message read status updates
-      if (message.type === 'message_read') {
-        const { chat_id, last_message_id } = message.payload || {};
+      if (msg.type === 'message_read') {
+        const payload = msg.payload as { chat_id?: string; last_message_id?: string } | undefined;
+        const { chat_id, last_message_id } = payload || {};
         if (chat_id === chat.id && last_message_id) {
           // Update all messages up to last_message_id to 'read' status
           setMessages(prev => {

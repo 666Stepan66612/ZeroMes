@@ -35,15 +35,17 @@ export async function sendMessage(data: SendMessageRequest): Promise<Message> {
     
     // Listen for response
     const timeout = setTimeout(() => reject(new Error('Timeout')), 5000)
-    const unsubscribe = ws.onMessage((msg: any) => {
-      if (msg.type === 'message_sent') {
+    const unsubscribe = ws.onMessage((msg: unknown) => {
+      const message = msg as { type: string; payload?: unknown }
+      if (message.type === 'message_sent') {
         clearTimeout(timeout)
         unsubscribe()
-        resolve(msg.payload)
-      } else if (msg.type === 'error') {
+        resolve(message.payload as Message)
+      } else if (message.type === 'error') {
         clearTimeout(timeout)
         unsubscribe()
-        reject(new Error(msg.payload?.error || 'Failed to send message'))
+        const errorPayload = message.payload as { error?: string } | undefined
+        reject(new Error(errorPayload?.error || 'Failed to send message'))
       }
     })
   })
@@ -73,15 +75,18 @@ export async function getMessages(
     
     // Listen for response
     const timeout = setTimeout(() => reject(new Error('Timeout')), 5000)
-    const unsubscribe = ws.onMessage((msg: any) => {
-      if (msg.type === 'messages') {
+    const unsubscribe = ws.onMessage((msg: unknown) => {
+      const message = msg as { type: string; payload?: unknown }
+      if (message.type === 'messages') {
         clearTimeout(timeout)
         unsubscribe()
-        resolve(msg.payload || { messages: [], next_message_id: '', has_more: false })
-      } else if (msg.type === 'error') {
+        const payload = message.payload as GetMessagesResponse | undefined
+        resolve(payload || { messages: [], next_message_id: '', has_more: false })
+      } else if (message.type === 'error') {
         clearTimeout(timeout)
         unsubscribe()
-        reject(new Error(msg.payload?.error || 'Failed to get messages'))
+        const errorPayload = message.payload as { error?: string } | undefined
+        reject(new Error(errorPayload?.error || 'Failed to get messages'))
       }
     })
   })
@@ -111,15 +116,17 @@ export async function markAsRead(
     
     // Listen for response
     const timeout = setTimeout(() => reject(new Error('Timeout')), 5000)
-    const unsubscribe = ws.onMessage((msg: any) => {
-      if (msg.type === 'marked_as_read') {
+    const unsubscribe = ws.onMessage((msg: unknown) => {
+      const message = msg as { type: string; payload?: unknown }
+      if (message.type === 'marked_as_read') {
         clearTimeout(timeout)
         unsubscribe()
         resolve()
-      } else if (msg.type === 'error') {
+      } else if (message.type === 'error') {
         clearTimeout(timeout)
         unsubscribe()
-        reject(new Error(msg.payload?.error || 'Failed to mark as read'))
+        const errorPayload = message.payload as { error?: string } | undefined
+        reject(new Error(errorPayload?.error || 'Failed to mark as read'))
       }
     })
   })
@@ -146,15 +153,17 @@ export async function deleteMessage(
     
     // Listen for response
     const timeout = setTimeout(() => reject(new Error('Timeout')), 5000)
-    const unsubscribe = ws.onMessage((msg: any) => {
-      if (msg.type === 'message_deleted') {
+    const unsubscribe = ws.onMessage((msg: unknown) => {
+      const message = msg as { type: string; payload?: unknown }
+      if (message.type === 'message_deleted') {
         clearTimeout(timeout)
         unsubscribe()
         resolve()
-      } else if (msg.type === 'error') {
+      } else if (message.type === 'error') {
         clearTimeout(timeout)
         unsubscribe()
-        reject(new Error(msg.payload?.error || 'Failed to delete message'))
+        const errorPayload = message.payload as { error?: string } | undefined
+        reject(new Error(errorPayload?.error || 'Failed to delete message'))
       }
     })
   })
@@ -184,15 +193,17 @@ export async function editMessage(
     
     // Listen for response
     const timeout = setTimeout(() => reject(new Error('Timeout')), 5000)
-    const unsubscribe = ws.onMessage((msg: any) => {
-      if (msg.type === 'message_altered') {
+    const unsubscribe = ws.onMessage((msg: unknown) => {
+      const message = msg as { type: string; payload?: unknown }
+      if (message.type === 'message_altered') {
         clearTimeout(timeout)
         unsubscribe()
         resolve()
-      } else if (msg.type === 'error') {
+      } else if (message.type === 'error') {
         clearTimeout(timeout)
         unsubscribe()
-        reject(new Error(msg.payload?.error || 'Failed to edit message'))
+        const errorPayload = message.payload as { error?: string } | undefined
+        reject(new Error(errorPayload?.error || 'Failed to edit message'))
       }
     })
   })
@@ -216,11 +227,13 @@ export async function getChats(): Promise<Chat[]> {
     
     // Listen for response
     const timeout = setTimeout(() => reject(new Error('Timeout')), 5000)
-    const unsubscribe = ws.onMessage((msg: any) => {
-      if (msg.type === 'chats') {
+    const unsubscribe = ws.onMessage((msg: unknown) => {
+      const message = msg as { type: string; payload?: unknown }
+      if (message.type === 'chats') {
         clearTimeout(timeout)
         unsubscribe()
-        resolve(msg.payload?.chats || [])
+        const payload = message.payload as { chats?: Chat[] } | undefined
+        resolve(payload?.chats || [])
       }
     })
   })
@@ -251,15 +264,16 @@ export async function saveChatKeys(
     
     // Listen for response
     const timeout = setTimeout(() => reject(new Error('Timeout')), 5000)
-    const unsubscribe = ws.onMessage((msg: any) => {
-      if (msg.type === 'chat_keys_saved') {
+    const unsubscribe = ws.onMessage((msg: unknown) => {
+      const message = msg as { type: string; payload?: unknown; error?: string }
+      if (message.type === 'chat_keys_saved') {
         clearTimeout(timeout)
         unsubscribe()
         resolve({ success: true })
-      } else if (msg.type === 'error') {
+      } else if (message.type === 'error') {
         clearTimeout(timeout)
         unsubscribe()
-        reject(new Error(msg.error || 'Failed to save chat keys'))
+        reject(new Error(message.error || 'Failed to save chat keys'))
       }
     })
   })
@@ -301,11 +315,12 @@ export async function checkOnlineStatus(userID: string): Promise<boolean> {
       reject(new Error('Timeout checking online status'))
     }, 5000)
 
-    const unsubscribe = ws.onMessage((msg: any) => {
-      if (msg.type === 'online_status' && msg.payload?.user_id === userID) {
+    const unsubscribe = ws.onMessage((msg: unknown) => {
+      const message = msg as { type: string; payload?: { user_id?: string; is_online?: boolean } }
+      if (message.type === 'online_status' && message.payload?.user_id === userID) {
         clearTimeout(timeout)
         unsubscribe()
-        resolve(msg.payload.is_online)
+        resolve(message.payload.is_online ?? false)
       }
     })
 

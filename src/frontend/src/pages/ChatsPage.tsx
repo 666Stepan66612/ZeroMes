@@ -8,6 +8,7 @@ import { ChatWindow, SearchModal, ThemeToggle } from '@/components';
 import { VirtualizedChatList } from '@/components/VirtualizedChatList';
 import { performLogout } from '@/lib/utils/logout';
 import type { Chat, User } from '@/types/api';
+import type { NewMessagePayload } from '@/types/websocket';
 import './ChatsPage.css';
 
 export function ChatsPage() {
@@ -66,53 +67,54 @@ export function ChatsPage() {
         }
       });
 
-      const unsubscribeMessage = ws.onMessage(async (message: any) => {
-        console.log('New message:', message);
-        console.log('Message type:', message?.type);
+      const unsubscribeMessage = ws.onMessage(async (message: unknown) => {
+        const msg = message as { type: string; payload?: unknown };
+        console.log('New message:', msg);
+        console.log('Message type:', msg?.type);
 
         // Skip unknown message types
-        if (!message || !message.type) {
-          console.warn('[ChatsPage] Invalid message format:', message);
+        if (!msg || !msg.type) {
+          console.warn('[ChatsPage] Invalid message format:', msg);
           return;
         }
 
         // Handle new message notification (incoming messages from others)
-        if (message.type === 'new_message') {
-          const msg = message.payload;
-          console.log('[ChatsPage] new_message payload:', msg);
-          
-          if (!msg || !msg.chat_id) {
-            console.warn('[ChatsPage] Invalid message payload:', msg);
+        if (msg.type === 'new_message') {
+          const payload = msg.payload as NewMessagePayload;
+          console.log('[ChatsPage] new_message payload:', payload);
+
+          if (!payload || !payload.chat_id) {
+            console.warn('[ChatsPage] Invalid message payload:', payload);
             return;
           }
-          
+
           // Skip if we already processed this message
-          const messageKey = `${msg.id}_${msg.chat_id}`;
+          const messageKey = `${payload.id}_${payload.chat_id}`;
           if (processedMessagesRef.current.has(messageKey)) {
             console.log('[ChatsPage] Skipping duplicate message:', messageKey);
             return;
           }
           processedMessagesRef.current.add(messageKey);
-          
+
           // Clean up old entries (keep only last 100)
           if (processedMessagesRef.current.size > 100) {
             const entries = Array.from(processedMessagesRef.current);
             processedMessagesRef.current = new Set(entries.slice(-100));
           }
-          
+
           // Check if we have this chat (use ref to get current value)
-          const existingChat = chatsRef.current.find(c => c.id === msg.chat_id);
-          
+          const existingChat = chatsRef.current.find(c => c.id === payload.chat_id);
+
           if (!existingChat) {
             // New chat - need to generate keys
-            console.log('[ChatsPage] New chat detected, generating keys for:', msg.chat_id);
-            
+            console.log('[ChatsPage] New chat detected, generating keys for:', payload.chat_id);
+
             try {
               // For new_message event, the sender is the companion (we are the recipient)
-              const companionId = msg.sender_id;
-              
+              const companionId = payload.sender_id;
+
               console.log('[ChatsPage] Companion ID (sender):', companionId);
-              console.log('[ChatsPage] Chat ID:', msg.chat_id);
+              console.log('[ChatsPage] Chat ID:', payload.chat_id);
               
               // Get companion's public key
               const companionPublicKey = await getUserPublicKey(companionId);
@@ -138,18 +140,18 @@ export function ChatsPage() {
               // FIX БАГ 3: после loadChats у нас уже есть расшифрованное сообщение —
               // сразу обновляем превью, не полагаясь на то что API успело сохранить last_message
               try {
-                const encryptedData = JSON.parse(msg.encrypted_content);
+                const encryptedData = JSON.parse(payload.encrypted_content);
                 const decrypted = await decryptMessage(
                   encryptedData.ciphertext,
                   encryptedData.nonce,
                   chatKey
                 );
                 const preview = decrypted.length > 50 ? decrypted.substring(0, 50) + '...' : decrypted;
-                const messageTime = msg.timestamp || msg.created_at || new Date().toISOString();
+                const messageTime = payload.timestamp || payload.created_at || new Date().toISOString();
 
                 setChats(prevChats =>
                   prevChats.map(chat =>
-                    chat.id === msg.chat_id
+                    chat.id === payload.chat_id
                       ? { ...chat, last_message_preview: preview, last_message_at: messageTime }
                       : chat
                   ).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
@@ -162,37 +164,37 @@ export function ChatsPage() {
             }
           } else {
             // Existing chat - update last message preview
-            console.log('[ChatsPage] Message for existing chat:', msg.chat_id);
+            console.log('[ChatsPage] Message for existing chat:', payload.chat_id);
             console.log('[ChatsPage] Existing chat object:', existingChat);
-            console.log('[ChatsPage] Message encrypted_content:', msg.encrypted_content);
-            
+            console.log('[ChatsPage] Message encrypted_content:', payload.encrypted_content);
+
             try {
               // Decrypt the message content
               const companionPublicKey = await getUserPublicKey(existingChat.companion_id);
               const companionPubKeyBytes = fromHex(companionPublicKey);
               const chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
-              
-              const encryptedData = JSON.parse(msg.encrypted_content);
+
+              const encryptedData = JSON.parse(payload.encrypted_content);
               const decrypted = await decryptMessage(
                 encryptedData.ciphertext,
                 encryptedData.nonce,
                 chatKey
               );
-              
+
               console.log('[ChatsPage] Decrypted message:', decrypted);
-              
+
               const preview = decrypted.length > 50 ? decrypted.substring(0, 50) + '...' : decrypted;
 
               console.log('[ChatsPage] Updating chat with preview:', preview);
-              console.log('[ChatsPage] msg.timestamp:', msg.timestamp, 'msg.created_at:', msg.created_at);
+              console.log('[ChatsPage] payload.timestamp:', payload.timestamp, 'payload.created_at:', payload.created_at);
 
               // Use timestamp or created_at (different events use different field names)
-              const messageTime = msg.timestamp || msg.created_at || new Date().toISOString();
+              const messageTime = payload.timestamp || payload.created_at || new Date().toISOString();
               
               // Update chats state with new last message preview and increment unread count
               setChats(prevChats => {
                 const updated = prevChats.map(chat => {
-                  if (chat.id === msg.chat_id) {
+                  if (chat.id === payload.chat_id) {
                     // Increment unread count only if this chat is not currently selected (use ref for current value)
                     const isCurrentChat = selectedChatIdRef.current === chat.id;
                     const newUnreadCount = isCurrentChat ? 0 : (chat.unread_count || 0) + 1;
@@ -213,24 +215,24 @@ export function ChatsPage() {
             } catch (error) {
               console.error('[ChatsPage] Failed to decrypt new message:', error);
             }
-            
+
             // Trigger chat update if this chat is currently open
-            if (selectedChat && selectedChat.id === msg.chat_id) {
+            if (selectedChat && selectedChat.id === payload.chat_id) {
               setChatUpdateTrigger(prev => prev + 1);
             }
           }
         }
         
         // Handle message_sent confirmation (update last message for sender)
-        if (message.type === 'message_sent') {
-          const msg = message.payload;
+        if (msg.type === 'message_sent') {
+          const payload = msg.payload as NewMessagePayload;
 
-          if (!msg || !msg.chat_id) {
+          if (!payload || !payload.chat_id) {
             return;
           }
 
           // Update last message preview for the chat we just sent to (use ref)
-          const existingChat = chatsRef.current.find(c => c.id === msg.chat_id);
+          const existingChat = chatsRef.current.find(c => c.id === payload.chat_id);
 
           if (existingChat) {
             try {
@@ -239,7 +241,7 @@ export function ChatsPage() {
               const companionPubKeyBytes = fromHex(companionPublicKey);
               const chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
 
-              const encryptedData = JSON.parse(msg.encrypted_content);
+              const encryptedData = JSON.parse(payload.encrypted_content);
               const decrypted = await decryptMessage(
                 encryptedData.ciphertext,
                 encryptedData.nonce,
@@ -248,15 +250,15 @@ export function ChatsPage() {
 
               const preview = decrypted.length > 50 ? decrypted.substring(0, 50) + '...' : decrypted;
 
-              console.log('[ChatsPage] message_sent msg.timestamp:', msg.timestamp, 'msg.created_at:', msg.created_at);
+              console.log('[ChatsPage] message_sent payload.timestamp:', payload.timestamp, 'payload.created_at:', payload.created_at);
 
               // Use timestamp or created_at (different events use different field names)
-              const messageTime = msg.timestamp || msg.created_at || new Date().toISOString();
+              const messageTime = payload.timestamp || payload.created_at || new Date().toISOString();
 
               // Update chats state with new last message preview
               setChats(prevChats => {
                 const updated = prevChats.map(chat =>
-                  chat.id === msg.chat_id
+                  chat.id === payload.chat_id
                     ? { ...chat, last_message_preview: preview, last_message_at: messageTime }
                     : chat
                 ).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
@@ -270,8 +272,8 @@ export function ChatsPage() {
         }
 
         // Handle other message types (chats, online_status, etc.) - just log for now
-        if (message.type !== 'new_message' && message.type !== 'message_sent') {
-          console.log('[ChatsPage] Unhandled message type:', message.type, 'payload:', message.payload);
+        if (msg.type !== 'new_message' && msg.type !== 'message_sent') {
+          console.log('[ChatsPage] Unhandled message type:', msg.type, 'payload:', msg.payload);
         }
       });
 

@@ -25,7 +25,7 @@ jobs:
       uses: golangci/golangci-lint-action@v4
       with:
         version: latest
-        working-directory: ./${{ matrix.service }}
+        working-directory: ./src/${{ matrix.service }}
         args: --timeout=5m
 
   check-dependencies:
@@ -45,11 +45,11 @@ jobs:
       run: |
         for service in auth-service message-service realtime-service api-gateway; do
           echo "Checking $service..."
-          cd $service
+          cd src/$service
           go mod verify
           go mod tidy
           git diff --exit-code go.mod go.sum || (echo "$service has untracked dependency changes" && exit 1)
-          cd ..
+          cd ../..
         done
 
   check-frontend-dependencies:
@@ -66,10 +66,10 @@ jobs:
         node-version: '20'
 
     - name: Check for vulnerabilities
-      working-directory: ./frontend
+      working-directory: ./src/frontend
       run: |
         npm audit --audit-level=high
 
     - name: Check outdated packages
-      working-directory: ./frontend
+      working-directory: ./src/frontend
       run: npm outdated || true

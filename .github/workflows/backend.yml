@@ -4,20 +4,20 @@ on:
   push:
     branches: [main, develop]
     paths:
-      - 'auth-service/**'
-      - 'message-service/**'
-      - 'realtime-service/**'
-      - 'api-gateway/**'
-      - 'pkg/**'
+      - 'src/auth-service/**'
+      - 'src/message-service/**'
+      - 'src/realtime-service/**'
+      - 'src/api-gateway/**'
+      - 'src/pkg/**'
       - '.github/workflows/backend.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'auth-service/**'
-      - 'message-service/**'
-      - 'realtime-service/**'
-      - 'api-gateway/**'
-      - 'pkg/**'
+      - 'src/auth-service/**'
+      - 'src/message-service/**'
+      - 'src/realtime-service/**'
+      - 'src/api-gateway/**'
+      - 'src/pkg/**'
 
 jobs:
   test-auth-service:
@@ -32,19 +32,19 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.26'
-        cache-dependency-path: auth-service/go.sum
+        cache-dependency-path: src/auth-service/go.sum
 
     - name: Install dependencies
-      working-directory: ./auth-service
+      working-directory: ./src/auth-service
       run: go mod download
 
     - name: Run tests
-      working-directory: ./auth-service
+      working-directory: ./src/auth-service
       run: |
         go test -v -race ./...
 
     - name: Check formatting
-      working-directory: ./auth-service
+      working-directory: ./src/auth-service
       run: |
         if [ -n "$(gofmt -l .)" ]; then
           echo "Go code is not formatted:"
@@ -53,7 +53,7 @@ jobs:
         fi
 
     - name: Build
-      working-directory: ./auth-service
+      working-directory: ./src/auth-service
       run: go build -v ./...
 
   test-message-service:
@@ -68,19 +68,19 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.26'
-        cache-dependency-path: message-service/go.sum
+        cache-dependency-path: src/message-service/go.sum
 
     - name: Install dependencies
-      working-directory: ./message-service
+      working-directory: ./src/message-service
       run: go mod download
 
     - name: Run tests
-      working-directory: ./message-service
+      working-directory: ./src/message-service
       run: |
         go test -v -race ./...
 
     - name: Check formatting
-      working-directory: ./message-service
+      working-directory: ./src/message-service
       run: |
         if [ -n "$(gofmt -l .)" ]; then
           echo "Go code is not formatted:"
@@ -89,7 +89,7 @@ jobs:
         fi
 
     - name: Build
-      working-directory: ./message-service
+      working-directory: ./src/message-service
       run: go build -v ./...
 
   test-realtime-service:
@@ -104,14 +104,14 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.26'
-        cache-dependency-path: realtime-service/go.sum
+        cache-dependency-path: src/realtime-service/go.sum
 
     - name: Install dependencies
-      working-directory: ./realtime-service
+      working-directory: ./src/realtime-service
       run: go mod download
 
     - name: Check formatting
-      working-directory: ./realtime-service
+      working-directory: ./src/realtime-service
       run: |
         if [ -n "$(gofmt -l .)" ]; then
           echo "Go code is not formatted:"
@@ -120,7 +120,7 @@ jobs:
         fi
 
     - name: Build
-      working-directory: ./realtime-service
+      working-directory: ./src/realtime-service
       run: go build -v ./...
 
   test-api-gateway:
@@ -135,14 +135,14 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.26'
-        cache-dependency-path: api-gateway/go.sum
+        cache-dependency-path: src/api-gateway/go.sum
 
     - name: Install dependencies
-      working-directory: ./api-gateway
+      working-directory: ./src/api-gateway
       run: go mod download
 
     - name: Check formatting
-      working-directory: ./api-gateway
+      working-directory: ./src/api-gateway
       run: |
         if [ -n "$(gofmt -l .)" ]; then
           echo "Go code is not formatted:"
@@ -151,7 +151,7 @@ jobs:
         fi
 
     - name: Build
-      working-directory: ./api-gateway
+      working-directory: ./src/api-gateway
       run: go build -v ./...
 
   test-pkg:
@@ -168,5 +168,5 @@ jobs:
         go-version: '1.26'
 
     - name: Run JWT tests
-      working-directory: ./pkg/jwt
+      working-directory: ./src/pkg/jwt
       run: go test -v -race ./...

@@ -14,23 +14,24 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Check docker-compose syntax
+      working-directory: ./src
       run: docker compose config > /dev/null
 
     - name: Verify migrations exist
       run: |
         echo "Checking auth-service migrations..."
-        test -d auth-service/migrations
-        test -f auth-service/migrations/*.up.sql
+        test -d src/auth-service/migrations
+        test -f src/auth-service/migrations/*.up.sql
 
         echo "Checking message-service migrations..."
-        test -d message-service/migrations
-        test -f message-service/migrations/*.up.sql
+        test -d src/message-service/migrations
+        test -f src/message-service/migrations/*.up.sql
 
     - name: Verify proto files
       run: |
         echo "Checking proto definitions..."
-        test -f pkg/proto/message.proto
-        test -f pkg/proto/realtime.proto
+        test -f src/pkg/proto/message.proto
+        test -f src/pkg/proto/realtime.proto
 
     - name: Check for secrets in code
       run: |
@@ -43,8 +44,8 @@ jobs:
 
     - name: Verify .env.example exists
       run: |
-        if [ ! -f .env.example ]; then
-          echo "Warning: .env.example not found"
+        if [ ! -f src/.env.example ]; then
+          echo "Warning: src/.env.example not found"
           exit 1
         fi
         echo ".env.example exists"

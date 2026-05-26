@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { Virtuoso } from 'react-virtuoso';
+import { type VirtuosoHandle, Virtuoso } from 'react-virtuoso';
 import type { Chat } from '@/types/api';
 
 interface VirtualizedChatListProps {
@@ -15,7 +15,7 @@ export function VirtualizedChatList({
   onSelectChat,
   containerHeight,
 }: VirtualizedChatListProps) {
-  const listRef = useRef<any>(null);
+  const listRef = useRef<VirtuosoHandle>(null);
 
   // Прокрутка к выбранному чату
   useEffect(() => {

@@ -78,14 +78,14 @@ export const api = {
   get: <T>(endpoint: string, config?: RequestConfig) =>
     request<T>(endpoint, { ...config, method: 'GET' }),
 
-  post: <T>(endpoint: string, data?: any, config?: RequestConfig) =>
+  post: <T>(endpoint: string, data?: unknown, config?: RequestConfig) =>
     request<T>(endpoint, {
       ...config,
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
     }),
 
-  put: <T>(endpoint: string, data?: any, config?: RequestConfig) =>
+  put: <T>(endpoint: string, data?: unknown, config?: RequestConfig) =>
     request<T>(endpoint, {
       ...config,
       method: 'PUT',
