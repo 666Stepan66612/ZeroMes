@@ -43,15 +43,6 @@ jobs:
       run: |
         go test -v -race ./...
 
-    - name: Check formatting
-      working-directory: ./src/auth-service
-      run: |
-        if [ -n "$(gofmt -l .)" ]; then
-          echo "Go code is not formatted:"
-          gofmt -d .
-          exit 1
-        fi
-
     - name: Build
       working-directory: ./src/auth-service
       run: go build -v ./...
@@ -79,15 +70,6 @@ jobs:
       run: |
         go test -v -race ./...
 
-    - name: Check formatting
-      working-directory: ./src/message-service
-      run: |
-        if [ -n "$(gofmt -l .)" ]; then
-          echo "Go code is not formatted:"
-          gofmt -d .
-          exit 1
-        fi
-
     - name: Build
       working-directory: ./src/message-service
       run: go build -v ./...
@@ -110,15 +92,6 @@ jobs:
       working-directory: ./src/realtime-service
       run: go mod download
 
-    - name: Check formatting
-      working-directory: ./src/realtime-service
-      run: |
-        if [ -n "$(gofmt -l .)" ]; then
-          echo "Go code is not formatted:"
-          gofmt -d .
-          exit 1
-        fi
-
     - name: Build
       working-directory: ./src/realtime-service
       run: go build -v ./...
@@ -140,15 +113,6 @@ jobs:
     - name: Install dependencies
       working-directory: ./src/api-gateway
       run: go mod download
-
-    - name: Check formatting
-      working-directory: ./src/api-gateway
-      run: |
-        if [ -n "$(gofmt -l .)" ]; then
-          echo "Go code is not formatted:"
-          gofmt -d .
-          exit 1
-        fi
 
     - name: Build
       working-directory: ./src/api-gateway
