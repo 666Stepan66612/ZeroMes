@@ -45,6 +45,7 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [triggerScrollToBottom, setTriggerScrollToBottom] = useState(false);
+  const [containerHeight, setContainerHeight] = useState(500);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const initialLoadDone = useRef(false);
@@ -71,26 +72,83 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     decryptKey();
   }, [chat.id, chat.encrypted_key]);
 
+  const loadMessages = useCallback(async () => {
+    if (!chat.id || !chatKey) return;
+
+    try {
+      setLoading(true);
+      const response = await getMessages({
+        chat_id: chat.id,
+        limit: 50,
+      });
+
+
+      const decryptedMessages = await Promise.all(
+        response.messages.map(async (msg) => {
+          try {
+            const decryptedText = await decryptMessageContent(msg.encrypted_content, chatKey);
+            return { ...msg, decryptedContent: decryptedText };
+          } catch (error) {
+            console.error('Failed to decrypt message:', error);
+            showError('Failed to decrypt some messages');
+            return { ...msg, decryptedContent: '[Decryption failed]' };
+          }
+        })
+      );
+
+      setMessages(decryptedMessages.reverse());
+
+      setHasMore(response.has_more || false);
+
+      setTimeout(() => {
+        initialLoadDone.current = true;
+      }, 100);
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [chat.id, chatKey, showError]);
+
+  const markMessagesAsRead = useCallback(async () => {
+    if (!chat.id || messages.length === 0) return;
+
+    const lastCompanionMessage = [...messages]
+      .reverse()
+      .find(m => m.sender_id === chat.companion_id);
+
+    if (!lastCompanionMessage) return;
+
+    try {
+      await markAsRead(chat.id, lastCompanionMessage.id);
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error);
+    }
+  }, [chat.id, chat.companion_id, messages]);
+
   useEffect(() => {
     // Reset pagination state when chat changes
-    setMessages([]);
-    setHasMore(true);
-    setLoadingMore(false);
-    initialLoadDone.current = false;
+    // Use a microtask to avoid synchronous setState in effect
+    Promise.resolve().then(() => {
+      setMessages([]);
+      setHasMore(true);
+      setLoadingMore(false);
+      initialLoadDone.current = false;
 
-    if (chat.id && chatKey) {
-      loadMessages().then(() => {
-        setTimeout(() => {
-          markMessagesAsRead();
-          initialLoadDone.current = true;
-        }, 100);
-      });
-    }
+      if (chat.id && chatKey) {
+        loadMessages().then(() => {
+          setTimeout(() => {
+            markMessagesAsRead();
+            initialLoadDone.current = true;
+          }, 100);
+        });
+      }
 
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 100);
-  }, [chat.id, chatKey]);
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    });
+  }, [chat.id, chatKey, loadMessages, markMessagesAsRead]);
 
   // Subscribe to WebSocket messages for real-time updates
   useEffect(() => {
@@ -226,43 +284,6 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     setShowScrollButton(!atBottom);
   }, []);
 
-  const loadMessages = async () => {
-    if (!chat.id || !chatKey) return;
-
-    try {
-      setLoading(true);
-      const response = await getMessages({
-        chat_id: chat.id,
-        limit: 50,
-      });
-
-
-      const decryptedMessages = await Promise.all(
-        response.messages.map(async (msg) => {
-          try {
-            const decryptedText = await decryptMessageContent(msg.encrypted_content, chatKey);
-            return { ...msg, decryptedContent: decryptedText };
-          } catch (error) {
-            console.error('Failed to decrypt message:', error);
-            showError('Failed to decrypt some messages');
-            return { ...msg, decryptedContent: '[Decryption failed]' };
-          }
-        })
-      );
-      
-      setMessages(decryptedMessages.reverse());
-
-      setHasMore(response.has_more || false);
-
-      setTimeout(() => {
-        initialLoadDone.current = true;
-      }, 100);
-    } catch (error) {
-      console.error('Failed to load messages:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadMoreMessages = useCallback(async () => {
     if (!chat.id || !chatKey || !hasMore || loadingMore || messages.length === 0) {
@@ -313,27 +334,24 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
     }
   }, [chat.id, chatKey, hasMore, loadingMore, messages]);
 
-  const markMessagesAsRead = async () => {
-    if (!chat.id || messages.length === 0) return;
-
-    const lastCompanionMessage = [...messages]
-      .reverse()
-      .find(m => m.sender_id === chat.companion_id);
-
-    if (lastCompanionMessage && lastCompanionMessage.status !== 'read') {
-      try {
-        await markAsRead(chat.id, lastCompanionMessage.id);
-      } catch (error) {
-        console.error('Failed to mark messages as read:', error);
-      }
-    }
-  };
-
   useEffect(() => {
     if (messages.length > 0) {
       markMessagesAsRead();
     }
-  }, [messages.length]);
+  }, [messages.length, markMessagesAsRead]);
+
+  // Measure container height
+  useEffect(() => {
+    const updateHeight = () => {
+      if (messagesContainerRef.current) {
+        setContainerHeight(messagesContainerRef.current.clientHeight);
+      }
+    };
+
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -532,7 +550,7 @@ export function ChatWindow({ chat, onBack }: ChatWindowProps) {
             messages={messages}
             chat={chat}
             onContextMenu={handleContextMenu}
-            containerHeight={messagesContainerRef.current?.clientHeight || 500}
+            containerHeight={containerHeight}
             onAtBottomChange={handleAtBottomChange}
             scrollToBottom={triggerScrollToBottom}
             onLoadMore={loadMoreMessages}

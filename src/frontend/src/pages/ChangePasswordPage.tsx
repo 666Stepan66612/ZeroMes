@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { changePassword } from '@/lib/api';
@@ -18,14 +18,7 @@ export function ChangePasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'input' | 'processing'>('input');
-  const [userLogin, setUserLogin] = useState<string>('');
-
-  useEffect(() => {
-    const login = localStorage.getItem('user_login');
-    if (login) {
-      setUserLogin(login);
-    }
-  }, []);
+  const [userLogin] = useState<string>(() => localStorage.getItem('user_login') || '');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

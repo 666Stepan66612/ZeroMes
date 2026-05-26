@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getChats, saveChatKeys, getUserPublicKey, checkOnlineStatus } from '@/lib/api';
 import { getWebSocketClient } from '@/lib/api/websocket';
@@ -31,6 +31,117 @@ export function ChatsPage() {
   useEffect(() => {
     selectedChatIdRef.current = selectedChatId;
   }, [selectedChatId]);
+
+  // Memoize selectedChat to keep reference stable when only last_message_preview changes
+  const selectedChat = useMemo(() => {
+    if (!selectedChatId) return null;
+    return chats.find(c => c.id === selectedChatId) || null;
+  }, [selectedChatId, chats]);
+
+  const loadChats = useCallback(async () => {
+    try {
+      setLoading(true);
+      const chatsData = await getChats();
+      console.log('[ChatsPage] Loaded chats:', chatsData);
+      console.log('[ChatsPage] First chat full object:', JSON.stringify(chatsData[0], null, 2));
+
+      // Check for chats without encrypted_key and generate them
+      // Also fetch companion logins and decrypt last message
+      const privateKey = await restorePrivateKey();
+      if (privateKey) {
+        const updatedChats = await Promise.all(
+          chatsData.map(async (chat) => {
+            const updatedChat = { ...chat };
+
+            let companionPubKeyBytes: Uint8Array | null = null;
+            let chatKey: Uint8Array | null = null;
+
+            // If chat has no encrypted_key, generate it
+            if (!chat.encrypted_key || chat.encrypted_key === '') {
+              try {
+                console.log('[ChatsPage] Generating key for chat:', chat.companion_id);
+
+                // Get companion's public key
+                const companionPublicKey = await getUserPublicKey(chat.companion_id);
+                companionPubKeyBytes = fromHex(companionPublicKey);
+
+                // Derive chat key using ECDH
+                chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
+
+                // Encrypt chat key with private key for storage
+                const { ciphertext } = await encryptChatKeyWithPrivateKey(chatKey, privateKey);
+
+                // Save to backend
+                await saveChatKeys({
+                  user_id: '', // Not used, backend gets it from JWT
+                  companion_id: chat.companion_id,
+                  encrypted_key: ciphertext,
+                  key_iv: '',
+                });
+
+                updatedChat.encrypted_key = ciphertext;
+              } catch (error) {
+                console.error('[ChatsPage] Failed to generate key for chat:', error);
+              }
+            }
+
+            // Fetch companion login
+            try {
+              console.log(`[ChatsPage] Fetching login for companion_id: ${chat.companion_id}`);
+              const response = await fetch(`/api/auth/search?id=${chat.companion_id}`, {
+                credentials: 'include',
+              });
+              const data = await response.json();
+              console.log(`[ChatsPage] Search response for ${chat.companion_id}:`, data);
+              if (data.users && data.users.length > 0) {
+                updatedChat.companion_login = data.users[0].login;
+                console.log(`[ChatsPage] Set companion_login to: ${updatedChat.companion_login}`);
+              } else {
+                console.warn(`[ChatsPage] No user found for companion_id: ${chat.companion_id}`);
+              }
+            } catch (error) {
+              console.error('[ChatsPage] Failed to fetch companion login:', error);
+            }
+
+            // Decrypt last message if exists
+            if (chat.last_message) {
+              try {
+                // Reuse cached keys if available
+                if (!companionPubKeyBytes) {
+                  const companionPublicKey = await getUserPublicKey(chat.companion_id);
+                  companionPubKeyBytes = fromHex(companionPublicKey);
+                }
+                if (!chatKey) {
+                  chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
+                }
+
+                const encryptedData = JSON.parse(chat.last_message);
+                const decrypted = await decryptMessage(
+                  encryptedData.ciphertext,
+                  encryptedData.nonce,
+                  chatKey
+                );
+                const preview = decrypted.length > 50 ? decrypted.substring(0, 50) + '...' : decrypted;
+                updatedChat.last_message_preview = preview;
+              } catch (error) {
+                console.error('[ChatsPage] Failed to decrypt last message:', error);
+                updatedChat.last_message_preview = '[Encrypted]';
+              }
+            }
+
+            return updatedChat;
+          })
+        );
+        setChats(updatedChats);
+      } else {
+        setChats(chatsData);
+      }
+    } catch (error) {
+      console.error('Failed to load chats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Clear keys on tab close if remember_me is false
   useEffect(() => {
@@ -306,7 +417,7 @@ export function ChatsPage() {
     return () => {
       cleanup?.();
     };
-  }, [navigate]);
+  }, [navigate, loadChats, selectedChat]);
 
   // Periodically check online status for all chats
   useEffect(() => {
@@ -344,138 +455,8 @@ export function ChatsPage() {
     return () => clearInterval(interval);
   }, [chats.length]); // Only depend on length to avoid infinite loop
 
-  // Memoize selectedChat to keep reference stable when only last_message_preview changes
-  const selectedChat = useMemo(() => {
-    if (!selectedChatId) return null;
-    return chats.find(c => c.id === selectedChatId) || null;
-  }, [selectedChatId, chats]);
-
   // Safety check: ensure chats is always an array
   const safeChats = Array.isArray(chats) ? chats : [];
-
-  const loadChats = async () => {
-    try {
-      setLoading(true);
-      const chatsData = await getChats();
-      console.log('[ChatsPage] Loaded chats:', chatsData);
-      console.log('[ChatsPage] First chat full object:', JSON.stringify(chatsData[0], null, 2));
-      
-      // Check for chats without encrypted_key and generate them
-      // Also fetch companion logins and decrypt last message
-      const privateKey = await restorePrivateKey();
-      if (privateKey) {
-        const updatedChats = await Promise.all(
-          chatsData.map(async (chat) => {
-            const updatedChat = { ...chat };
-
-            // FIX БАГ 2: кешируем публичный ключ и chatKey чтобы не запрашивать дважды
-            let companionPubKeyBytes: Uint8Array | null = null;
-            let chatKey: Uint8Array | null = null;
-
-            // If chat has no encrypted_key, generate it
-            if (!chat.encrypted_key || chat.encrypted_key === '') {
-              try {
-                console.log('[ChatsPage] Generating key for chat:', chat.companion_id);
-                
-                // Get companion's public key
-                const companionPublicKey = await getUserPublicKey(chat.companion_id);
-                companionPubKeyBytes = fromHex(companionPublicKey);
-                
-                // Derive chat key using ECDH
-                chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
-                
-                // Encrypt chat key with private key for storage
-                const { ciphertext } = await encryptChatKeyWithPrivateKey(chatKey, privateKey);
-                
-                // Save to server
-                await saveChatKeys({
-                  user_id: chat.companion_id,
-                  companion_id: chat.companion_id,
-                  encrypted_key: ciphertext,
-                  key_iv: '',
-                });
-                
-                updatedChat.encrypted_key = ciphertext;
-              } catch (error) {
-                console.error('[ChatsPage] Failed to generate key for chat:', error);
-              }
-            }
-            
-            // Decrypt last message if available
-        
-            console.log('[ChatsPage] Processing last_message for chat:', chat.companion_id, 'last_message:', chat.last_message);
-            if (chat.last_message && chat.last_message !== '' && updatedChat.encrypted_key) {
-              try {
-                if (!companionPubKeyBytes || !chatKey) {
-                  const companionPublicKey = await getUserPublicKey(chat.companion_id);
-                  companionPubKeyBytes = fromHex(companionPublicKey);
-                  chatKey = deriveChatKey(privateKey, companionPubKeyBytes);
-                }
-
-                // Parse encrypted message (format: {"ciphertext":"...","nonce":"..."})
-                console.log('[ChatsPage] Parsing last_message:', chat.last_message);
-                const encryptedData = JSON.parse(chat.last_message);
-                const decrypted = await decryptMessage(
-                  encryptedData.ciphertext,
-                  encryptedData.nonce,
-                  chatKey
-                );
-                console.log('[ChatsPage] Decrypted last message:', decrypted);
-                updatedChat.last_message_preview = decrypted.length > 50
-                  ? decrypted.substring(0, 50) + '...'
-                  : decrypted;
-              } catch (error) {
-                console.error('[ChatsPage] Failed to decrypt last message:', error);
-                updatedChat.last_message_preview = 'Message...';
-              }
-            } else {
-              // No last message yet
-              updatedChat.last_message_preview = 'No messages yet';
-            }
-            
-            // Fetch companion login from auth-service
-            try {
-              console.log(`[ChatsPage] Fetching login for companion_id: ${chat.companion_id}`);
-              const response = await fetch(`/api/auth/search?id=${chat.companion_id}`, {
-                credentials: 'include', // Include cookies for JWT
-              });
-              const data = await response.json();
-              console.log(`[ChatsPage] Search response for ${chat.companion_id}:`, data);
-              if (data.users && data.users.length > 0) {
-                updatedChat.companion_login = data.users[0].login;
-                console.log(`[ChatsPage] Set companion_login to: ${updatedChat.companion_login}`);
-              } else {
-                console.warn(`[ChatsPage] No user found for companion_id: ${chat.companion_id}`);
-              }
-            } catch (error) {
-              console.error('[ChatsPage] Failed to fetch companion login:', error);
-            }
-            
-            // Check online status
-            try {
-              const isOnline = await checkOnlineStatus(chat.companion_id);
-              updatedChat.is_online = isOnline;
-            } catch (error) {
-              console.error('[ChatsPage] Failed to check online status:', error);
-              updatedChat.is_online = false;
-            }
-            
-            // Set unread count to 0 initially, will update asynchronously
-            updatedChat.unread_count = 0;
-            
-            return updatedChat;
-          })
-        );
-        setChats(updatedChats);
-      } else {
-        setChats(chatsData);
-      }
-    } catch (error) {
-      console.error('Failed to load chats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSelectChat = (chat: Chat) => {
     setSelectedChatId(chat.id);

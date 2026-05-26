@@ -86,10 +86,8 @@ describe('ECDH Shared Secret', () => {
 
   it('should compute different shared secrets for different key pairs', () => {
     const alice1Private = derivePrivateKey('alice1', 1000)
-    const alice1Public = derivePublicKey(alice1Private)
 
     const alice2Private = derivePrivateKey('alice2', 1000)
-    const alice2Public = derivePublicKey(alice2Private)
 
     const bobPrivate = derivePrivateKey('bob', 1000)
     const bobPublic = derivePublicKey(bobPrivate)

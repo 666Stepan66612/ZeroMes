@@ -14,13 +14,11 @@ export function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(() => location.state?.message || '');
 
   useEffect(() => {
-    // Show success message from registration
+    // Clear the message from location state after displaying it
     if (location.state?.message) {
-      setSuccessMessage(location.state.message);
-      // Clear the message from location state
       window.history.replaceState({}, document.title);
     }
   }, [location]);
