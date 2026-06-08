@@ -19,14 +19,22 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MessageService_SendMessage_FullMethodName    = "/message.MessageService/SendMessage"
-	MessageService_GetMessages_FullMethodName    = "/message.MessageService/GetMessages"
-	MessageService_MarkAsRead_FullMethodName     = "/message.MessageService/MarkAsRead"
-	MessageService_DeleteMessage_FullMethodName  = "/message.MessageService/DeleteMessage"
-	MessageService_AlterMessage_FullMethodName   = "/message.MessageService/AlterMessage"
-	MessageService_GetChats_FullMethodName       = "/message.MessageService/GetChats"
-	MessageService_SaveChatKeys_FullMethodName   = "/message.MessageService/SaveChatKeys"
-	MessageService_UpdateChatKeys_FullMethodName = "/message.MessageService/UpdateChatKeys"
+	MessageService_SendMessage_FullMethodName       = "/message.MessageService/SendMessage"
+	MessageService_GetMessages_FullMethodName       = "/message.MessageService/GetMessages"
+	MessageService_MarkAsRead_FullMethodName        = "/message.MessageService/MarkAsRead"
+	MessageService_DeleteMessage_FullMethodName     = "/message.MessageService/DeleteMessage"
+	MessageService_AlterMessage_FullMethodName      = "/message.MessageService/AlterMessage"
+	MessageService_GetChats_FullMethodName          = "/message.MessageService/GetChats"
+	MessageService_SaveChatKeys_FullMethodName      = "/message.MessageService/SaveChatKeys"
+	MessageService_UpdateChatKeys_FullMethodName    = "/message.MessageService/UpdateChatKeys"
+	MessageService_CreateGroup_FullMethodName       = "/message.MessageService/CreateGroup"
+	MessageService_AddGroupMember_FullMethodName    = "/message.MessageService/AddGroupMember"
+	MessageService_RemoveGroupMember_FullMethodName = "/message.MessageService/RemoveGroupMember"
+	MessageService_LeaveGroup_FullMethodName        = "/message.MessageService/LeaveGroup"
+	MessageService_GetGroupChats_FullMethodName     = "/message.MessageService/GetGroupChats"
+	MessageService_GetGroupMembers_FullMethodName   = "/message.MessageService/GetGroupMembers"
+	MessageService_SaveGroupKeySeed_FullMethodName  = "/message.MessageService/SaveGroupKeySeed"
+	MessageService_GetGroupKeySeed_FullMethodName   = "/message.MessageService/GetGroupKeySeed"
 )
 
 // MessageServiceClient is the client API for MessageService service.
@@ -41,6 +49,15 @@ type MessageServiceClient interface {
 	GetChats(ctx context.Context, in *GetChatsRequest, opts ...grpc.CallOption) (*GetChatsResponse, error)
 	SaveChatKeys(ctx context.Context, in *SaveChatKeysRequest, opts ...grpc.CallOption) (*SaveChatKeysResponse, error)
 	UpdateChatKeys(ctx context.Context, in *UpdateChatKeysRequest, opts ...grpc.CallOption) (*UpdateChatKeysResponse, error)
+	// Group chat methods
+	CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*CreateGroupResponse, error)
+	AddGroupMember(ctx context.Context, in *AddGroupMemberRequest, opts ...grpc.CallOption) (*AddGroupMemberResponse, error)
+	RemoveGroupMember(ctx context.Context, in *RemoveGroupMemberRequest, opts ...grpc.CallOption) (*RemoveGroupMemberResponse, error)
+	LeaveGroup(ctx context.Context, in *LeaveGroupRequest, opts ...grpc.CallOption) (*LeaveGroupResponse, error)
+	GetGroupChats(ctx context.Context, in *GetGroupChatsRequest, opts ...grpc.CallOption) (*GetGroupChatsResponse, error)
+	GetGroupMembers(ctx context.Context, in *GetGroupMembersRequest, opts ...grpc.CallOption) (*GetGroupMembersResponse, error)
+	SaveGroupKeySeed(ctx context.Context, in *SaveGroupKeySeedRequest, opts ...grpc.CallOption) (*SaveGroupKeySeedResponse, error)
+	GetGroupKeySeed(ctx context.Context, in *GetGroupKeySeedRequest, opts ...grpc.CallOption) (*GetGroupKeySeedResponse, error)
 }
 
 type messageServiceClient struct {
@@ -131,6 +148,86 @@ func (c *messageServiceClient) UpdateChatKeys(ctx context.Context, in *UpdateCha
 	return out, nil
 }
 
+func (c *messageServiceClient) CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*CreateGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateGroupResponse)
+	err := c.cc.Invoke(ctx, MessageService_CreateGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *messageServiceClient) AddGroupMember(ctx context.Context, in *AddGroupMemberRequest, opts ...grpc.CallOption) (*AddGroupMemberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddGroupMemberResponse)
+	err := c.cc.Invoke(ctx, MessageService_AddGroupMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *messageServiceClient) RemoveGroupMember(ctx context.Context, in *RemoveGroupMemberRequest, opts ...grpc.CallOption) (*RemoveGroupMemberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemoveGroupMemberResponse)
+	err := c.cc.Invoke(ctx, MessageService_RemoveGroupMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *messageServiceClient) LeaveGroup(ctx context.Context, in *LeaveGroupRequest, opts ...grpc.CallOption) (*LeaveGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LeaveGroupResponse)
+	err := c.cc.Invoke(ctx, MessageService_LeaveGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *messageServiceClient) GetGroupChats(ctx context.Context, in *GetGroupChatsRequest, opts ...grpc.CallOption) (*GetGroupChatsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetGroupChatsResponse)
+	err := c.cc.Invoke(ctx, MessageService_GetGroupChats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *messageServiceClient) GetGroupMembers(ctx context.Context, in *GetGroupMembersRequest, opts ...grpc.CallOption) (*GetGroupMembersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetGroupMembersResponse)
+	err := c.cc.Invoke(ctx, MessageService_GetGroupMembers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *messageServiceClient) SaveGroupKeySeed(ctx context.Context, in *SaveGroupKeySeedRequest, opts ...grpc.CallOption) (*SaveGroupKeySeedResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SaveGroupKeySeedResponse)
+	err := c.cc.Invoke(ctx, MessageService_SaveGroupKeySeed_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *messageServiceClient) GetGroupKeySeed(ctx context.Context, in *GetGroupKeySeedRequest, opts ...grpc.CallOption) (*GetGroupKeySeedResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetGroupKeySeedResponse)
+	err := c.cc.Invoke(ctx, MessageService_GetGroupKeySeed_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MessageServiceServer is the server API for MessageService service.
 // All implementations must embed UnimplementedMessageServiceServer
 // for forward compatibility.
@@ -143,6 +240,15 @@ type MessageServiceServer interface {
 	GetChats(context.Context, *GetChatsRequest) (*GetChatsResponse, error)
 	SaveChatKeys(context.Context, *SaveChatKeysRequest) (*SaveChatKeysResponse, error)
 	UpdateChatKeys(context.Context, *UpdateChatKeysRequest) (*UpdateChatKeysResponse, error)
+	// Group chat methods
+	CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupResponse, error)
+	AddGroupMember(context.Context, *AddGroupMemberRequest) (*AddGroupMemberResponse, error)
+	RemoveGroupMember(context.Context, *RemoveGroupMemberRequest) (*RemoveGroupMemberResponse, error)
+	LeaveGroup(context.Context, *LeaveGroupRequest) (*LeaveGroupResponse, error)
+	GetGroupChats(context.Context, *GetGroupChatsRequest) (*GetGroupChatsResponse, error)
+	GetGroupMembers(context.Context, *GetGroupMembersRequest) (*GetGroupMembersResponse, error)
+	SaveGroupKeySeed(context.Context, *SaveGroupKeySeedRequest) (*SaveGroupKeySeedResponse, error)
+	GetGroupKeySeed(context.Context, *GetGroupKeySeedRequest) (*GetGroupKeySeedResponse, error)
 	mustEmbedUnimplementedMessageServiceServer()
 }
 
@@ -176,6 +282,30 @@ func (UnimplementedMessageServiceServer) SaveChatKeys(context.Context, *SaveChat
 }
 func (UnimplementedMessageServiceServer) UpdateChatKeys(context.Context, *UpdateChatKeysRequest) (*UpdateChatKeysResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateChatKeys not implemented")
+}
+func (UnimplementedMessageServiceServer) CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateGroup not implemented")
+}
+func (UnimplementedMessageServiceServer) AddGroupMember(context.Context, *AddGroupMemberRequest) (*AddGroupMemberResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddGroupMember not implemented")
+}
+func (UnimplementedMessageServiceServer) RemoveGroupMember(context.Context, *RemoveGroupMemberRequest) (*RemoveGroupMemberResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveGroupMember not implemented")
+}
+func (UnimplementedMessageServiceServer) LeaveGroup(context.Context, *LeaveGroupRequest) (*LeaveGroupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LeaveGroup not implemented")
+}
+func (UnimplementedMessageServiceServer) GetGroupChats(context.Context, *GetGroupChatsRequest) (*GetGroupChatsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetGroupChats not implemented")
+}
+func (UnimplementedMessageServiceServer) GetGroupMembers(context.Context, *GetGroupMembersRequest) (*GetGroupMembersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetGroupMembers not implemented")
+}
+func (UnimplementedMessageServiceServer) SaveGroupKeySeed(context.Context, *SaveGroupKeySeedRequest) (*SaveGroupKeySeedResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveGroupKeySeed not implemented")
+}
+func (UnimplementedMessageServiceServer) GetGroupKeySeed(context.Context, *GetGroupKeySeedRequest) (*GetGroupKeySeedResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetGroupKeySeed not implemented")
 }
 func (UnimplementedMessageServiceServer) mustEmbedUnimplementedMessageServiceServer() {}
 func (UnimplementedMessageServiceServer) testEmbeddedByValue()                        {}
@@ -342,6 +472,150 @@ func _MessageService_UpdateChatKeys_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MessageService_CreateGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).CreateGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_CreateGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).CreateGroup(ctx, req.(*CreateGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MessageService_AddGroupMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddGroupMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).AddGroupMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_AddGroupMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).AddGroupMember(ctx, req.(*AddGroupMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MessageService_RemoveGroupMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveGroupMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).RemoveGroupMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_RemoveGroupMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).RemoveGroupMember(ctx, req.(*RemoveGroupMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MessageService_LeaveGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaveGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).LeaveGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_LeaveGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).LeaveGroup(ctx, req.(*LeaveGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MessageService_GetGroupChats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGroupChatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).GetGroupChats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_GetGroupChats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).GetGroupChats(ctx, req.(*GetGroupChatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MessageService_GetGroupMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGroupMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).GetGroupMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_GetGroupMembers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).GetGroupMembers(ctx, req.(*GetGroupMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MessageService_SaveGroupKeySeed_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveGroupKeySeedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).SaveGroupKeySeed(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_SaveGroupKeySeed_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).SaveGroupKeySeed(ctx, req.(*SaveGroupKeySeedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MessageService_GetGroupKeySeed_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGroupKeySeedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).GetGroupKeySeed(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_GetGroupKeySeed_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).GetGroupKeySeed(ctx, req.(*GetGroupKeySeedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MessageService_ServiceDesc is the grpc.ServiceDesc for MessageService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -380,6 +654,38 @@ var MessageService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateChatKeys",
 			Handler:    _MessageService_UpdateChatKeys_Handler,
+		},
+		{
+			MethodName: "CreateGroup",
+			Handler:    _MessageService_CreateGroup_Handler,
+		},
+		{
+			MethodName: "AddGroupMember",
+			Handler:    _MessageService_AddGroupMember_Handler,
+		},
+		{
+			MethodName: "RemoveGroupMember",
+			Handler:    _MessageService_RemoveGroupMember_Handler,
+		},
+		{
+			MethodName: "LeaveGroup",
+			Handler:    _MessageService_LeaveGroup_Handler,
+		},
+		{
+			MethodName: "GetGroupChats",
+			Handler:    _MessageService_GetGroupChats_Handler,
+		},
+		{
+			MethodName: "GetGroupMembers",
+			Handler:    _MessageService_GetGroupMembers_Handler,
+		},
+		{
+			MethodName: "SaveGroupKeySeed",
+			Handler:    _MessageService_SaveGroupKeySeed_Handler,
+		},
+		{
+			MethodName: "GetGroupKeySeed",
+			Handler:    _MessageService_GetGroupKeySeed_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

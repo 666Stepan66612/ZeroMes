@@ -29,6 +29,7 @@ message IncomingMessage {
     string chat_id = 3;
     string content = 4;
     int64 timestamp = 5;
+    string group_id = 6; // empty if 1-1 chat
 }
 
 message RegisterClient {

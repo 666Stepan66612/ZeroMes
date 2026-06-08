@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v3.21.12
-// source: realtime.proto
+// source: proto/realtime.proto
 
 package realtimepb
 
@@ -34,7 +34,7 @@ type ConnectionRequest struct {
 
 func (x *ConnectionRequest) Reset() {
 	*x = ConnectionRequest{}
-	mi := &file_realtime_proto_msgTypes[0]
+	mi := &file_proto_realtime_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -46,7 +46,7 @@ func (x *ConnectionRequest) String() string {
 func (*ConnectionRequest) ProtoMessage() {}
 
 func (x *ConnectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_realtime_proto_msgTypes[0]
+	mi := &file_proto_realtime_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -59,7 +59,7 @@ func (x *ConnectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConnectionRequest.ProtoReflect.Descriptor instead.
 func (*ConnectionRequest) Descriptor() ([]byte, []int) {
-	return file_realtime_proto_rawDescGZIP(), []int{0}
+	return file_proto_realtime_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ConnectionRequest) GetPayload() isConnectionRequest_Payload {
@@ -117,7 +117,7 @@ type ConnectionResponse struct {
 
 func (x *ConnectionResponse) Reset() {
 	*x = ConnectionResponse{}
-	mi := &file_realtime_proto_msgTypes[1]
+	mi := &file_proto_realtime_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -129,7 +129,7 @@ func (x *ConnectionResponse) String() string {
 func (*ConnectionResponse) ProtoMessage() {}
 
 func (x *ConnectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_realtime_proto_msgTypes[1]
+	mi := &file_proto_realtime_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -142,7 +142,7 @@ func (x *ConnectionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConnectionResponse.ProtoReflect.Descriptor instead.
 func (*ConnectionResponse) Descriptor() ([]byte, []int) {
-	return file_realtime_proto_rawDescGZIP(), []int{1}
+	return file_proto_realtime_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ConnectionResponse) GetPayload() isConnectionResponse_Payload {
@@ -208,13 +208,14 @@ type IncomingMessage struct {
 	ChatId        string                 `protobuf:"bytes,3,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
 	Content       string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
 	Timestamp     int64                  `protobuf:"varint,5,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	GroupId       string                 `protobuf:"bytes,6,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"` // empty if 1-1 chat
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *IncomingMessage) Reset() {
 	*x = IncomingMessage{}
-	mi := &file_realtime_proto_msgTypes[2]
+	mi := &file_proto_realtime_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -226,7 +227,7 @@ func (x *IncomingMessage) String() string {
 func (*IncomingMessage) ProtoMessage() {}
 
 func (x *IncomingMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_realtime_proto_msgTypes[2]
+	mi := &file_proto_realtime_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -239,7 +240,7 @@ func (x *IncomingMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IncomingMessage.ProtoReflect.Descriptor instead.
 func (*IncomingMessage) Descriptor() ([]byte, []int) {
-	return file_realtime_proto_rawDescGZIP(), []int{2}
+	return file_proto_realtime_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *IncomingMessage) GetMessageId() string {
@@ -277,6 +278,13 @@ func (x *IncomingMessage) GetTimestamp() int64 {
 	return 0
 }
 
+func (x *IncomingMessage) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
 type RegisterClient struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -286,7 +294,7 @@ type RegisterClient struct {
 
 func (x *RegisterClient) Reset() {
 	*x = RegisterClient{}
-	mi := &file_realtime_proto_msgTypes[3]
+	mi := &file_proto_realtime_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -298,7 +306,7 @@ func (x *RegisterClient) String() string {
 func (*RegisterClient) ProtoMessage() {}
 
 func (x *RegisterClient) ProtoReflect() protoreflect.Message {
-	mi := &file_realtime_proto_msgTypes[3]
+	mi := &file_proto_realtime_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -311,7 +319,7 @@ func (x *RegisterClient) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterClient.ProtoReflect.Descriptor instead.
 func (*RegisterClient) Descriptor() ([]byte, []int) {
-	return file_realtime_proto_rawDescGZIP(), []int{3}
+	return file_proto_realtime_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RegisterClient) GetUserId() string {
@@ -329,7 +337,7 @@ type Disconnect struct {
 
 func (x *Disconnect) Reset() {
 	*x = Disconnect{}
-	mi := &file_realtime_proto_msgTypes[4]
+	mi := &file_proto_realtime_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -341,7 +349,7 @@ func (x *Disconnect) String() string {
 func (*Disconnect) ProtoMessage() {}
 
 func (x *Disconnect) ProtoReflect() protoreflect.Message {
-	mi := &file_realtime_proto_msgTypes[4]
+	mi := &file_proto_realtime_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -354,7 +362,7 @@ func (x *Disconnect) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Disconnect.ProtoReflect.Descriptor instead.
 func (*Disconnect) Descriptor() ([]byte, []int) {
-	return file_realtime_proto_rawDescGZIP(), []int{4}
+	return file_proto_realtime_proto_rawDescGZIP(), []int{4}
 }
 
 type ConnectionStatus struct {
@@ -367,7 +375,7 @@ type ConnectionStatus struct {
 
 func (x *ConnectionStatus) Reset() {
 	*x = ConnectionStatus{}
-	mi := &file_realtime_proto_msgTypes[5]
+	mi := &file_proto_realtime_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -379,7 +387,7 @@ func (x *ConnectionStatus) String() string {
 func (*ConnectionStatus) ProtoMessage() {}
 
 func (x *ConnectionStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_realtime_proto_msgTypes[5]
+	mi := &file_proto_realtime_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -392,7 +400,7 @@ func (x *ConnectionStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConnectionStatus.ProtoReflect.Descriptor instead.
 func (*ConnectionStatus) Descriptor() ([]byte, []int) {
-	return file_realtime_proto_rawDescGZIP(), []int{5}
+	return file_proto_realtime_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ConnectionStatus) GetUserId() string {
@@ -420,7 +428,7 @@ type TypingRequest struct {
 
 func (x *TypingRequest) Reset() {
 	*x = TypingRequest{}
-	mi := &file_realtime_proto_msgTypes[6]
+	mi := &file_proto_realtime_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -432,7 +440,7 @@ func (x *TypingRequest) String() string {
 func (*TypingRequest) ProtoMessage() {}
 
 func (x *TypingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_realtime_proto_msgTypes[6]
+	mi := &file_proto_realtime_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -445,7 +453,7 @@ func (x *TypingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TypingRequest.ProtoReflect.Descriptor instead.
 func (*TypingRequest) Descriptor() ([]byte, []int) {
-	return file_realtime_proto_rawDescGZIP(), []int{6}
+	return file_proto_realtime_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *TypingRequest) GetUserId() string {
@@ -479,7 +487,7 @@ type TypingResponse struct {
 
 func (x *TypingResponse) Reset() {
 	*x = TypingResponse{}
-	mi := &file_realtime_proto_msgTypes[7]
+	mi := &file_proto_realtime_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -491,7 +499,7 @@ func (x *TypingResponse) String() string {
 func (*TypingResponse) ProtoMessage() {}
 
 func (x *TypingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_realtime_proto_msgTypes[7]
+	mi := &file_proto_realtime_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -504,7 +512,7 @@ func (x *TypingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TypingResponse.ProtoReflect.Descriptor instead.
 func (*TypingResponse) Descriptor() ([]byte, []int) {
-	return file_realtime_proto_rawDescGZIP(), []int{7}
+	return file_proto_realtime_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *TypingResponse) GetSuccess() bool {
@@ -531,7 +539,7 @@ type ReadReceiptRequest struct {
 
 func (x *ReadReceiptRequest) Reset() {
 	*x = ReadReceiptRequest{}
-	mi := &file_realtime_proto_msgTypes[8]
+	mi := &file_proto_realtime_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -543,7 +551,7 @@ func (x *ReadReceiptRequest) String() string {
 func (*ReadReceiptRequest) ProtoMessage() {}
 
 func (x *ReadReceiptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_realtime_proto_msgTypes[8]
+	mi := &file_proto_realtime_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -556,7 +564,7 @@ func (x *ReadReceiptRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReadReceiptRequest.ProtoReflect.Descriptor instead.
 func (*ReadReceiptRequest) Descriptor() ([]byte, []int) {
-	return file_realtime_proto_rawDescGZIP(), []int{8}
+	return file_proto_realtime_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ReadReceiptRequest) GetUserId() string {
@@ -583,7 +591,7 @@ type ReadReceiptResponse struct {
 
 func (x *ReadReceiptResponse) Reset() {
 	*x = ReadReceiptResponse{}
-	mi := &file_realtime_proto_msgTypes[9]
+	mi := &file_proto_realtime_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -595,7 +603,7 @@ func (x *ReadReceiptResponse) String() string {
 func (*ReadReceiptResponse) ProtoMessage() {}
 
 func (x *ReadReceiptResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_realtime_proto_msgTypes[9]
+	mi := &file_proto_realtime_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -608,7 +616,7 @@ func (x *ReadReceiptResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReadReceiptResponse.ProtoReflect.Descriptor instead.
 func (*ReadReceiptResponse) Descriptor() ([]byte, []int) {
-	return file_realtime_proto_rawDescGZIP(), []int{9}
+	return file_proto_realtime_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ReadReceiptResponse) GetSuccess() bool {
@@ -635,7 +643,7 @@ type Error struct {
 
 func (x *Error) Reset() {
 	*x = Error{}
-	mi := &file_realtime_proto_msgTypes[10]
+	mi := &file_proto_realtime_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -647,7 +655,7 @@ func (x *Error) String() string {
 func (*Error) ProtoMessage() {}
 
 func (x *Error) ProtoReflect() protoreflect.Message {
-	mi := &file_realtime_proto_msgTypes[10]
+	mi := &file_proto_realtime_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -660,7 +668,7 @@ func (x *Error) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Error.ProtoReflect.Descriptor instead.
 func (*Error) Descriptor() ([]byte, []int) {
-	return file_realtime_proto_rawDescGZIP(), []int{10}
+	return file_proto_realtime_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Error) GetCode() string {
@@ -677,11 +685,11 @@ func (x *Error) GetMessage() string {
 	return ""
 }
 
-var File_realtime_proto protoreflect.FileDescriptor
+var File_proto_realtime_proto protoreflect.FileDescriptor
 
-const file_realtime_proto_rawDesc = "" +
+const file_proto_realtime_proto_rawDesc = "" +
 	"\n" +
-	"\x0erealtime.proto\x12\brealtime\"\x8e\x01\n" +
+	"\x14proto/realtime.proto\x12\brealtime\"\x8e\x01\n" +
 	"\x11ConnectionRequest\x126\n" +
 	"\bregister\x18\x01 \x01(\v2\x18.realtime.RegisterClientH\x00R\bregister\x126\n" +
 	"\n" +
@@ -692,14 +700,15 @@ const file_realtime_proto_rawDesc = "" +
 	"\x06status\x18\x01 \x01(\v2\x1a.realtime.ConnectionStatusH\x00R\x06status\x125\n" +
 	"\amessage\x18\x02 \x01(\v2\x19.realtime.IncomingMessageH\x00R\amessage\x12'\n" +
 	"\x05error\x18\x03 \x01(\v2\x0f.realtime.ErrorH\x00R\x05errorB\t\n" +
-	"\apayload\"\x9e\x01\n" +
+	"\apayload\"\xb9\x01\n" +
 	"\x0fIncomingMessage\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x1b\n" +
 	"\tsender_id\x18\x02 \x01(\tR\bsenderId\x12\x17\n" +
 	"\achat_id\x18\x03 \x01(\tR\x06chatId\x12\x18\n" +
 	"\acontent\x18\x04 \x01(\tR\acontent\x12\x1c\n" +
-	"\ttimestamp\x18\x05 \x01(\x03R\ttimestamp\")\n" +
+	"\ttimestamp\x18\x05 \x01(\x03R\ttimestamp\x12\x19\n" +
+	"\bgroup_id\x18\x06 \x01(\tR\agroupId\")\n" +
 	"\x0eRegisterClient\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"\f\n" +
 	"\n" +
@@ -732,19 +741,19 @@ const file_realtime_proto_rawDesc = "" +
 	"\x0fSendReadReceipt\x12\x1c.realtime.ReadReceiptRequest\x1a\x1d.realtime.ReadReceiptResponseB6Z4github.com/666Stepan66612/ZeroMes/pkg/gen/realtimepbb\x06proto3"
 
 var (
-	file_realtime_proto_rawDescOnce sync.Once
-	file_realtime_proto_rawDescData []byte
+	file_proto_realtime_proto_rawDescOnce sync.Once
+	file_proto_realtime_proto_rawDescData []byte
 )
 
-func file_realtime_proto_rawDescGZIP() []byte {
-	file_realtime_proto_rawDescOnce.Do(func() {
-		file_realtime_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_realtime_proto_rawDesc), len(file_realtime_proto_rawDesc)))
+func file_proto_realtime_proto_rawDescGZIP() []byte {
+	file_proto_realtime_proto_rawDescOnce.Do(func() {
+		file_proto_realtime_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_realtime_proto_rawDesc), len(file_proto_realtime_proto_rawDesc)))
 	})
-	return file_realtime_proto_rawDescData
+	return file_proto_realtime_proto_rawDescData
 }
 
-var file_realtime_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
-var file_realtime_proto_goTypes = []any{
+var file_proto_realtime_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_proto_realtime_proto_goTypes = []any{
 	(*ConnectionRequest)(nil),   // 0: realtime.ConnectionRequest
 	(*ConnectionResponse)(nil),  // 1: realtime.ConnectionResponse
 	(*IncomingMessage)(nil),     // 2: realtime.IncomingMessage
@@ -757,7 +766,7 @@ var file_realtime_proto_goTypes = []any{
 	(*ReadReceiptResponse)(nil), // 9: realtime.ReadReceiptResponse
 	(*Error)(nil),               // 10: realtime.Error
 }
-var file_realtime_proto_depIdxs = []int32{
+var file_proto_realtime_proto_depIdxs = []int32{
 	3,  // 0: realtime.ConnectionRequest.register:type_name -> realtime.RegisterClient
 	4,  // 1: realtime.ConnectionRequest.disconnect:type_name -> realtime.Disconnect
 	5,  // 2: realtime.ConnectionResponse.status:type_name -> realtime.ConnectionStatus
@@ -778,16 +787,16 @@ var file_realtime_proto_depIdxs = []int32{
 	0,  // [0:7] is the sub-list for field type_name
 }
 
-func init() { file_realtime_proto_init() }
-func file_realtime_proto_init() {
-	if File_realtime_proto != nil {
+func init() { file_proto_realtime_proto_init() }
+func file_proto_realtime_proto_init() {
+	if File_proto_realtime_proto != nil {
 		return
 	}
-	file_realtime_proto_msgTypes[0].OneofWrappers = []any{
+	file_proto_realtime_proto_msgTypes[0].OneofWrappers = []any{
 		(*ConnectionRequest_Register)(nil),
 		(*ConnectionRequest_Disconnect)(nil),
 	}
-	file_realtime_proto_msgTypes[1].OneofWrappers = []any{
+	file_proto_realtime_proto_msgTypes[1].OneofWrappers = []any{
 		(*ConnectionResponse_Status)(nil),
 		(*ConnectionResponse_Message)(nil),
 		(*ConnectionResponse_Error)(nil),
@@ -796,17 +805,17 @@ func file_realtime_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_realtime_proto_rawDesc), len(file_realtime_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_realtime_proto_rawDesc), len(file_proto_realtime_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   2,
 		},
-		GoTypes:           file_realtime_proto_goTypes,
-		DependencyIndexes: file_realtime_proto_depIdxs,
-		MessageInfos:      file_realtime_proto_msgTypes,
+		GoTypes:           file_proto_realtime_proto_goTypes,
+		DependencyIndexes: file_proto_realtime_proto_depIdxs,
+		MessageInfos:      file_proto_realtime_proto_msgTypes,
 	}.Build()
-	File_realtime_proto = out.File
-	file_realtime_proto_goTypes = nil
-	file_realtime_proto_depIdxs = nil
+	File_proto_realtime_proto = out.File
+	file_proto_realtime_proto_goTypes = nil
+	file_proto_realtime_proto_depIdxs = nil
 }

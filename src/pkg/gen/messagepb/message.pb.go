@@ -75,9 +75,11 @@ type SendMessageRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	ChatId           string                 `protobuf:"bytes,1,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
 	SenderId         string                 `protobuf:"bytes,2,opt,name=sender_id,json=senderId,proto3" json:"sender_id,omitempty"`
-	RecipientId      string                 `protobuf:"bytes,3,opt,name=recipient_id,json=recipientId,proto3" json:"recipient_id,omitempty"`
+	RecipientId      string                 `protobuf:"bytes,3,opt,name=recipient_id,json=recipientId,proto3" json:"recipient_id,omitempty"` // empty if group message
 	EncryptedContent string                 `protobuf:"bytes,4,opt,name=encrypted_content,json=encryptedContent,proto3" json:"encrypted_content,omitempty"`
 	MessageType      string                 `protobuf:"bytes,5,opt,name=message_type,json=messageType,proto3" json:"message_type,omitempty"`
+	GroupId          string                 `protobuf:"bytes,6,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`           // empty if 1-1 chat
+	KeyVersion       int32                  `protobuf:"varint,7,opt,name=key_version,json=keyVersion,proto3" json:"key_version,omitempty"` // for group messages
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -145,6 +147,20 @@ func (x *SendMessageRequest) GetMessageType() string {
 		return x.MessageType
 	}
 	return ""
+}
+
+func (x *SendMessageRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *SendMessageRequest) GetKeyVersion() int32 {
+	if x != nil {
+		return x.KeyVersion
+	}
+	return 0
 }
 
 type GetMessagesRequest struct {
@@ -628,11 +644,13 @@ type Message struct {
 	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	ChatId           string                 `protobuf:"bytes,2,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
 	SenderId         string                 `protobuf:"bytes,3,opt,name=sender_id,json=senderId,proto3" json:"sender_id,omitempty"`
-	RecipientId      string                 `protobuf:"bytes,4,opt,name=recipient_id,json=recipientId,proto3" json:"recipient_id,omitempty"`
+	RecipientId      string                 `protobuf:"bytes,4,opt,name=recipient_id,json=recipientId,proto3" json:"recipient_id,omitempty"` // empty if group message
 	EncryptedContent string                 `protobuf:"bytes,5,opt,name=encrypted_content,json=encryptedContent,proto3" json:"encrypted_content,omitempty"`
 	MessageType      string                 `protobuf:"bytes,6,opt,name=message_type,json=messageType,proto3" json:"message_type,omitempty"`
 	CreatedAt        *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	Status           MessageStatus          `protobuf:"varint,8,opt,name=status,proto3,enum=message.MessageStatus" json:"status,omitempty"`
+	GroupId          string                 `protobuf:"bytes,9,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`            // empty if 1-1 chat
+	KeyVersion       int32                  `protobuf:"varint,10,opt,name=key_version,json=keyVersion,proto3" json:"key_version,omitempty"` // for group messages
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -721,6 +739,20 @@ func (x *Message) GetStatus() MessageStatus {
 		return x.Status
 	}
 	return MessageStatus_SENT
+}
+
+func (x *Message) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *Message) GetKeyVersion() int32 {
+	if x != nil {
+		return x.KeyVersion
+	}
+	return 0
 }
 
 type GetChatsRequest struct {
@@ -1203,17 +1235,1164 @@ func (x *UpdateChatKeysResponse) GetError() string {
 	return ""
 }
 
+type GroupChat struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	AvatarUrl     string                 `protobuf:"bytes,3,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
+	CreatedBy     string                 `protobuf:"bytes,4,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
+	KeyVersion    int32                  `protobuf:"varint,5,opt,name=key_version,json=keyVersion,proto3" json:"key_version,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastMessage   string                 `protobuf:"bytes,7,opt,name=last_message,json=lastMessage,proto3" json:"last_message,omitempty"`
+	LastMessageAt *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=last_message_at,json=lastMessageAt,proto3" json:"last_message_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GroupChat) Reset() {
+	*x = GroupChat{}
+	mi := &file_proto_message_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupChat) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupChat) ProtoMessage() {}
+
+func (x *GroupChat) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GroupChat.ProtoReflect.Descriptor instead.
+func (*GroupChat) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *GroupChat) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GroupChat) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *GroupChat) GetAvatarUrl() string {
+	if x != nil {
+		return x.AvatarUrl
+	}
+	return ""
+}
+
+func (x *GroupChat) GetCreatedBy() string {
+	if x != nil {
+		return x.CreatedBy
+	}
+	return ""
+}
+
+func (x *GroupChat) GetKeyVersion() int32 {
+	if x != nil {
+		return x.KeyVersion
+	}
+	return 0
+}
+
+func (x *GroupChat) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *GroupChat) GetLastMessage() string {
+	if x != nil {
+		return x.LastMessage
+	}
+	return ""
+}
+
+func (x *GroupChat) GetLastMessageAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastMessageAt
+	}
+	return nil
+}
+
+type GroupMember struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	UserId               string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Login                string                 `protobuf:"bytes,2,opt,name=login,proto3" json:"login,omitempty"`
+	Role                 string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"` // 'admin' or 'member'
+	JoinedAt             *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=joined_at,json=joinedAt,proto3" json:"joined_at,omitempty"`
+	CanReadFromMessageId string                 `protobuf:"bytes,5,opt,name=can_read_from_message_id,json=canReadFromMessageId,proto3" json:"can_read_from_message_id,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *GroupMember) Reset() {
+	*x = GroupMember{}
+	mi := &file_proto_message_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupMember) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupMember) ProtoMessage() {}
+
+func (x *GroupMember) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GroupMember.ProtoReflect.Descriptor instead.
+func (*GroupMember) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *GroupMember) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *GroupMember) GetLogin() string {
+	if x != nil {
+		return x.Login
+	}
+	return ""
+}
+
+func (x *GroupMember) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *GroupMember) GetJoinedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.JoinedAt
+	}
+	return nil
+}
+
+func (x *GroupMember) GetCanReadFromMessageId() string {
+	if x != nil {
+		return x.CanReadFromMessageId
+	}
+	return ""
+}
+
+type GroupKeySeed struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	EncryptedSeed string                 `protobuf:"bytes,1,opt,name=encrypted_seed,json=encryptedSeed,proto3" json:"encrypted_seed,omitempty"`
+	EncryptedBy   string                 `protobuf:"bytes,2,opt,name=encrypted_by,json=encryptedBy,proto3" json:"encrypted_by,omitempty"` // user_id who encrypted
+	KeyVersion    int32                  `protobuf:"varint,3,opt,name=key_version,json=keyVersion,proto3" json:"key_version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GroupKeySeed) Reset() {
+	*x = GroupKeySeed{}
+	mi := &file_proto_message_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupKeySeed) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupKeySeed) ProtoMessage() {}
+
+func (x *GroupKeySeed) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GroupKeySeed.ProtoReflect.Descriptor instead.
+func (*GroupKeySeed) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *GroupKeySeed) GetEncryptedSeed() string {
+	if x != nil {
+		return x.EncryptedSeed
+	}
+	return ""
+}
+
+func (x *GroupKeySeed) GetEncryptedBy() string {
+	if x != nil {
+		return x.EncryptedBy
+	}
+	return ""
+}
+
+func (x *GroupKeySeed) GetKeyVersion() int32 {
+	if x != nil {
+		return x.KeyVersion
+	}
+	return 0
+}
+
+// Create group
+type CreateGroupRequest struct {
+	state             protoimpl.MessageState      `protogen:"open.v1"`
+	Name              string                      `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	MemberIds         []string                    `protobuf:"bytes,2,rep,name=member_ids,json=memberIds,proto3" json:"member_ids,omitempty"` // initial members
+	CreatedBy         string                      `protobuf:"bytes,3,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
+	GroupKeySeed      string                      `protobuf:"bytes,4,opt,name=group_key_seed,json=groupKeySeed,proto3" json:"group_key_seed,omitempty"` // generated by creator
+	SeedDistributions []*GroupKeySeedDistribution `protobuf:"bytes,5,rep,name=seed_distributions,json=seedDistributions,proto3" json:"seed_distributions,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *CreateGroupRequest) Reset() {
+	*x = CreateGroupRequest{}
+	mi := &file_proto_message_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateGroupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateGroupRequest) ProtoMessage() {}
+
+func (x *CreateGroupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateGroupRequest.ProtoReflect.Descriptor instead.
+func (*CreateGroupRequest) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *CreateGroupRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateGroupRequest) GetMemberIds() []string {
+	if x != nil {
+		return x.MemberIds
+	}
+	return nil
+}
+
+func (x *CreateGroupRequest) GetCreatedBy() string {
+	if x != nil {
+		return x.CreatedBy
+	}
+	return ""
+}
+
+func (x *CreateGroupRequest) GetGroupKeySeed() string {
+	if x != nil {
+		return x.GroupKeySeed
+	}
+	return ""
+}
+
+func (x *CreateGroupRequest) GetSeedDistributions() []*GroupKeySeedDistribution {
+	if x != nil {
+		return x.SeedDistributions
+	}
+	return nil
+}
+
+type GroupKeySeedDistribution struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	EncryptedSeed string                 `protobuf:"bytes,2,opt,name=encrypted_seed,json=encryptedSeed,proto3" json:"encrypted_seed,omitempty"` // encrypted via ECDH
+	EncryptedBy   string                 `protobuf:"bytes,3,opt,name=encrypted_by,json=encryptedBy,proto3" json:"encrypted_by,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GroupKeySeedDistribution) Reset() {
+	*x = GroupKeySeedDistribution{}
+	mi := &file_proto_message_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupKeySeedDistribution) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupKeySeedDistribution) ProtoMessage() {}
+
+func (x *GroupKeySeedDistribution) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GroupKeySeedDistribution.ProtoReflect.Descriptor instead.
+func (*GroupKeySeedDistribution) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *GroupKeySeedDistribution) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *GroupKeySeedDistribution) GetEncryptedSeed() string {
+	if x != nil {
+		return x.EncryptedSeed
+	}
+	return ""
+}
+
+func (x *GroupKeySeedDistribution) GetEncryptedBy() string {
+	if x != nil {
+		return x.EncryptedBy
+	}
+	return ""
+}
+
+type CreateGroupResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Group         *GroupChat             `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateGroupResponse) Reset() {
+	*x = CreateGroupResponse{}
+	mi := &file_proto_message_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateGroupResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateGroupResponse) ProtoMessage() {}
+
+func (x *CreateGroupResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateGroupResponse.ProtoReflect.Descriptor instead.
+func (*CreateGroupResponse) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *CreateGroupResponse) GetGroup() *GroupChat {
+	if x != nil {
+		return x.Group
+	}
+	return nil
+}
+
+// Add member
+type AddGroupMemberRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GroupId       string                 `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // who is being added
+	AddedBy       string                 `protobuf:"bytes,3,opt,name=added_by,json=addedBy,proto3" json:"added_by,omitempty"`
+	EncryptedSeed string                 `protobuf:"bytes,4,opt,name=encrypted_seed,json=encryptedSeed,proto3" json:"encrypted_seed,omitempty"` // encrypted for new member via ECDH
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddGroupMemberRequest) Reset() {
+	*x = AddGroupMemberRequest{}
+	mi := &file_proto_message_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddGroupMemberRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddGroupMemberRequest) ProtoMessage() {}
+
+func (x *AddGroupMemberRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddGroupMemberRequest.ProtoReflect.Descriptor instead.
+func (*AddGroupMemberRequest) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *AddGroupMemberRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *AddGroupMemberRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *AddGroupMemberRequest) GetAddedBy() string {
+	if x != nil {
+		return x.AddedBy
+	}
+	return ""
+}
+
+func (x *AddGroupMemberRequest) GetEncryptedSeed() string {
+	if x != nil {
+		return x.EncryptedSeed
+	}
+	return ""
+}
+
+type AddGroupMemberResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddGroupMemberResponse) Reset() {
+	*x = AddGroupMemberResponse{}
+	mi := &file_proto_message_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddGroupMemberResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddGroupMemberResponse) ProtoMessage() {}
+
+func (x *AddGroupMemberResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddGroupMemberResponse.ProtoReflect.Descriptor instead.
+func (*AddGroupMemberResponse) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *AddGroupMemberResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+// Remove member
+type RemoveGroupMemberRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GroupId       string                 `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // who is being removed
+	RemovedBy     string                 `protobuf:"bytes,3,opt,name=removed_by,json=removedBy,proto3" json:"removed_by,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoveGroupMemberRequest) Reset() {
+	*x = RemoveGroupMemberRequest{}
+	mi := &file_proto_message_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveGroupMemberRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveGroupMemberRequest) ProtoMessage() {}
+
+func (x *RemoveGroupMemberRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveGroupMemberRequest.ProtoReflect.Descriptor instead.
+func (*RemoveGroupMemberRequest) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *RemoveGroupMemberRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *RemoveGroupMemberRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *RemoveGroupMemberRequest) GetRemovedBy() string {
+	if x != nil {
+		return x.RemovedBy
+	}
+	return ""
+}
+
+type RemoveGroupMemberResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	NewKeyVersion int32                  `protobuf:"varint,2,opt,name=new_key_version,json=newKeyVersion,proto3" json:"new_key_version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoveGroupMemberResponse) Reset() {
+	*x = RemoveGroupMemberResponse{}
+	mi := &file_proto_message_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveGroupMemberResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveGroupMemberResponse) ProtoMessage() {}
+
+func (x *RemoveGroupMemberResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveGroupMemberResponse.ProtoReflect.Descriptor instead.
+func (*RemoveGroupMemberResponse) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *RemoveGroupMemberResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *RemoveGroupMemberResponse) GetNewKeyVersion() int32 {
+	if x != nil {
+		return x.NewKeyVersion
+	}
+	return 0
+}
+
+// Leave group
+type LeaveGroupRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GroupId       string                 `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LeaveGroupRequest) Reset() {
+	*x = LeaveGroupRequest{}
+	mi := &file_proto_message_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LeaveGroupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LeaveGroupRequest) ProtoMessage() {}
+
+func (x *LeaveGroupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LeaveGroupRequest.ProtoReflect.Descriptor instead.
+func (*LeaveGroupRequest) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *LeaveGroupRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *LeaveGroupRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type LeaveGroupResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LeaveGroupResponse) Reset() {
+	*x = LeaveGroupResponse{}
+	mi := &file_proto_message_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LeaveGroupResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LeaveGroupResponse) ProtoMessage() {}
+
+func (x *LeaveGroupResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LeaveGroupResponse.ProtoReflect.Descriptor instead.
+func (*LeaveGroupResponse) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *LeaveGroupResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+// Get user's groups
+type GetGroupChatsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetGroupChatsRequest) Reset() {
+	*x = GetGroupChatsRequest{}
+	mi := &file_proto_message_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetGroupChatsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetGroupChatsRequest) ProtoMessage() {}
+
+func (x *GetGroupChatsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetGroupChatsRequest.ProtoReflect.Descriptor instead.
+func (*GetGroupChatsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *GetGroupChatsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type GetGroupChatsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Groups        []*GroupChat           `protobuf:"bytes,1,rep,name=groups,proto3" json:"groups,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetGroupChatsResponse) Reset() {
+	*x = GetGroupChatsResponse{}
+	mi := &file_proto_message_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetGroupChatsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetGroupChatsResponse) ProtoMessage() {}
+
+func (x *GetGroupChatsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetGroupChatsResponse.ProtoReflect.Descriptor instead.
+func (*GetGroupChatsResponse) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *GetGroupChatsResponse) GetGroups() []*GroupChat {
+	if x != nil {
+		return x.Groups
+	}
+	return nil
+}
+
+// Get group members
+type GetGroupMembersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GroupId       string                 `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetGroupMembersRequest) Reset() {
+	*x = GetGroupMembersRequest{}
+	mi := &file_proto_message_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetGroupMembersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetGroupMembersRequest) ProtoMessage() {}
+
+func (x *GetGroupMembersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetGroupMembersRequest.ProtoReflect.Descriptor instead.
+func (*GetGroupMembersRequest) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *GetGroupMembersRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+type GetGroupMembersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Members       []*GroupMember         `protobuf:"bytes,1,rep,name=members,proto3" json:"members,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetGroupMembersResponse) Reset() {
+	*x = GetGroupMembersResponse{}
+	mi := &file_proto_message_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetGroupMembersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetGroupMembersResponse) ProtoMessage() {}
+
+func (x *GetGroupMembersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetGroupMembersResponse.ProtoReflect.Descriptor instead.
+func (*GetGroupMembersResponse) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *GetGroupMembersResponse) GetMembers() []*GroupMember {
+	if x != nil {
+		return x.Members
+	}
+	return nil
+}
+
+// Save group key seed
+type SaveGroupKeySeedRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	EncryptedSeed string                 `protobuf:"bytes,3,opt,name=encrypted_seed,json=encryptedSeed,proto3" json:"encrypted_seed,omitempty"`
+	EncryptedBy   string                 `protobuf:"bytes,4,opt,name=encrypted_by,json=encryptedBy,proto3" json:"encrypted_by,omitempty"`
+	KeyVersion    int32                  `protobuf:"varint,5,opt,name=key_version,json=keyVersion,proto3" json:"key_version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SaveGroupKeySeedRequest) Reset() {
+	*x = SaveGroupKeySeedRequest{}
+	mi := &file_proto_message_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SaveGroupKeySeedRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SaveGroupKeySeedRequest) ProtoMessage() {}
+
+func (x *SaveGroupKeySeedRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SaveGroupKeySeedRequest.ProtoReflect.Descriptor instead.
+func (*SaveGroupKeySeedRequest) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *SaveGroupKeySeedRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *SaveGroupKeySeedRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *SaveGroupKeySeedRequest) GetEncryptedSeed() string {
+	if x != nil {
+		return x.EncryptedSeed
+	}
+	return ""
+}
+
+func (x *SaveGroupKeySeedRequest) GetEncryptedBy() string {
+	if x != nil {
+		return x.EncryptedBy
+	}
+	return ""
+}
+
+func (x *SaveGroupKeySeedRequest) GetKeyVersion() int32 {
+	if x != nil {
+		return x.KeyVersion
+	}
+	return 0
+}
+
+type SaveGroupKeySeedResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SaveGroupKeySeedResponse) Reset() {
+	*x = SaveGroupKeySeedResponse{}
+	mi := &file_proto_message_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SaveGroupKeySeedResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SaveGroupKeySeedResponse) ProtoMessage() {}
+
+func (x *SaveGroupKeySeedResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SaveGroupKeySeedResponse.ProtoReflect.Descriptor instead.
+func (*SaveGroupKeySeedResponse) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *SaveGroupKeySeedResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+// Get group key seed
+type GetGroupKeySeedRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetGroupKeySeedRequest) Reset() {
+	*x = GetGroupKeySeedRequest{}
+	mi := &file_proto_message_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetGroupKeySeedRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetGroupKeySeedRequest) ProtoMessage() {}
+
+func (x *GetGroupKeySeedRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetGroupKeySeedRequest.ProtoReflect.Descriptor instead.
+func (*GetGroupKeySeedRequest) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *GetGroupKeySeedRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *GetGroupKeySeedRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+type GetGroupKeySeedResponse struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Seed              *GroupKeySeed          `protobuf:"bytes,1,opt,name=seed,proto3" json:"seed,omitempty"`
+	CurrentKeyVersion int32                  `protobuf:"varint,2,opt,name=current_key_version,json=currentKeyVersion,proto3" json:"current_key_version,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *GetGroupKeySeedResponse) Reset() {
+	*x = GetGroupKeySeedResponse{}
+	mi := &file_proto_message_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetGroupKeySeedResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetGroupKeySeedResponse) ProtoMessage() {}
+
+func (x *GetGroupKeySeedResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetGroupKeySeedResponse.ProtoReflect.Descriptor instead.
+func (*GetGroupKeySeedResponse) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *GetGroupKeySeedResponse) GetSeed() *GroupKeySeed {
+	if x != nil {
+		return x.Seed
+	}
+	return nil
+}
+
+func (x *GetGroupKeySeedResponse) GetCurrentKeyVersion() int32 {
+	if x != nil {
+		return x.CurrentKeyVersion
+	}
+	return 0
+}
+
 var File_proto_message_proto protoreflect.FileDescriptor
 
 const file_proto_message_proto_rawDesc = "" +
 	"\n" +
-	"\x13proto/message.proto\x12\amessage\x1a\x1fgoogle/protobuf/timestamp.proto\"\xbd\x01\n" +
+	"\x13proto/message.proto\x12\amessage\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf9\x01\n" +
 	"\x12SendMessageRequest\x12\x17\n" +
 	"\achat_id\x18\x01 \x01(\tR\x06chatId\x12\x1b\n" +
 	"\tsender_id\x18\x02 \x01(\tR\bsenderId\x12!\n" +
 	"\frecipient_id\x18\x03 \x01(\tR\vrecipientId\x12+\n" +
 	"\x11encrypted_content\x18\x04 \x01(\tR\x10encryptedContent\x12!\n" +
-	"\fmessage_type\x18\x05 \x01(\tR\vmessageType\"\x84\x01\n" +
+	"\fmessage_type\x18\x05 \x01(\tR\vmessageType\x12\x19\n" +
+	"\bgroup_id\x18\x06 \x01(\tR\agroupId\x12\x1f\n" +
+	"\vkey_version\x18\a \x01(\x05R\n" +
+	"keyVersion\"\x84\x01\n" +
 	"\x12GetMessagesRequest\x12\x17\n" +
 	"\achat_id\x18\x01 \x01(\tR\x06chatId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x14\n" +
@@ -1244,7 +2423,7 @@ const file_proto_message_proto_rawDesc = "" +
 	"\x15DeleteMessageResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\"0\n" +
 	"\x14AlterMessageResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xad\x02\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xe9\x02\n" +
 	"\aMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\achat_id\x18\x02 \x01(\tR\x06chatId\x12\x1b\n" +
@@ -1254,7 +2433,11 @@ const file_proto_message_proto_rawDesc = "" +
 	"\fmessage_type\x18\x06 \x01(\tR\vmessageType\x129\n" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12.\n" +
-	"\x06status\x18\b \x01(\x0e2\x16.message.MessageStatusR\x06status\"*\n" +
+	"\x06status\x18\b \x01(\x0e2\x16.message.MessageStatusR\x06status\x12\x19\n" +
+	"\bgroup_id\x18\t \x01(\tR\agroupId\x12\x1f\n" +
+	"\vkey_version\x18\n" +
+	" \x01(\x05R\n" +
+	"keyVersion\"*\n" +
 	"\x0fGetChatsRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"7\n" +
 	"\x10GetChatsResponse\x12#\n" +
@@ -1287,11 +2470,92 @@ const file_proto_message_proto_rawDesc = "" +
 	"\x16UpdateChatKeysResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12#\n" +
 	"\rupdated_count\x18\x02 \x01(\x05R\fupdatedCount\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error*2\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\"\xb0\x02\n" +
+	"\tGroupChat\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1d\n" +
+	"\n" +
+	"avatar_url\x18\x03 \x01(\tR\tavatarUrl\x12\x1d\n" +
+	"\n" +
+	"created_by\x18\x04 \x01(\tR\tcreatedBy\x12\x1f\n" +
+	"\vkey_version\x18\x05 \x01(\x05R\n" +
+	"keyVersion\x129\n" +
+	"\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12!\n" +
+	"\flast_message\x18\a \x01(\tR\vlastMessage\x12B\n" +
+	"\x0flast_message_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\rlastMessageAt\"\xc1\x01\n" +
+	"\vGroupMember\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
+	"\x05login\x18\x02 \x01(\tR\x05login\x12\x12\n" +
+	"\x04role\x18\x03 \x01(\tR\x04role\x127\n" +
+	"\tjoined_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\bjoinedAt\x126\n" +
+	"\x18can_read_from_message_id\x18\x05 \x01(\tR\x14canReadFromMessageId\"y\n" +
+	"\fGroupKeySeed\x12%\n" +
+	"\x0eencrypted_seed\x18\x01 \x01(\tR\rencryptedSeed\x12!\n" +
+	"\fencrypted_by\x18\x02 \x01(\tR\vencryptedBy\x12\x1f\n" +
+	"\vkey_version\x18\x03 \x01(\x05R\n" +
+	"keyVersion\"\xde\x01\n" +
+	"\x12CreateGroupRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
+	"\n" +
+	"member_ids\x18\x02 \x03(\tR\tmemberIds\x12\x1d\n" +
+	"\n" +
+	"created_by\x18\x03 \x01(\tR\tcreatedBy\x12$\n" +
+	"\x0egroup_key_seed\x18\x04 \x01(\tR\fgroupKeySeed\x12P\n" +
+	"\x12seed_distributions\x18\x05 \x03(\v2!.message.GroupKeySeedDistributionR\x11seedDistributions\"}\n" +
+	"\x18GroupKeySeedDistribution\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12%\n" +
+	"\x0eencrypted_seed\x18\x02 \x01(\tR\rencryptedSeed\x12!\n" +
+	"\fencrypted_by\x18\x03 \x01(\tR\vencryptedBy\"?\n" +
+	"\x13CreateGroupResponse\x12(\n" +
+	"\x05group\x18\x01 \x01(\v2\x12.message.GroupChatR\x05group\"\x8d\x01\n" +
+	"\x15AddGroupMemberRequest\x12\x19\n" +
+	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x19\n" +
+	"\badded_by\x18\x03 \x01(\tR\aaddedBy\x12%\n" +
+	"\x0eencrypted_seed\x18\x04 \x01(\tR\rencryptedSeed\"2\n" +
+	"\x16AddGroupMemberResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"m\n" +
+	"\x18RemoveGroupMemberRequest\x12\x19\n" +
+	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1d\n" +
+	"\n" +
+	"removed_by\x18\x03 \x01(\tR\tremovedBy\"]\n" +
+	"\x19RemoveGroupMemberResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12&\n" +
+	"\x0fnew_key_version\x18\x02 \x01(\x05R\rnewKeyVersion\"G\n" +
+	"\x11LeaveGroupRequest\x12\x19\n" +
+	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\".\n" +
+	"\x12LeaveGroupResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"/\n" +
+	"\x14GetGroupChatsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"C\n" +
+	"\x15GetGroupChatsResponse\x12*\n" +
+	"\x06groups\x18\x01 \x03(\v2\x12.message.GroupChatR\x06groups\"3\n" +
+	"\x16GetGroupMembersRequest\x12\x19\n" +
+	"\bgroup_id\x18\x01 \x01(\tR\agroupId\"I\n" +
+	"\x17GetGroupMembersResponse\x12.\n" +
+	"\amembers\x18\x01 \x03(\v2\x14.message.GroupMemberR\amembers\"\xb8\x01\n" +
+	"\x17SaveGroupKeySeedRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12%\n" +
+	"\x0eencrypted_seed\x18\x03 \x01(\tR\rencryptedSeed\x12!\n" +
+	"\fencrypted_by\x18\x04 \x01(\tR\vencryptedBy\x12\x1f\n" +
+	"\vkey_version\x18\x05 \x01(\x05R\n" +
+	"keyVersion\"4\n" +
+	"\x18SaveGroupKeySeedResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"L\n" +
+	"\x16GetGroupKeySeedRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\"t\n" +
+	"\x17GetGroupKeySeedResponse\x12)\n" +
+	"\x04seed\x18\x01 \x01(\v2\x15.message.GroupKeySeedR\x04seed\x12.\n" +
+	"\x13current_key_version\x18\x02 \x01(\x05R\x11currentKeyVersion*2\n" +
 	"\rMessageStatus\x12\b\n" +
 	"\x04SENT\x10\x00\x12\r\n" +
 	"\tDELIVERED\x10\x01\x12\b\n" +
-	"\x04READ\x10\x022\xe9\x04\n" +
+	"\x04READ\x10\x022\xfe\t\n" +
 	"\x0eMessageService\x12H\n" +
 	"\vSendMessage\x12\x1b.message.SendMessageRequest\x1a\x1c.message.SendMessageResponse\x12H\n" +
 	"\vGetMessages\x12\x1b.message.GetMessagesRequest\x1a\x1c.message.GetMessagesResponse\x12E\n" +
@@ -1301,7 +2565,16 @@ const file_proto_message_proto_rawDesc = "" +
 	"\fAlterMessage\x12\x1c.message.AlterMessageRequest\x1a\x1d.message.AlterMessageResponse\x12?\n" +
 	"\bGetChats\x12\x18.message.GetChatsRequest\x1a\x19.message.GetChatsResponse\x12K\n" +
 	"\fSaveChatKeys\x12\x1c.message.SaveChatKeysRequest\x1a\x1d.message.SaveChatKeysResponse\x12Q\n" +
-	"\x0eUpdateChatKeys\x12\x1e.message.UpdateChatKeysRequest\x1a\x1f.message.UpdateChatKeysResponseB5Z3github.com/666Stepan66612/ZeroMes/pkg/gen/messagepbb\x06proto3"
+	"\x0eUpdateChatKeys\x12\x1e.message.UpdateChatKeysRequest\x1a\x1f.message.UpdateChatKeysResponse\x12H\n" +
+	"\vCreateGroup\x12\x1b.message.CreateGroupRequest\x1a\x1c.message.CreateGroupResponse\x12Q\n" +
+	"\x0eAddGroupMember\x12\x1e.message.AddGroupMemberRequest\x1a\x1f.message.AddGroupMemberResponse\x12Z\n" +
+	"\x11RemoveGroupMember\x12!.message.RemoveGroupMemberRequest\x1a\".message.RemoveGroupMemberResponse\x12E\n" +
+	"\n" +
+	"LeaveGroup\x12\x1a.message.LeaveGroupRequest\x1a\x1b.message.LeaveGroupResponse\x12N\n" +
+	"\rGetGroupChats\x12\x1d.message.GetGroupChatsRequest\x1a\x1e.message.GetGroupChatsResponse\x12T\n" +
+	"\x0fGetGroupMembers\x12\x1f.message.GetGroupMembersRequest\x1a .message.GetGroupMembersResponse\x12W\n" +
+	"\x10SaveGroupKeySeed\x12 .message.SaveGroupKeySeedRequest\x1a!.message.SaveGroupKeySeedResponse\x12T\n" +
+	"\x0fGetGroupKeySeed\x12\x1f.message.GetGroupKeySeedRequest\x1a .message.GetGroupKeySeedResponseB5Z3github.com/666Stepan66612/ZeroMes/pkg/gen/messagepbb\x06proto3"
 
 var (
 	file_proto_message_proto_rawDescOnce sync.Once
@@ -1316,60 +2589,104 @@ func file_proto_message_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_message_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_message_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_proto_message_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
 var file_proto_message_proto_goTypes = []any{
-	(MessageStatus)(0),             // 0: message.MessageStatus
-	(*SendMessageRequest)(nil),     // 1: message.SendMessageRequest
-	(*GetMessagesRequest)(nil),     // 2: message.GetMessagesRequest
-	(*MarkAsReadRequest)(nil),      // 3: message.MarkAsReadRequest
-	(*DeleteMessageRequest)(nil),   // 4: message.DeleteMessageRequest
-	(*AlterMessageRequest)(nil),    // 5: message.AlterMessageRequest
-	(*SendMessageResponse)(nil),    // 6: message.SendMessageResponse
-	(*GetMessagesResponse)(nil),    // 7: message.GetMessagesResponse
-	(*MarkAsReadResponse)(nil),     // 8: message.MarkAsReadResponse
-	(*DeleteMessageResponse)(nil),  // 9: message.DeleteMessageResponse
-	(*AlterMessageResponse)(nil),   // 10: message.AlterMessageResponse
-	(*Message)(nil),                // 11: message.Message
-	(*GetChatsRequest)(nil),        // 12: message.GetChatsRequest
-	(*GetChatsResponse)(nil),       // 13: message.GetChatsResponse
-	(*Chat)(nil),                   // 14: message.Chat
-	(*SaveChatKeysRequest)(nil),    // 15: message.SaveChatKeysRequest
-	(*SaveChatKeysResponse)(nil),   // 16: message.SaveChatKeysResponse
-	(*UpdateChatKeysRequest)(nil),  // 17: message.UpdateChatKeysRequest
-	(*ChatKeyUpdate)(nil),          // 18: message.ChatKeyUpdate
-	(*UpdateChatKeysResponse)(nil), // 19: message.UpdateChatKeysResponse
-	(*timestamppb.Timestamp)(nil),  // 20: google.protobuf.Timestamp
+	(MessageStatus)(0),                // 0: message.MessageStatus
+	(*SendMessageRequest)(nil),        // 1: message.SendMessageRequest
+	(*GetMessagesRequest)(nil),        // 2: message.GetMessagesRequest
+	(*MarkAsReadRequest)(nil),         // 3: message.MarkAsReadRequest
+	(*DeleteMessageRequest)(nil),      // 4: message.DeleteMessageRequest
+	(*AlterMessageRequest)(nil),       // 5: message.AlterMessageRequest
+	(*SendMessageResponse)(nil),       // 6: message.SendMessageResponse
+	(*GetMessagesResponse)(nil),       // 7: message.GetMessagesResponse
+	(*MarkAsReadResponse)(nil),        // 8: message.MarkAsReadResponse
+	(*DeleteMessageResponse)(nil),     // 9: message.DeleteMessageResponse
+	(*AlterMessageResponse)(nil),      // 10: message.AlterMessageResponse
+	(*Message)(nil),                   // 11: message.Message
+	(*GetChatsRequest)(nil),           // 12: message.GetChatsRequest
+	(*GetChatsResponse)(nil),          // 13: message.GetChatsResponse
+	(*Chat)(nil),                      // 14: message.Chat
+	(*SaveChatKeysRequest)(nil),       // 15: message.SaveChatKeysRequest
+	(*SaveChatKeysResponse)(nil),      // 16: message.SaveChatKeysResponse
+	(*UpdateChatKeysRequest)(nil),     // 17: message.UpdateChatKeysRequest
+	(*ChatKeyUpdate)(nil),             // 18: message.ChatKeyUpdate
+	(*UpdateChatKeysResponse)(nil),    // 19: message.UpdateChatKeysResponse
+	(*GroupChat)(nil),                 // 20: message.GroupChat
+	(*GroupMember)(nil),               // 21: message.GroupMember
+	(*GroupKeySeed)(nil),              // 22: message.GroupKeySeed
+	(*CreateGroupRequest)(nil),        // 23: message.CreateGroupRequest
+	(*GroupKeySeedDistribution)(nil),  // 24: message.GroupKeySeedDistribution
+	(*CreateGroupResponse)(nil),       // 25: message.CreateGroupResponse
+	(*AddGroupMemberRequest)(nil),     // 26: message.AddGroupMemberRequest
+	(*AddGroupMemberResponse)(nil),    // 27: message.AddGroupMemberResponse
+	(*RemoveGroupMemberRequest)(nil),  // 28: message.RemoveGroupMemberRequest
+	(*RemoveGroupMemberResponse)(nil), // 29: message.RemoveGroupMemberResponse
+	(*LeaveGroupRequest)(nil),         // 30: message.LeaveGroupRequest
+	(*LeaveGroupResponse)(nil),        // 31: message.LeaveGroupResponse
+	(*GetGroupChatsRequest)(nil),      // 32: message.GetGroupChatsRequest
+	(*GetGroupChatsResponse)(nil),     // 33: message.GetGroupChatsResponse
+	(*GetGroupMembersRequest)(nil),    // 34: message.GetGroupMembersRequest
+	(*GetGroupMembersResponse)(nil),   // 35: message.GetGroupMembersResponse
+	(*SaveGroupKeySeedRequest)(nil),   // 36: message.SaveGroupKeySeedRequest
+	(*SaveGroupKeySeedResponse)(nil),  // 37: message.SaveGroupKeySeedResponse
+	(*GetGroupKeySeedRequest)(nil),    // 38: message.GetGroupKeySeedRequest
+	(*GetGroupKeySeedResponse)(nil),   // 39: message.GetGroupKeySeedResponse
+	(*timestamppb.Timestamp)(nil),     // 40: google.protobuf.Timestamp
 }
 var file_proto_message_proto_depIdxs = []int32{
 	11, // 0: message.SendMessageResponse.message:type_name -> message.Message
 	11, // 1: message.GetMessagesResponse.messages:type_name -> message.Message
-	20, // 2: message.Message.created_at:type_name -> google.protobuf.Timestamp
+	40, // 2: message.Message.created_at:type_name -> google.protobuf.Timestamp
 	0,  // 3: message.Message.status:type_name -> message.MessageStatus
 	14, // 4: message.GetChatsResponse.chats:type_name -> message.Chat
-	20, // 5: message.Chat.created_at:type_name -> google.protobuf.Timestamp
-	20, // 6: message.Chat.last_message_at:type_name -> google.protobuf.Timestamp
+	40, // 5: message.Chat.created_at:type_name -> google.protobuf.Timestamp
+	40, // 6: message.Chat.last_message_at:type_name -> google.protobuf.Timestamp
 	18, // 7: message.UpdateChatKeysRequest.keys:type_name -> message.ChatKeyUpdate
-	1,  // 8: message.MessageService.SendMessage:input_type -> message.SendMessageRequest
-	2,  // 9: message.MessageService.GetMessages:input_type -> message.GetMessagesRequest
-	3,  // 10: message.MessageService.MarkAsRead:input_type -> message.MarkAsReadRequest
-	4,  // 11: message.MessageService.DeleteMessage:input_type -> message.DeleteMessageRequest
-	5,  // 12: message.MessageService.AlterMessage:input_type -> message.AlterMessageRequest
-	12, // 13: message.MessageService.GetChats:input_type -> message.GetChatsRequest
-	15, // 14: message.MessageService.SaveChatKeys:input_type -> message.SaveChatKeysRequest
-	17, // 15: message.MessageService.UpdateChatKeys:input_type -> message.UpdateChatKeysRequest
-	6,  // 16: message.MessageService.SendMessage:output_type -> message.SendMessageResponse
-	7,  // 17: message.MessageService.GetMessages:output_type -> message.GetMessagesResponse
-	8,  // 18: message.MessageService.MarkAsRead:output_type -> message.MarkAsReadResponse
-	9,  // 19: message.MessageService.DeleteMessage:output_type -> message.DeleteMessageResponse
-	10, // 20: message.MessageService.AlterMessage:output_type -> message.AlterMessageResponse
-	13, // 21: message.MessageService.GetChats:output_type -> message.GetChatsResponse
-	16, // 22: message.MessageService.SaveChatKeys:output_type -> message.SaveChatKeysResponse
-	19, // 23: message.MessageService.UpdateChatKeys:output_type -> message.UpdateChatKeysResponse
-	16, // [16:24] is the sub-list for method output_type
-	8,  // [8:16] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	40, // 8: message.GroupChat.created_at:type_name -> google.protobuf.Timestamp
+	40, // 9: message.GroupChat.last_message_at:type_name -> google.protobuf.Timestamp
+	40, // 10: message.GroupMember.joined_at:type_name -> google.protobuf.Timestamp
+	24, // 11: message.CreateGroupRequest.seed_distributions:type_name -> message.GroupKeySeedDistribution
+	20, // 12: message.CreateGroupResponse.group:type_name -> message.GroupChat
+	20, // 13: message.GetGroupChatsResponse.groups:type_name -> message.GroupChat
+	21, // 14: message.GetGroupMembersResponse.members:type_name -> message.GroupMember
+	22, // 15: message.GetGroupKeySeedResponse.seed:type_name -> message.GroupKeySeed
+	1,  // 16: message.MessageService.SendMessage:input_type -> message.SendMessageRequest
+	2,  // 17: message.MessageService.GetMessages:input_type -> message.GetMessagesRequest
+	3,  // 18: message.MessageService.MarkAsRead:input_type -> message.MarkAsReadRequest
+	4,  // 19: message.MessageService.DeleteMessage:input_type -> message.DeleteMessageRequest
+	5,  // 20: message.MessageService.AlterMessage:input_type -> message.AlterMessageRequest
+	12, // 21: message.MessageService.GetChats:input_type -> message.GetChatsRequest
+	15, // 22: message.MessageService.SaveChatKeys:input_type -> message.SaveChatKeysRequest
+	17, // 23: message.MessageService.UpdateChatKeys:input_type -> message.UpdateChatKeysRequest
+	23, // 24: message.MessageService.CreateGroup:input_type -> message.CreateGroupRequest
+	26, // 25: message.MessageService.AddGroupMember:input_type -> message.AddGroupMemberRequest
+	28, // 26: message.MessageService.RemoveGroupMember:input_type -> message.RemoveGroupMemberRequest
+	30, // 27: message.MessageService.LeaveGroup:input_type -> message.LeaveGroupRequest
+	32, // 28: message.MessageService.GetGroupChats:input_type -> message.GetGroupChatsRequest
+	34, // 29: message.MessageService.GetGroupMembers:input_type -> message.GetGroupMembersRequest
+	36, // 30: message.MessageService.SaveGroupKeySeed:input_type -> message.SaveGroupKeySeedRequest
+	38, // 31: message.MessageService.GetGroupKeySeed:input_type -> message.GetGroupKeySeedRequest
+	6,  // 32: message.MessageService.SendMessage:output_type -> message.SendMessageResponse
+	7,  // 33: message.MessageService.GetMessages:output_type -> message.GetMessagesResponse
+	8,  // 34: message.MessageService.MarkAsRead:output_type -> message.MarkAsReadResponse
+	9,  // 35: message.MessageService.DeleteMessage:output_type -> message.DeleteMessageResponse
+	10, // 36: message.MessageService.AlterMessage:output_type -> message.AlterMessageResponse
+	13, // 37: message.MessageService.GetChats:output_type -> message.GetChatsResponse
+	16, // 38: message.MessageService.SaveChatKeys:output_type -> message.SaveChatKeysResponse
+	19, // 39: message.MessageService.UpdateChatKeys:output_type -> message.UpdateChatKeysResponse
+	25, // 40: message.MessageService.CreateGroup:output_type -> message.CreateGroupResponse
+	27, // 41: message.MessageService.AddGroupMember:output_type -> message.AddGroupMemberResponse
+	29, // 42: message.MessageService.RemoveGroupMember:output_type -> message.RemoveGroupMemberResponse
+	31, // 43: message.MessageService.LeaveGroup:output_type -> message.LeaveGroupResponse
+	33, // 44: message.MessageService.GetGroupChats:output_type -> message.GetGroupChatsResponse
+	35, // 45: message.MessageService.GetGroupMembers:output_type -> message.GetGroupMembersResponse
+	37, // 46: message.MessageService.SaveGroupKeySeed:output_type -> message.SaveGroupKeySeedResponse
+	39, // 47: message.MessageService.GetGroupKeySeed:output_type -> message.GetGroupKeySeedResponse
+	32, // [32:48] is the sub-list for method output_type
+	16, // [16:32] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_proto_message_proto_init() }
@@ -1383,7 +2700,7 @@ func file_proto_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_message_proto_rawDesc), len(file_proto_message_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   19,
+			NumMessages:   39,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
