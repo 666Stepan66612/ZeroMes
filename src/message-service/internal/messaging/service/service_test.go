@@ -68,6 +68,104 @@ func (m *MockMessageRepository) UpdateChatKeys(ctx context.Context, userID strin
 	return args.Int(0), args.Error(1)
 }
 
+func (m *MockMessageRepository) CreateGroup(ctx context.Context, name, avatarURL, createdBy string, keyVersion int) (string, error) {
+	args := m.Called(ctx, name, avatarURL, createdBy, keyVersion)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockMessageRepository) GetGroupByID(ctx context.Context, groupID string) (*GroupChat, error) {
+	args := m.Called(ctx, groupID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*GroupChat), args.Error(1)
+}
+
+func (m *MockMessageRepository) GetGroupChats(ctx context.Context, userID string) ([]*GroupChat, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*GroupChat), args.Error(1)
+}
+
+func (m *MockMessageRepository) AddGroupMember(ctx context.Context, groupID, userID, role string, canReadFromMessageID *string) error {
+	args := m.Called(ctx, groupID, userID, role, canReadFromMessageID)
+	return args.Error(0)
+}
+
+func (m *MockMessageRepository) RemoveGroupMember(ctx context.Context, groupID, userID string) error {
+	args := m.Called(ctx, groupID, userID)
+	return args.Error(0)
+}
+
+func (m *MockMessageRepository) GetGroupMembers(ctx context.Context, groupID string) ([]*GroupMember, error) {
+	args := m.Called(ctx, groupID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*GroupMember), args.Error(1)
+}
+
+func (m *MockMessageRepository) CheckGroupMembership(ctx context.Context, groupID, userID string) (bool, string, error) {
+	args := m.Called(ctx, groupID, userID)
+	return args.Bool(0), args.String(1), args.Error(2)
+}
+
+func (m *MockMessageRepository) GetActiveGroupMemberIDs(ctx context.Context, groupID string) ([]string, error) {
+	args := m.Called(ctx, groupID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]string), args.Error(1)
+}
+
+func (m *MockMessageRepository) SaveGroupKeySeed(ctx context.Context, userID, groupID, encryptedSeed, encryptedBy string, keyVersion int) error {
+	args := m.Called(ctx, userID, groupID, encryptedSeed, encryptedBy, keyVersion)
+	return args.Error(0)
+}
+
+func (m *MockMessageRepository) GetGroupKeySeed(ctx context.Context, userID, groupID string) (*GroupKeySeed, error) {
+	args := m.Called(ctx, userID, groupID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*GroupKeySeed), args.Error(1)
+}
+
+func (m *MockMessageRepository) GetCurrentKeyVersion(ctx context.Context, groupID string) (int, error) {
+	args := m.Called(ctx, groupID)
+	return args.Int(0), args.Error(1)
+}
+
+func (m *MockMessageRepository) TryAcquireRotationLock(ctx context.Context, groupID, userID string) (bool, error) {
+	args := m.Called(ctx, groupID, userID)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockMessageRepository) IncrementKeyVersion(ctx context.Context, groupID string) (int, error) {
+	args := m.Called(ctx, groupID)
+	return args.Int(0), args.Error(1)
+}
+
+func (m *MockMessageRepository) ReleaseRotationLock(ctx context.Context, groupID string) error {
+	args := m.Called(ctx, groupID)
+	return args.Error(0)
+}
+
+func (m *MockMessageRepository) GetGroupMessages(ctx context.Context, groupID, userID string, limit int, lastMessageID string) ([]*Message, error) {
+	args := m.Called(ctx, groupID, userID, limit, lastMessageID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*Message), args.Error(1)
+}
+
+func (m *MockMessageRepository) CreateGroupMessage(ctx context.Context, msg *Message) error {
+	args := m.Called(ctx, msg)
+	return args.Error(0)
+}
+
 // Mock KafkaProducer
 type MockKafkaProducer struct {
 	mock.Mock

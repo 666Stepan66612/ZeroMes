@@ -9,4 +9,8 @@ var (
 	ErrInternalServer = errors.New("internal server error")
 	NilRequest        = errors.New("request is nil")
 	ErrForbidden      = errors.New("Forbidden")
+	ErrNotGroupMember = errors.New("not a group member")
+	ErrNotAdmin       = errors.New("not an admin")
+	ErrGroupNotFound  = errors.New("group not found")
+	ErrAlreadyMember  = errors.New("already a group member")
 )

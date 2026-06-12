@@ -50,3 +50,34 @@ type OutboxEvent struct {
 	LastError   *string
 	Status      string // "pending", "processing", "completed", "failed"
 }
+
+type GroupChat struct {
+    ID            string
+    Name          string
+    AvatarURL     string
+    CreatedBy     string
+    KeyVersion    int
+    CreatedAt     time.Time
+    LastMessage   string
+    LastMessageAt time.Time
+}
+
+type GroupMember struct {
+    UserID                string
+    Login                 string
+    Role                  string
+    JoinedAt              time.Time
+    CanReadFromMessageID  *string
+}
+
+type GroupKeySeed struct {
+    EncryptedSeed string
+    EncryptedBy   string
+    KeyVersion    int
+}
+
+type SeedDistribution struct {
+    UserID        string
+    EncryptedSeed string
+    EncryptedBy   string
+}
