@@ -20,6 +20,14 @@ type MessageClient interface {
 	GetChats(ctx context.Context, userID string) (*domain.GetChatsResponse, error)
 	SaveChatKeys(ctx context.Context, userID, companionID, encryptedKey, keyIV string) error
 	UpdateChatKeys(ctx context.Context, userID string, keys []domain.ChatKeyUpdate) (int, error)
+	CreateGroup(ctx context.Context, name, createdBy string, memberIDs []string, seedDistributions []domain.SeedDistribution) (*domain.GroupChat, error)
+	AddGroupMember(ctx context.Context, groupID, userID, addedBy, encryptedSeed string) error
+	RemoveGroupMember(ctx context.Context, groupID, userID, removedBy string) (int32, error)
+	LeaveGroup(ctx context.Context, groupID, userID string) error
+	GetGroupChats(ctx context.Context, userID string) (*domain.GetGroupChatsResponse, error)
+	GetGroupMembers(ctx context.Context, groupID string) (*domain.GetGroupMembersResponse, error)
+	SaveGroupKeySeed(ctx context.Context, userID, groupID, encryptedSeed, encryptedBy string, keyVersion int32) error
+	GetGroupKeySeed(ctx context.Context, userID, groupID string) (*domain.GetGroupKeySeedResponse, error)
 }
 
 type RealtimeClient interface {

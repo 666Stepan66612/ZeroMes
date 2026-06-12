@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -13,20 +14,22 @@ import (
 )
 
 type Hub struct {
-	streams     map[string]pb.ConnectionService_ConnectionStreamServer
-	repo        PresenceRepository
-	instanceID  string
-	mu          sync.RWMutex
-	cancelFuncs map[string]context.CancelFunc
-	cancelMu    sync.Mutex
+	streams          map[string]pb.ConnectionService_ConnectionStreamServer
+	repo             PresenceRepository
+	groupProvider    GroupMemberProvider
+	instanceID       string
+	mu               sync.RWMutex
+	cancelFuncs      map[string]context.CancelFunc
+	cancelMu         sync.Mutex
 }
 
-func NewHub(repo PresenceRepository, instanceID string) *Hub {
+func NewHub(repo PresenceRepository, instanceID string, groupProvider GroupMemberProvider) *Hub {
 	return &Hub{
-		streams:     make(map[string]pb.ConnectionService_ConnectionStreamServer),
-		cancelFuncs: make(map[string]context.CancelFunc),
-		repo:        repo,
-		instanceID:  instanceID,
+		streams:       make(map[string]pb.ConnectionService_ConnectionStreamServer),
+		cancelFuncs:   make(map[string]context.CancelFunc),
+		repo:          repo,
+		groupProvider: groupProvider,
+		instanceID:    instanceID,
 	}
 }
 
@@ -140,12 +143,18 @@ func (h *Hub) heartbeat(ctx context.Context, userID string) {
 }
 
 func (h *Hub) DeliverMessage(ctx context.Context, msg *domain.Message) error {
+	if msg.GroupID != "" {
+		return h.deliverGroupMessage(ctx, msg)
+	}
+	return h.deliverDirectMessage(ctx, msg)
+}
+
+func (h *Hub) deliverDirectMessage(ctx context.Context, msg *domain.Message) error {
 	stream, err := h.GetStream(msg.RecipientID)
 	if err != nil {
 		return nil
 	}
 
-	// Create JSON payload with all message data
 	payload := map[string]interface{}{
 		"type": "new_message",
 		"payload": map[string]interface{}{
@@ -165,8 +174,61 @@ func (h *Hub) DeliverMessage(ctx context.Context, msg *domain.Message) error {
 				MessageId: msg.MessageID,
 				SenderId:  msg.SenderID,
 				Content:   string(jsonData),
-				Timestamp: 0, // Not used, timestamp is in JSON payload
 			},
 		},
 	})
+}
+
+func (h *Hub) deliverGroupMessage(ctx context.Context, msg *domain.Message) error {
+	memberIDs, err := h.groupProvider.GetActiveGroupMemberIDs(ctx, msg.GroupID)
+	if err != nil {
+		slog.Error("failed to get group members", "group_id", msg.GroupID, "err", err)
+		return err
+	}
+
+	payload := map[string]interface{}{
+		"type": "new_message",
+		"payload": map[string]interface{}{
+			"message_id":        msg.MessageID,
+			"chat_id":           msg.ChatID,
+			"sender_id":         msg.SenderID,
+			"encrypted_content": msg.Content,
+			"timestamp":         msg.Timestamp,
+			"group_id":          msg.GroupID,
+			"key_version":       msg.KeyVersion,
+		},
+	}
+
+	jsonData, _ := json.Marshal(payload)
+
+	sent := 0
+	for _, userID := range memberIDs {
+		if userID == msg.SenderID {
+			continue
+		}
+
+		stream, err := h.GetStream(userID)
+		if err != nil {
+			continue
+		}
+
+		if err := stream.Send(&pb.ConnectionResponse{
+			Payload: &pb.ConnectionResponse_Message{
+				Message: &pb.IncomingMessage{
+					MessageId: msg.MessageID,
+					SenderId:  msg.SenderID,
+					ChatId:    msg.ChatID,
+					GroupId:   msg.GroupID,
+					Content:   string(jsonData),
+				},
+			},
+		}); err != nil {
+			slog.Warn("failed to send group message", "user_id", userID, "err", err)
+			continue
+		}
+		sent++
+	}
+
+	slog.Info("group message delivered", "group_id", msg.GroupID, "total_members", len(memberIDs), "sent", sent)
+	return nil
 }

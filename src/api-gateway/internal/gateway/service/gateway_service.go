@@ -126,6 +126,86 @@ func (s *gatewayService) HandleWebSocket(ctx context.Context, userID string, sen
 					"is_online": isOnline,
 				})
 
+			case "create_group":
+				distributions := make([]domain.SeedDistribution, len(req.SeedDistributions))
+				for i, sd := range req.SeedDistributions {
+					distributions[i] = domain.SeedDistribution(sd)
+				}
+				result, err := s.messageClient.CreateGroup(ctx, req.GroupName, userID, req.MemberIDs, distributions)
+				if err != nil {
+					slog.Warn("create_group failed", "user_id", userID, "err", err)
+					sendResponse(send, "error", map[string]string{"error": "failed to create group"})
+					continue
+				}
+				sendResponse(send, "group_created", result)
+
+			case "add_group_member":
+				err := s.messageClient.AddGroupMember(ctx, req.GroupID, req.UserID, userID, req.EncryptedSeed)
+				if err != nil {
+					slog.Warn("add_group_member failed", "user_id", userID, "err", err)
+					sendResponse(send, "error", map[string]string{"error": "failed to add group member"})
+					continue
+				}
+				sendResponse(send, "group_member_added", nil)
+
+			case "remove_group_member":
+				newVersion, err := s.messageClient.RemoveGroupMember(ctx, req.GroupID, req.UserID, userID)
+				if err != nil {
+					slog.Warn("remove_group_member failed", "user_id", userID, "err", err)
+					sendResponse(send, "error", map[string]string{"error": "failed to remove group member"})
+					continue
+				}
+				sendResponse(send, "group_member_removed", map[string]interface{}{
+					"group_id":       req.GroupID,
+					"user_id":        req.UserID,
+					"new_key_version": newVersion,
+				})
+
+			case "leave_group":
+				err := s.messageClient.LeaveGroup(ctx, req.GroupID, userID)
+				if err != nil {
+					slog.Warn("leave_group failed", "user_id", userID, "err", err)
+					sendResponse(send, "error", map[string]string{"error": "failed to leave group"})
+					continue
+				}
+				sendResponse(send, "left_group", nil)
+
+			case "get_group_chats":
+				result, err := s.messageClient.GetGroupChats(ctx, userID)
+				if err != nil {
+					slog.Warn("get_group_chats failed", "user_id", userID, "err", err)
+					sendResponse(send, "error", map[string]string{"error": "failed to fetch group chats"})
+					continue
+				}
+				sendResponse(send, "group_chats", result)
+
+			case "get_group_members":
+				result, err := s.messageClient.GetGroupMembers(ctx, req.GroupID)
+				if err != nil {
+					slog.Warn("get_group_members failed", "user_id", userID, "err", err)
+					sendResponse(send, "error", map[string]string{"error": "failed to fetch group members"})
+					continue
+				}
+				sendResponse(send, "group_members", result)
+
+			case "save_group_key_seed":
+				err := s.messageClient.SaveGroupKeySeed(ctx, userID, req.GroupID, req.EncryptedSeed, req.AddedBy, req.KeyVersion)
+				if err != nil {
+					slog.Warn("save_group_key_seed failed", "user_id", userID, "err", err)
+					sendResponse(send, "error", map[string]string{"error": "failed to save group key seed"})
+					continue
+				}
+				sendResponse(send, "group_key_seed_saved", nil)
+
+			case "get_group_key_seed":
+				result, err := s.messageClient.GetGroupKeySeed(ctx, userID, req.GroupID)
+				if err != nil {
+					slog.Warn("get_group_key_seed failed", "user_id", userID, "err", err)
+					sendResponse(send, "error", map[string]string{"error": "failed to fetch group key seed"})
+					continue
+				}
+				sendResponse(send, "group_key_seed", result)
+
 			default:
 				slog.Warn("unknown websocket command", "user_id", userID, "type", req.Type)
 				sendResponse(send, "error", map[string]string{"error": "unknown type"})

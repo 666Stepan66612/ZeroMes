@@ -26,3 +26,7 @@ type PresenceRepository interface {
 	GetOnlineCount(ctx context.Context) (int64, error)
 	ExtendTTL(ctx context.Context, userID string, ttl time.Duration) error
 }
+
+type GroupMemberProvider interface {
+	GetActiveGroupMemberIDs(ctx context.Context, groupID string) ([]string, error)
+}

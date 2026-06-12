@@ -230,6 +230,7 @@ services:
       JWT_SECRET: ${JWT_ACCESS_SECRET}
       KAFKA_GROUP_ID: ${REALTIME_KAFKA_GROUP_ID}
       INSTANCE_ID: ${REALTIME_INSTANCE_ID}
+      MESSAGE_SERVICE_ADDR: message-service:${MESSAGE_SERVICE_GRPC_PORT}
     depends_on:
       redis:
         condition: service_healthy

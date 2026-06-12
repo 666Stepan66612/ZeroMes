@@ -82,6 +82,8 @@ func (c *KafkaConsumer) Start(ctx context.Context) error {
 				RecipientID: protoMsg.RecipientId,
 				Content:     protoMsg.EncryptedContent,
 				Timestamp:   protoMsg.CreatedAt.AsTime().Format(time.RFC3339),
+				GroupID:     protoMsg.GroupId,
+				KeyVersion:  protoMsg.KeyVersion,
 			}
 
 			if err := c.manager.DeliverMessage(ctx, msg); err != nil {

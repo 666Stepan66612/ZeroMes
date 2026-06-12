@@ -47,7 +47,19 @@ func main() {
 	defer redisClient.Close()
 
 	redisRepo := repository.NewRedisRepository(redisClient)
-	hub := service.NewHub(redisRepo, instanceID)
+
+	messageServiceAddr := os.Getenv("MESSAGE_SERVICE_ADDR")
+	if messageServiceAddr == "" {
+		messageServiceAddr = "message-service:50051"
+	}
+	messageClient, err := repository.NewMessageServiceClient(messageServiceAddr)
+	if err != nil {
+		slog.Error("failed to connect to message-service", "err", err)
+		os.Exit(1)
+	}
+	defer messageClient.Close()
+
+	hub := service.NewHub(redisRepo, instanceID, messageClient)
 
 	consumer := service.NewKafkaConsumer(
 		[]string{os.Getenv("KAFKA_BROKERS")},

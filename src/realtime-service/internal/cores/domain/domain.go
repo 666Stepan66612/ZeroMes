@@ -7,4 +7,6 @@ type Message struct {
 	RecipientID string
 	Content     string
 	Timestamp   string
+	GroupID     string
+	KeyVersion  int32
 }

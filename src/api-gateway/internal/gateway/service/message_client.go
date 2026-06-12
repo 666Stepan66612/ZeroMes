@@ -177,3 +177,140 @@ func (c *MessageClientService) UpdateChatKeys(ctx context.Context, userID string
 	slog.Info("message-service UpdateChatKeys success", "updated_count", resp.UpdatedCount)
 	return int(resp.UpdatedCount), nil
 }
+
+func (c *MessageClientService) CreateGroup(ctx context.Context, name, createdBy string, memberIDs []string, seedDistributions []domain.SeedDistribution) (*domain.GroupChat, error) {
+	pbDistributions := make([]*messagepb.GroupKeySeedDistribution, len(seedDistributions))
+	for i, sd := range seedDistributions {
+		pbDistributions[i] = &messagepb.GroupKeySeedDistribution{
+			UserId:        sd.UserID,
+			EncryptedSeed: sd.EncryptedSeed,
+			EncryptedBy:   sd.EncryptedBy,
+		}
+	}
+
+	resp, err := c.client.CreateGroup(ctx, &messagepb.CreateGroupRequest{
+		Name:              name,
+		CreatedBy:         createdBy,
+		MemberIds:         memberIDs,
+		SeedDistributions: pbDistributions,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &domain.GroupChat{
+		ID:         resp.Group.Id,
+		Name:       resp.Group.Name,
+		AvatarURL:  resp.Group.AvatarUrl,
+		CreatedBy:  resp.Group.CreatedBy,
+		KeyVersion: resp.Group.KeyVersion,
+		CreatedAt:  resp.Group.CreatedAt.AsTime().Format(time.RFC3339),
+	}, nil
+}
+
+func (c *MessageClientService) AddGroupMember(ctx context.Context, groupID, userID, addedBy, encryptedSeed string) error {
+	_, err := c.client.AddGroupMember(ctx, &messagepb.AddGroupMemberRequest{
+		GroupId:       groupID,
+		UserId:        userID,
+		AddedBy:       addedBy,
+		EncryptedSeed: encryptedSeed,
+	})
+	return err
+}
+
+func (c *MessageClientService) RemoveGroupMember(ctx context.Context, groupID, userID, removedBy string) (int32, error) {
+	resp, err := c.client.RemoveGroupMember(ctx, &messagepb.RemoveGroupMemberRequest{
+		GroupId:   groupID,
+		UserId:    userID,
+		RemovedBy: removedBy,
+	})
+	if err != nil {
+		return 0, err
+	}
+	return resp.NewKeyVersion, nil
+}
+
+func (c *MessageClientService) LeaveGroup(ctx context.Context, groupID, userID string) error {
+	_, err := c.client.LeaveGroup(ctx, &messagepb.LeaveGroupRequest{
+		GroupId: groupID,
+		UserId:  userID,
+	})
+	return err
+}
+
+func (c *MessageClientService) GetGroupChats(ctx context.Context, userID string) (*domain.GetGroupChatsResponse, error) {
+	resp, err := c.client.GetGroupChats(ctx, &messagepb.GetGroupChatsRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	groups := make([]*domain.GroupChat, len(resp.Groups))
+	for i, g := range resp.Groups {
+		groups[i] = &domain.GroupChat{
+			ID:         g.Id,
+			Name:       g.Name,
+			AvatarURL:  g.AvatarUrl,
+			CreatedBy:  g.CreatedBy,
+			KeyVersion: g.KeyVersion,
+			CreatedAt:  g.CreatedAt.AsTime().Format(time.RFC3339),
+		}
+	}
+
+	return &domain.GetGroupChatsResponse{Groups: groups}, nil
+}
+
+func (c *MessageClientService) GetGroupMembers(ctx context.Context, groupID string) (*domain.GetGroupMembersResponse, error) {
+	resp, err := c.client.GetGroupMembers(ctx, &messagepb.GetGroupMembersRequest{
+		GroupId: groupID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	members := make([]*domain.GroupMember, len(resp.Members))
+	for i, m := range resp.Members {
+		gm := &domain.GroupMember{
+			UserID:   m.UserId,
+			Role:     m.Role,
+			JoinedAt: m.JoinedAt.AsTime().Format(time.RFC3339),
+		}
+		if m.CanReadFromMessageId != "" {
+			gm.CanReadFromMessageID = &m.CanReadFromMessageId
+		}
+		members[i] = gm
+	}
+
+	return &domain.GetGroupMembersResponse{Members: members}, nil
+}
+
+func (c *MessageClientService) SaveGroupKeySeed(ctx context.Context, userID, groupID, encryptedSeed, encryptedBy string, keyVersion int32) error {
+	_, err := c.client.SaveGroupKeySeed(ctx, &messagepb.SaveGroupKeySeedRequest{
+		UserId:        userID,
+		GroupId:       groupID,
+		EncryptedSeed: encryptedSeed,
+		EncryptedBy:   encryptedBy,
+		KeyVersion:    keyVersion,
+	})
+	return err
+}
+
+func (c *MessageClientService) GetGroupKeySeed(ctx context.Context, userID, groupID string) (*domain.GetGroupKeySeedResponse, error) {
+	resp, err := c.client.GetGroupKeySeed(ctx, &messagepb.GetGroupKeySeedRequest{
+		UserId:  userID,
+		GroupId: groupID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &domain.GetGroupKeySeedResponse{
+		Seed: &domain.GroupKeySeed{
+			EncryptedSeed: resp.Seed.EncryptedSeed,
+			EncryptedBy:   resp.Seed.EncryptedBy,
+			KeyVersion:    resp.Seed.KeyVersion,
+		},
+		CurrentKeyVersion: resp.CurrentKeyVersion,
+	}, nil
+}
