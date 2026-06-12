@@ -11,6 +11,8 @@ type Message struct {
 	MessageType      string
 	CreatedAt        time.Time
 	Status           MessageStatus
+	GroupID          string
+	KeyVersion       int
 }
 
 type ChatsList struct {

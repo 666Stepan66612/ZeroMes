@@ -31,10 +31,11 @@ func (r *postgresRepository) CreateWithChats(ctx context.Context, msg *service.M
 	defer tx.Rollback(ctx)
 
 	_, err = tx.Exec(ctx, `
-		INSERT INTO messages (id, chat_id, sender_id, recipient_id, encrypted_content, message_type, created_at, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO messages (id, chat_id, sender_id, recipient_id, encrypted_content, message_type, created_at, status, group_id, key_version)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`, msg.ID, msg.ChatID, msg.SenderID, msg.RecipientID,
-		msg.EncryptedContent, msg.MessageType, msg.CreatedAt, msg.Status)
+		msg.EncryptedContent, msg.MessageType, msg.CreatedAt, msg.Status,
+		msg.GroupID, msg.KeyVersion)
 	if err != nil {
 		return err
 	}
@@ -62,7 +63,7 @@ func (r *postgresRepository) GetByChatID(ctx context.Context, chatID string, lim
 
 	if lastMessageID == "" {
 		query = `
-			SELECT id, chat_id, sender_id, recipient_id, encrypted_content, message_type, created_at, status
+			SELECT id, chat_id, sender_id, COALESCE(recipient_id,''), encrypted_content, message_type, created_at, status, COALESCE(group_id,''), key_version
 			FROM messages
 			WHERE chat_id = $1
 			ORDER BY created_at DESC, id DESC
@@ -84,7 +85,7 @@ func (r *postgresRepository) GetByChatID(ctx context.Context, chatID string, lim
 		}
 
 		query = `
-			SELECT id, chat_id, sender_id, recipient_id, encrypted_content, message_type, created_at, status
+			SELECT id, chat_id, sender_id, COALESCE(recipient_id,''), encrypted_content, message_type, created_at, status, COALESCE(group_id,''), key_version
 			FROM messages
 			WHERE chat_id = $1 AND (created_at, id) < (SELECT created_at, id FROM messages WHERE id = $2)
 			ORDER BY created_at DESC, id DESC
@@ -115,6 +116,8 @@ func (r *postgresRepository) GetByChatID(ctx context.Context, chatID string, lim
 			&msg.MessageType,
 			&msg.CreatedAt,
 			&msg.Status,
+			&msg.GroupID,
+			&msg.KeyVersion,
 		)
 		if err != nil {
 			return nil, err
@@ -128,7 +131,7 @@ func (r *postgresRepository) GetByChatID(ctx context.Context, chatID string, lim
 
 func (r *postgresRepository) GetByID(ctx context.Context, messageID string) (*service.Message, error) {
 	query := `
-		SELECT id, chat_id, sender_id, recipient_id, encrypted_content, message_type, created_at, status
+		SELECT id, chat_id, sender_id, COALESCE(recipient_id,''), encrypted_content, message_type, created_at, status, COALESCE(group_id,''), key_version
 		FROM messages
 		WHERE id = $1
 	`
@@ -143,6 +146,8 @@ func (r *postgresRepository) GetByID(ctx context.Context, messageID string) (*se
 		&msg.MessageType,
 		&msg.CreatedAt,
 		&msg.Status,
+		&msg.GroupID,
+		&msg.KeyVersion,
 	)
 
 	if err == pgx.ErrNoRows {
@@ -486,7 +491,7 @@ func (r *postgresRepository) GetGroupMessages(ctx context.Context, groupID, user
 
 	if lastMessageID == "" {
 		query = `
-			SELECT id, chat_id, sender_id, recipient_id, encrypted_content, message_type, created_at, status
+			SELECT id, chat_id, sender_id, COALESCE(recipient_id,''), encrypted_content, message_type, created_at, status, COALESCE(group_id,''), key_version
 			FROM messages
 			WHERE group_id = $1
 			ORDER BY created_at DESC, id DESC
@@ -494,7 +499,7 @@ func (r *postgresRepository) GetGroupMessages(ctx context.Context, groupID, user
 		args = []interface{}{groupID, limit}
 	} else {
 		query = `
-			SELECT id, chat_id, sender_id, recipient_id, encrypted_content, message_type, created_at, status
+			SELECT id, chat_id, sender_id, COALESCE(recipient_id,''), encrypted_content, message_type, created_at, status, COALESCE(group_id,''), key_version
 			FROM messages
 			WHERE group_id = $1 AND (created_at, id) < (SELECT created_at, id FROM messages WHERE id = $2)
 			ORDER BY created_at DESC, id DESC
@@ -512,7 +517,8 @@ func (r *postgresRepository) GetGroupMessages(ctx context.Context, groupID, user
 	for rows.Next() {
 		msg := &service.Message{}
 		if err := rows.Scan(&msg.ID, &msg.ChatID, &msg.SenderID, &msg.RecipientID,
-			&msg.EncryptedContent, &msg.MessageType, &msg.CreatedAt, &msg.Status); err != nil {
+			&msg.EncryptedContent, &msg.MessageType, &msg.CreatedAt, &msg.Status,
+			&msg.GroupID, &msg.KeyVersion); err != nil {
 			return nil, err
 		}
 		messages = append(messages, msg)
@@ -525,7 +531,7 @@ func (r *postgresRepository) CreateGroupMessage(ctx context.Context, msg *servic
 		`INSERT INTO messages (id, chat_id, sender_id, encrypted_content, message_type, created_at, status, group_id, key_version)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 		msg.ID, msg.ChatID, msg.SenderID, msg.EncryptedContent,
-		msg.MessageType, msg.CreatedAt, msg.Status, msg.ChatID, 0,
+		msg.MessageType, msg.CreatedAt, msg.Status, msg.GroupID, msg.KeyVersion,
 	)
 	return err
 }
