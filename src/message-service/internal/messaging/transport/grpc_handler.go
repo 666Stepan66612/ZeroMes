@@ -27,7 +27,7 @@ func NewGRPCHandler(messageService service.MessageService) *GRPCHandler {
 }
 
 func (h *GRPCHandler) SendMessage(ctx context.Context, req *pb.SendMessageRequest) (*pb.SendMessageResponse, error) {
-	slog.Info("gRPC SendMessage received", "chat_id", req.ChatId, "sender_id", req.SenderId, "recipient_id", req.RecipientId)
+	slog.Info("gRPC SendMessage received", "chat_id", req.ChatId, "sender_id", req.SenderId, "recipient_id", req.RecipientId, "group_id", req.GroupId)
 	msg, err := h.messageService.SendMessage(
 		ctx,
 		req.ChatId,
@@ -52,6 +52,8 @@ func (h *GRPCHandler) SendMessage(ctx context.Context, req *pb.SendMessageReques
 			MessageType:      msg.MessageType,
 			CreatedAt:        timestamppb.New(msg.CreatedAt),
 			Status:           pb.MessageStatus(msg.Status),
+			GroupId:          msg.GroupID,
+			KeyVersion:       int32(msg.KeyVersion),
 		},
 	}, nil
 }
@@ -83,6 +85,8 @@ func (h *GRPCHandler) GetMessages(ctx context.Context, req *pb.GetMessagesReques
 			MessageType:      msg.MessageType,
 			CreatedAt:        timestamppb.New(msg.CreatedAt),
 			Status:           pb.MessageStatus(msg.Status),
+			GroupId:          msg.GroupID,
+			KeyVersion:       int32(msg.KeyVersion),
 		})
 	}
 
@@ -203,14 +207,157 @@ func (h *GRPCHandler) UpdateChatKeys(ctx context.Context, req *pb.UpdateChatKeys
 	}, nil
 }
 
+func (h *GRPCHandler) CreateGroup(ctx context.Context, req *pb.CreateGroupRequest) (*pb.CreateGroupResponse, error) {
+	slog.Info("gRPC CreateGroup", "name", req.Name, "created_by", req.CreatedBy, "members", len(req.MemberIds))
+
+	distributions := make([]service.SeedDistribution, len(req.SeedDistributions))
+	for i, d := range req.SeedDistributions {
+		distributions[i] = service.SeedDistribution{
+			UserID:        d.UserId,
+			EncryptedSeed: d.EncryptedSeed,
+			EncryptedBy:   d.EncryptedBy,
+		}
+	}
+
+	group, err := h.messageService.CreateGroup(ctx, req.Name, req.CreatedBy, req.MemberIds, distributions)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+
+	return &pb.CreateGroupResponse{
+		Group: &pb.GroupChat{
+			Id:         group.ID,
+			Name:       group.Name,
+			AvatarUrl:  group.AvatarURL,
+			CreatedBy:  group.CreatedBy,
+			KeyVersion: int32(group.KeyVersion),
+			CreatedAt:  timestamppb.New(group.CreatedAt),
+		},
+	}, nil
+}
+
+func (h *GRPCHandler) AddGroupMember(ctx context.Context, req *pb.AddGroupMemberRequest) (*pb.AddGroupMemberResponse, error) {
+	slog.Info("gRPC AddGroupMember", "group_id", req.GroupId, "user_id", req.UserId, "added_by", req.AddedBy)
+
+	err := h.messageService.AddGroupMember(ctx, req.GroupId, req.UserId, req.AddedBy, req.EncryptedSeed)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+
+	return &pb.AddGroupMemberResponse{Success: true}, nil
+}
+
+func (h *GRPCHandler) RemoveGroupMember(ctx context.Context, req *pb.RemoveGroupMemberRequest) (*pb.RemoveGroupMemberResponse, error) {
+	slog.Info("gRPC RemoveGroupMember", "group_id", req.GroupId, "user_id", req.UserId, "removed_by", req.RemovedBy)
+
+	newVersion, err := h.messageService.RemoveGroupMember(ctx, req.GroupId, req.UserId, req.RemovedBy)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+
+	return &pb.RemoveGroupMemberResponse{
+		Success:       true,
+		NewKeyVersion: int32(newVersion),
+	}, nil
+}
+
+func (h *GRPCHandler) LeaveGroup(ctx context.Context, req *pb.LeaveGroupRequest) (*pb.LeaveGroupResponse, error) {
+	slog.Info("gRPC LeaveGroup", "group_id", req.GroupId, "user_id", req.UserId)
+
+	err := h.messageService.LeaveGroup(ctx, req.GroupId, req.UserId)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+
+	return &pb.LeaveGroupResponse{Success: true}, nil
+}
+
+func (h *GRPCHandler) GetGroupChats(ctx context.Context, req *pb.GetGroupChatsRequest) (*pb.GetGroupChatsResponse, error) {
+	slog.Info("gRPC GetGroupChats", "user_id", req.UserId)
+
+	groups, err := h.messageService.GetGroupChats(ctx, req.UserId)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+
+	pbGroups := make([]*pb.GroupChat, 0, len(groups))
+	for _, g := range groups {
+		pbGroups = append(pbGroups, &pb.GroupChat{
+			Id:         g.ID,
+			Name:       g.Name,
+			AvatarUrl:  g.AvatarURL,
+			CreatedBy:  g.CreatedBy,
+			KeyVersion: int32(g.KeyVersion),
+			CreatedAt:  timestamppb.New(g.CreatedAt),
+		})
+	}
+
+	return &pb.GetGroupChatsResponse{Groups: pbGroups}, nil
+}
+
+func (h *GRPCHandler) GetGroupMembers(ctx context.Context, req *pb.GetGroupMembersRequest) (*pb.GetGroupMembersResponse, error) {
+	slog.Info("gRPC GetGroupMembers", "group_id", req.GroupId)
+
+	members, err := h.messageService.GetGroupMembers(ctx, req.GroupId)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+
+	pbMembers := make([]*pb.GroupMember, 0, len(members))
+	for _, m := range members {
+		gm := &pb.GroupMember{
+			UserId:   m.UserID,
+			Role:     m.Role,
+			JoinedAt: timestamppb.New(m.JoinedAt),
+		}
+		if m.CanReadFromMessageID != nil {
+			gm.CanReadFromMessageId = *m.CanReadFromMessageID
+		}
+		pbMembers = append(pbMembers, gm)
+	}
+
+	return &pb.GetGroupMembersResponse{Members: pbMembers}, nil
+}
+
+func (h *GRPCHandler) SaveGroupKeySeed(ctx context.Context, req *pb.SaveGroupKeySeedRequest) (*pb.SaveGroupKeySeedResponse, error) {
+	slog.Info("gRPC SaveGroupKeySeed", "user_id", req.UserId, "group_id", req.GroupId)
+
+	err := h.messageService.SaveGroupKeySeed(ctx, req.UserId, req.GroupId, req.EncryptedSeed, req.EncryptedBy, int(req.KeyVersion))
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+
+	return &pb.SaveGroupKeySeedResponse{Success: true}, nil
+}
+
+func (h *GRPCHandler) GetGroupKeySeed(ctx context.Context, req *pb.GetGroupKeySeedRequest) (*pb.GetGroupKeySeedResponse, error) {
+	slog.Info("gRPC GetGroupKeySeed", "user_id", req.UserId, "group_id", req.GroupId)
+
+	seed, keyVersion, err := h.messageService.GetGroupKeySeed(ctx, req.UserId, req.GroupId)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+
+	return &pb.GetGroupKeySeedResponse{
+		Seed: &pb.GroupKeySeed{
+			EncryptedSeed: seed.EncryptedSeed,
+			EncryptedBy:   seed.EncryptedBy,
+			KeyVersion:    int32(seed.KeyVersion),
+		},
+		CurrentKeyVersion: int32(keyVersion),
+	}, nil
+}
+
 func toGRPCError(err error) error {
 	switch {
-	case errors.Is(err, apperrors.ErrNotFound):
+	case errors.Is(err, apperrors.ErrNotFound), errors.Is(err, apperrors.ErrGroupNotFound):
 		return status.Error(codes.NotFound, err.Error())
-	case errors.Is(err, apperrors.ErrNotYourMessage):
+	case errors.Is(err, apperrors.ErrNotYourMessage), errors.Is(err, apperrors.ErrNotAdmin):
 		return status.Error(codes.PermissionDenied, err.Error())
-	case errors.Is(err, apperrors.ErrInvalidInput):
+	case errors.Is(err, apperrors.ErrInvalidInput), errors.Is(err, apperrors.ErrAlreadyMember):
 		return status.Error(codes.InvalidArgument, err.Error())
+	case errors.Is(err, apperrors.ErrNotGroupMember):
+		return status.Error(codes.PermissionDenied, err.Error())
 	default:
 		return status.Error(codes.Internal, err.Error())
 	}
